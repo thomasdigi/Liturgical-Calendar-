@@ -16,6 +16,7 @@ import {
   getCalendar,
   getLanguage,
   getVersion,
+  isChant,
   LANGUAGES,
   publicConfig,
   VERSIONS,
@@ -128,7 +129,8 @@ const rangeMonths = new Set<string>();
 for (let d = new Date(`${from}T12:00:00Z`); d <= new Date(`${to}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
   rangeMonths.add(d.toISOString().slice(0, 7));
 }
-const searchLangs = [...new Set([FALLBACK_LANGUAGE as LanguageId, ...langs])];
+// (Not the chant edition: its text is musical notation.)
+const searchLangs = [...new Set([FALLBACK_LANGUAGE as LanguageId, ...langs])].filter((l) => !isChant(l));
 for (const calendar of calendars)
   for (const version of versions) {
     if (!doSettings(calendar, version)) continue;

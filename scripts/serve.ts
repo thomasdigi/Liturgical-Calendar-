@@ -14,6 +14,7 @@ import { getSearchMonth } from '../src/search.ts';
 import { buildIcs } from '../src/ical.ts';
 
 const WEB = resolve(import.meta.dirname, '../web');
+const EXSURGE = resolve(import.meta.dirname, '../vendor/divinum-officium/web/www/js/exsurge.js');
 const PORT = Number(process.env.PORT ?? 3000);
 const TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -78,6 +79,12 @@ createServer(async (req, res) => {
         throw notFound();
       });
       return sendJson(res, body);
+    }
+
+    // The chant notation library ships with Divinum Officium (see scripts/site.ts).
+    if (path === '/vendor/exsurge.js') {
+      res.writeHead(200, { 'content-type': 'text/javascript' });
+      return res.end(await readFile(EXSURGE));
     }
 
     const file = path === '/' ? 'index.html' : path.slice(1);

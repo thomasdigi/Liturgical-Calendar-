@@ -8,7 +8,7 @@
 # Size, per calendar/version per day: about 0.7 MB of shared Latin plus about 0.65 MB per
 # language (each about 0.45 MB without the votive offices), search index included.
 # GitHub Pages sites should stay under 1 GB, so choose the range and languages to fit:
-# the defaults (three months, General 1962, eight languages, all votive offices) are about 0.55 GB.
+# the defaults (three months, General 1962, eight languages plus the chant, all votive offices) are about 0.6 GB.
 # Adding the USA calendar doubles that; use fewer languages or months, or --votive none.
 name: Build and publish site
 
@@ -25,8 +25,8 @@ on:
         description: Versions (1962, 1954, 1906)
         default: '1962'
       languages:
-        description: Languages (en, la-bea, cs, da, de, es, fr, it, hu, hu-kaldi, nl, pl, pl-newer, pt, vi, uk, he)
-        default: en,la-bea,es,fr,de,it,pt,pl
+        description: Languages (en, la-bea, cs, da, de, es, fr, it, hu, hu-kaldi, nl, pl, pl-newer, pt, vi, uk, he; la-gabc is the chant notation)
+        default: en,la-bea,es,fr,de,it,pt,pl,la-gabc
       votives:
         description: Votive offices (dead, parvum, sabbato, or none)
         default: dead,parvum,sabbato
@@ -53,7 +53,7 @@ jobs:
       MONTHS: ${{ inputs.months || '3' }}
       CALENDARS: ${{ inputs.calendars || 'general' }}
       VERSIONS: ${{ inputs.versions || '1962' }}
-      LANGUAGES: ${{ inputs.languages || 'en,la-bea,es,fr,de,it,pt,pl' }}
+      LANGUAGES: ${{ inputs.languages || 'en,la-bea,es,fr,de,it,pt,pl,la-gabc' }}
       VOTIVE_OFFICES: ${{ inputs.votives || 'dead,parvum,sabbato' }}
       # The site's address, so calendar events can link back to their day.
       SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/

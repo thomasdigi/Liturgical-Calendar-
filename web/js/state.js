@@ -23,7 +23,9 @@ export const state = {
   layout: store.get('layout', 'interlinear'), // 'interlinear' | 'side'
   massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
   massN: Number(params.get('n')) || 1, // which Mass, on days with several
-  page: ['month', 'search'].includes(params.get('page')) ? params.get('page') : 'day',
+  page: ['month', 'search', 'clergy'].includes(params.get('page')) ? params.get('page') : 'day',
+  clergy: store.get('clergy', 'off') === 'on' || params.get('page') === 'clergy', // Clergy mode (tab shown)
+  chant: store.get('chant', 'off') === 'on', // Gregorian notation in place of the Latin (Office)
   office: params.get('office') || 'day', // 'day' or a votive office id (dead, parvum, sabbato)
   compare: !!params.get('cmp'), // show another calendar/version beside this one
   cmpCalendar: (params.get('cmp') || '').split('/')[0] || null,
@@ -74,6 +76,9 @@ export function altLangId() {
 
 /** The language whose data is loaded: the chosen one, or the alternative if it isn't offered here. */
 export const shownLangId = () => (offers(state.lang) ? state.lang : altLangId());
+
+/** Chant notation can be shown: the Office of the day, with the chant edition on this site. */
+export const chantAvailable = () => state.view === 'office' && state.office === 'day' && !!config.chant && built(config.chant);
 
 export const fullAvailable = () => lang(shownLangId()).fullMass;
 

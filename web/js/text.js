@@ -1,7 +1,8 @@
 // Drawing a Mass or an Hour (and, in compare mode, two side by side).
 import { updateUrl } from './controls.js';
 import { fetchDay, fetchPart } from './data.js';
-import { RANGE, altLangId, built, comboLabel, config, currentPartId, day, lang, offers, officeHours, shownLangId, state } from './state.js';
+import { renderChant } from './chant.js';
+import { RANGE, altLangId, built, chantAvailable, comboLabel, config, currentPartId, day, lang, offers, officeHours, shownLangId, state } from './state.js';
 import { rememberPlace } from './lastread.js';
 import { offlineHint } from './offline.js';
 import { markStructure, renderOutline } from './outline.js';
@@ -105,6 +106,18 @@ export async function render() {
       } catch { other = null; }
     }
   }
+  // Chant: DO's chant edition has the same sections, with the Latin as notation (GABC).
+  // Put each one in place of the Latin; keep the translation column.
+  let chanted = false;
+  if (state.chant && chantAvailable() && !state.compare) {
+    try {
+      const gabc = await fetchPart(config.chant, main.part.id);
+      if (gabc.length === main.part.sections.length) {
+        main.part.sections = main.part.sections.map((s, i) => ({ ...s, latin: gabc[i].vernacular || gabc[i].latin || s.latin }));
+        chanted = true;
+      }
+    } catch { /* not built for this day: plain Latin */ }
+  }
   if (seq !== renderSeq) return;
 
   const { part, altPart } = main;
@@ -149,6 +162,10 @@ export async function render() {
     $('text').innerHTML = title + sectionsHtml(part, altPart, L, notes, 's');
   }
   document.body.classList.toggle('comparing', state.compare);
+  document.body.classList.toggle('chanting', chanted);
+  if (chanted) renderChant($('text')).then((ok) => {
+    if (!ok && seq === renderSeq) $('text').insertAdjacentHTML('afterbegin', '<p class="msg">The chant notation could not be loaded; showing its text.</p>');
+  });
 
   // Reading mode hides instructions: longer red rubrics ("Secreto", "Deinde, clara voce…"),
   // but keeps the short markers (℣. ℟. Ant.) and the commemoration/suffrage labels.

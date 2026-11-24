@@ -5,7 +5,7 @@
 //  - Texts (data/…): saved as they're read, and by "Save for offline" (web/js/offline.js),
 //    in the DATA cache. Served from there at once, refreshed in the background when online.
 //  - Site settings (data/config.json, data/available.json): network first.
-const SHELL = 'shell-v3';
+const SHELL = 'shell-v4';
 const DATA = 'data-v1'; // keep in step with web/js/offline.js
 
 const SHELL_FILES = [
@@ -32,6 +32,9 @@ const SHELL_FILES = [
   'js/settings.js',
   'js/tip.js',
   'js/lastread.js',
+  'js/chant.js',
+  'js/clergy.js',
+  'vendor/exsurge.js', // chant notation (copied in by scripts/site.ts)
 ];
 
 self.addEventListener('install', (event) => {

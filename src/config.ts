@@ -79,7 +79,14 @@ export const LANGUAGES = [
   { id: 'vi', label: 'Tiếng Việt', do: 'Vietnamice' },
   { id: 'uk', label: 'Українська', do: 'Ukrainian' },
   { id: 'he', label: 'עברית', do: 'Hebrew', rtl: true },
+  // Not a language: DO's chant edition of the Office (Gregorian notation, GABC). Shown with the
+  // Chant button, never in the language menu. Office only; DO has no chant for the Mass.
+  { id: 'la-gabc', label: 'Chant', do: 'Latin-gabc', chant: true },
 ] as const;
+
+/** The chant edition, stored like a language. */
+export const CHANT_LANGUAGE = 'la-gabc';
+export const isChant = (id: string) => id === CHANT_LANGUAGE;
 
 /** The language DO fills gaps with; untranslated lines are compared against it. */
 export const FALLBACK_LANGUAGE = 'en';
@@ -179,7 +186,8 @@ export function publicConfig() {
       label: c.label,
       versions: VERSIONS.filter((v) => doSettings(c.id, v.id)).map((v) => v.id),
     })),
-    languages: LANGUAGES.map((l) => ({
+    chant: CHANT_LANGUAGE,
+    languages: LANGUAGES.filter((l) => !isChant(l.id)).map((l) => ({
       id: l.id,
       label: l.label,
       htmlLang: l.id.split('-')[0],

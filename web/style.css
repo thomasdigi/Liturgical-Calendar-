@@ -21,7 +21,7 @@
     color-scheme: dark;
     --bg: #15130f; --paper: #1d1a15; --ink: #ece6da; --muted: #a49a8b;
     --rule: #3a342b; --rubric: #e2786b; --accent: #8e241c; --accent-ink: #e8897d; --on-accent: #ffffff;
-    --c-black: #000; --tab-bg: #26221c;
+    --c-black: #000; --tab-bg: #26221c; --chant-filter: invert(.92) hue-rotate(180deg);
   }
 }
 /* Chosen light mode: ask browsers not to repaint the page dark (Chrome/Brave "dark mode for sites"). */
@@ -30,7 +30,7 @@
   color-scheme: dark;
   --bg: #15130f; --paper: #1d1a15; --ink: #ece6da; --muted: #a49a8b;
   --rule: #3a342b; --rubric: #e2786b; --accent: #8e241c; --accent-ink: #e8897d; --on-accent: #ffffff;
-  --c-black: #000; --tab-bg: #26221c;
+  --c-black: #000; --tab-bg: #26221c; --chant-filter: invert(.92) hue-rotate(180deg);
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -171,6 +171,8 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .officebar { gap: 8px; align-items: center; flex-wrap: wrap; }
 .officebar .pill { border: 1px solid var(--rule); background: var(--paper); border-radius: 9px; padding: 6px 12px; min-height: 36px; cursor: pointer; color: var(--ink); font: inherit; }
 .officebar .pill[hidden] { display: none; }
+.officebar .pill[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.officebar .pill:disabled { opacity: .45; cursor: not-allowed; }
 .struct.nocturn { display: block; margin: 6px 0 2px; font: 600 15px var(--sans); font-style: normal; text-transform: uppercase; letter-spacing: .06em; }
 .struct.lesson { display: inline-block; margin-top: 10px; font-weight: 600; font-style: normal; }
 .struct.tedeum { display: block; margin-top: 10px; font-weight: 600; font-style: normal; }
@@ -482,3 +484,41 @@ body.comparing #layout { display: none; }
      commemoration label is never left alone at the bottom of a page. */
   .commem, .struct { break-after: avoid; }
 }
+
+/* ---------- chant notation (Office, "Chant" button) ---------- */
+.GCHANT { width: 100%; overflow-x: auto; margin: 4px 0 8px; }
+.GCHANT svg { max-width: 100%; height: auto; filter: var(--chant-filter, none); }
+.GABC { white-space: pre-wrap; font-family: var(--sans); font-size: 12px; color: var(--muted); }
+
+/* A saint's name added where the book has "N." (USA calendar texts) */
+.supplied { font-style: italic; color: var(--muted); }
+
+/* ---------- Clergy mode: the day's facts on one page ---------- */
+.clergy { max-width: 720px; margin: 0 auto; text-align: left; }
+.clergy[hidden] { display: none; }
+.clergy > .weekday, .clergy > .title, .clergy-combo { text-align: center; }
+.clergy > .title { margin: 6px 0; font-size: clamp(22px, 4vw, 30px); line-height: 1.2; font-weight: 600; text-wrap: balance; }
+.clergy-combo { margin: 0 0 14px; color: var(--muted); font-family: var(--sans); font-size: 13px; }
+.clergy .ccom, .clergy .cfast { text-align: center; color: var(--muted); font-style: italic; margin: 0 0 10px; }
+.ccard { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 18px; margin: 14px 0; }
+.ccard h2 { margin: 0 0 8px; font-size: 20px; color: var(--accent-ink); }
+.ccard dl { margin: 0; }
+.crow { display: grid; grid-template-columns: minmax(120px, 38%) 1fr; gap: 12px; padding: 7px 0; border-top: 1px solid var(--rule); }
+.crow:first-child { border-top: 0; }
+.crow dt { color: var(--muted); font-family: var(--sans); font-size: 14px; }
+.crow dd { margin: 0; }
+.crow .swatch { vertical-align: -2px; }
+.cnote { display: block; color: var(--muted); font-size: 13px; font-style: italic; }
+.clinks { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.clinks button { font-family: var(--sans); font-size: 14px; border: 1px solid var(--rule); background: var(--tab-bg); color: var(--ink); border-radius: 9px; padding: 6px 14px; min-height: 36px; cursor: pointer; }
+.clinks button:hover { border-color: var(--accent-ink); }
+.cnote-foot { color: var(--muted); font-size: 13px; text-align: center; margin-top: 18px; }
+@media (max-width: 480px) {
+  .crow { grid-template-columns: 1fr; gap: 2px; }
+}
+@media print {
+  .clinks, .cnote-foot { display: none; }
+  .ccard { border-color: #999; break-inside: avoid; }
+}
+.drawer label.check { display: flex; align-items: center; gap: 10px; font-family: var(--sans); font-size: 15px; margin: 4px 0 8px; cursor: pointer; }
+.drawer label.check input { width: 20px; height: 20px; accent-color: var(--accent); }

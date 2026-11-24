@@ -31,6 +31,7 @@
         <button type="button" data-page="day" aria-pressed="true">Day</button>
         <button type="button" data-page="month" aria-pressed="false">Month</button>
         <button type="button" data-page="search" aria-pressed="false">Search</button>
+        <button type="button" data-page="clergy" aria-pressed="false" id="clergy-tab" hidden>Clergy</button>
       </div>
       <button type="button" id="settings-btn" class="settings-btn" aria-haspopup="dialog" aria-controls="settings-panel">
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
@@ -46,6 +47,14 @@
   </header>
 
   <main>
+    <!-- Clergy mode: the day's Mass and Office facts on one page -->
+    <section class="clergy" id="clergy" hidden aria-labelledby="clergy-title">
+      <p class="weekday" id="clergy-date"></p>
+      <h1 class="title" id="clergy-title"></h1>
+      <p class="clergy-combo" id="clergy-combo"></p>
+      <div id="clergy-body"></div>
+    </section>
+
     <!-- Month view -->
     <section class="month" id="month" hidden aria-labelledby="month-title">
       <div class="month-head">
@@ -108,6 +117,7 @@
     <div class="officebar" id="officebar">
       <label class="select"><span>Office</span><select id="office"></select></label>
       <button type="button" id="martyrology" class="pill" title="Open the Martyrology, read at Prime">Martyrology</button>
+      <button type="button" id="chant" class="pill" aria-pressed="false" title="Show the Gregorian chant notation in place of the Latin">Chant</button>
     </div>
     <nav class="hours" id="hours" role="tablist" aria-label="Hours"></nav>
 
@@ -179,6 +189,12 @@
           <button type="button" data-theme="auto" aria-pressed="true">Automatic</button>
         </div>
         <p class="hint">Automatic follows your phone or computer.</p>
+      </section>
+
+      <section aria-labelledby="set-clergy">
+        <h3 id="set-clergy">Clergy mode</h3>
+        <label class="check"><input type="checkbox" id="clergy-mode"> Show the Clergy page</label>
+        <p class="hint">Adds a “Clergy” tab beside Day, Month and Search: the day’s rank, colour, Gloria, Credo, Preface, votive Masses, Matins, Lauds and Vespers on one page.</p>
       </section>
 
       <section aria-labelledby="set-offline">

@@ -6,6 +6,7 @@ import { fetchDay } from './data.js';
 import { runSearch, syncSearchOptions } from './search.js';
 import { RANGE, SIZES, avail, calendarHas, clampDate, comboBuilt, config, day, params, setAvail, setConfig, setDay, setRANGE, shownLangId, state } from './state.js';
 import { render, setPendingScroll } from './text.js';
+import { renderClergy } from './clergy.js';
 import { initOffline, offlineHint } from './offline.js';
 import { scrollToTarget } from './outline.js';
 import { initSettings } from './settings.js';
@@ -67,6 +68,26 @@ export async function init() {
     const b = e.target.closest('button[data-target]');
     if (b) scrollToTarget(b.dataset.target);
   });
+  $('chant').onclick = () => {
+    if ($('chant').disabled) return;
+    state.chant = !state.chant; store.set('chant', state.chant ? 'on' : 'off'); syncControls(); render();
+  };
+  $('clergy-mode').onchange = (e) => {
+    state.clergy = e.target.checked; store.set('clergy', state.clergy ? 'on' : 'off');
+    if (!state.clergy && state.page === 'clergy') { state.page = 'day'; load(); }
+    syncControls();
+  };
+  // Buttons on the Clergy page open the Mass or an Hour of the day.
+  $('clergy-body').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-open]');
+    if (!b) return;
+    state.page = 'day';
+    state.office = 'day';
+    if (b.dataset.open === 'mass') state.view = 'mass';
+    else { state.view = 'office'; state.hour = b.dataset.open; }
+    store.set('view', state.view);
+    syncControls(); load(); window.scrollTo(0, 0);
+  });
   $('martyrology').onclick = () => {
     state.office = 'day';
     if (state.hour === 'prime') {
@@ -120,7 +141,7 @@ export async function init() {
     e.target.value = '';
   };
   $('totop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-  window.addEventListener('scroll', () => { $('totop').hidden = window.scrollY < 600 || state.page !== 'day'; }, { passive: true });
+  window.addEventListener('scroll', () => { $('totop').hidden = window.scrollY < 600 || state.page === 'month' || state.page === 'search'; }, { passive: true });
   $('prev').onclick = () => go(shift(state.date, -1));
   $('next').onclick = () => go(shift(state.date, 1));
   $('today').onclick = () => go(isoToday());
@@ -148,6 +169,7 @@ export async function load() {
   $('date').value = state.date;
   if (state.page === 'month') { renderMonth(); return; }
   if (state.page === 'search') { syncSearchOptions(); return; }
+  if (state.page === 'clergy') { renderWeek(); renderClergy(); return; }
   renderWeek();
   const shown = shownLangId();
   try {
@@ -187,7 +209,7 @@ export function go(date, { animate = 0 } = {}) {
     syncControls();
   }
   if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const el = state.page === 'month' ? $('month') : $('dayview');
+    const el = state.page === 'month' ? $('month') : state.page === 'clergy' ? $('clergy') : $('dayview');
     el.classList.remove('swipe-next', 'swipe-prev');
     void el.offsetWidth; // restart the animation
     el.classList.add(animate > 0 ? 'swipe-next' : 'swipe-prev');

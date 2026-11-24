@@ -34,6 +34,20 @@ circles today. **Add to your calendar** (Settings): subscribe to, or download, a
 feed of every day's feast or of fast days only (`data/<calendar>/<version>/calendar.ics`,
 `fasting.ics`, built for the same dates as the site; `src/ical.ts`).
 
+**Chant** (Office): the Gregorian notation of the hymns, antiphons and psalm tones, from DO's
+chant edition (`la-gabc`, built like a language), drawn by exsurge (MIT License, shipped with
+DO) in place of the Latin; the translation stays beside it. The Mass has no chant edition in DO.
+
+**Clergy mode** (Settings): a **Clergy** page with the whole day on one screen. Mass: rank,
+colour, Gloria, Credo, Preface, what follows the Epistle, commemorations, whether votive Masses
+are allowed. Office: rank, psalms, Matins (nocturns, lessons, Te Deum), Lauds scheme, First or
+Second Vespers. Read from DO's own texts for the day at build time (`src/ordo.ts`). The votive
+Mass line gives the general rule for the day's class.
+
+Holy Week's special services (Palm Sunday, the Triduum, the Easter Vigil) keep their headings.
+In the USA texts, where the book prints "N." for the saint's name, the name is added in
+brackets (*[Padre Pio]*), but not where "N." stands for the Pope or the bishop.
+
 Also: **search** across the texts (Mass propers and the Hours, accent-insensitive, phrases in
 quotes), **compare** mode (the same Mass or Hour in another calendar or version, side by
 side), labelled **commemorations and suffrages**, the **votive offices** (Office of the Dead:
