@@ -10,7 +10,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { availableParallelism } from 'node:os';
 import { resolve } from 'node:path';
 import {
-  CALENDARS,
+  ACTIVE_CALENDARS,
   doSettings,
   FALLBACK_LANGUAGE,
   getCalendar,
@@ -50,7 +50,7 @@ to ??= from;
 
 const list = <T extends { id: string }>(name: string, all: readonly T[], get: (id: string) => T) =>
   (flag(name)?.split(',') ?? all.map((x) => x.id)).map((id) => get(id).id);
-const calendars = list('calendar', CALENDARS, getCalendar) as CalendarId[];
+const calendars = list('calendar', ACTIVE_CALENDARS, getCalendar) as CalendarId[]; // hidden ones only on request
 const versions = list('version', VERSIONS, getVersion) as VersionId[];
 const langs = list('lang', LANGUAGES, getLanguage) as LanguageId[];
 

@@ -33,6 +33,9 @@ export const VERSIONS = [
  * Calendars (which local feasts are kept). `dioecesis` is DO's calendar setting.
  * A calendar may replace DO's version names for some versions, and if it lists
  * `versions`, it exists only for those.
+ * `hidden: true` keeps a calendar working and tested but leaves it out of the menus and
+ * default builds; delete that line to bring it back. (It can still be built on purpose
+ * with --calendar.)
  */
 export const CALENDARS = [
   { id: 'general', label: 'General Roman', dioecesis: 'Generale' },
@@ -45,8 +48,12 @@ export const CALENDARS = [
     versions: { '1962': { office: 'Rubrics 1960 - 2020 USA', mass: 'Rubrics 1960 Newcalendar' } },
   },
   { id: 'brazil', label: 'Brazil', dioecesis: 'Brasilia' },
-  { id: 'rome', label: 'Diocese of Rome', dioecesis: 'Urbis' },
+  // Set aside for now: in 1962 it differs from the General calendar on only three days.
+  { id: 'rome', label: 'Diocese of Rome', dioecesis: 'Urbis', hidden: true },
 ] as const;
+
+/** The calendars offered to readers (not hidden). */
+export const ACTIVE_CALENDARS = CALENDARS.filter((c) => !('hidden' in c && c.hidden));
 
 /**
  * Second languages shown beside the Latin: every translation DO offers for the Office
@@ -74,8 +81,10 @@ export const LANGUAGES = [
   { id: 'he', label: 'עברית', do: 'Hebrew', rtl: true },
 ] as const;
 
-/** Languages whose gaps DO fills with English; these get "not fully translated" notes. */
+/** The language DO fills gaps with; untranslated lines are compared against it. */
 export const FALLBACK_LANGUAGE = 'en';
+/** The second language a new reader sees. */
+export const DEFAULT_LANGUAGE = 'en';
 
 const DO_WWW = resolve(import.meta.dirname, '../vendor/divinum-officium/web/www');
 
@@ -165,7 +174,7 @@ export function languageOffers(id: string) {
 export function publicConfig() {
   return {
     versions: VERSIONS.map(({ id, label }) => ({ id, label })),
-    calendars: CALENDARS.map((c) => ({
+    calendars: ACTIVE_CALENDARS.map((c) => ({
       id: c.id,
       label: c.label,
       versions: VERSIONS.filter((v) => doSettings(c.id, v.id)).map((v) => v.id),
@@ -178,6 +187,7 @@ export function publicConfig() {
       ...languageOffers(l.id), // office / mass false: greyed out there
     })),
     fallbackLanguage: FALLBACK_LANGUAGE,
+    defaultLanguage: DEFAULT_LANGUAGE,
     hours: HOURS.map(({ id, label, latin }) => ({ id, label, latin })),
     votives: VOTIVES.map((v) => ({
       id: v.id,

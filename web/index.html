@@ -94,6 +94,7 @@
 
     <div class="officebar" id="officebar">
       <label class="select"><span>Office</span><select id="office"></select></label>
+      <button type="button" id="martyrology" class="pill" title="Open the Martyrology, read at Prime">Martyrology</button>
     </div>
     <nav class="hours" id="hours" role="tablist" aria-label="Hours"></nav>
 
@@ -123,6 +124,8 @@
       <label class="select"><span class="sr">Version</span><select id="cmp-version"></select></label>
     </div>
 
+    <nav class="outline" id="outline" aria-label="In this Hour" hidden></nav>
+
     <p class="fallback" id="fallback" hidden></p>
 
     <article id="text" class="text"></article>
@@ -150,6 +153,6 @@
   </dialog>
 
   <script src="i18n.js"></script>
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

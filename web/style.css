@@ -146,8 +146,39 @@ body:not([data-display="both"]) .text .col.vn { padding-top: 0; border-top: 0; }
 .text h3 .vn { color: var(--muted); font-weight: 400; }
 .text h3, .text h3 span { min-width: 0; overflow-wrap: anywhere; }
 /* Jump targets clear the sticky top bar (it scrolls away on phones). */
-.text section, .text .commem { scroll-margin-top: 130px; }
-@media (max-width: 720px) { .text section, .text .commem { scroll-margin-top: 12px; } }
+.text section, .text .commem { scroll-margin-top: calc(var(--topbar, 110px) + 56px); }
+/* ---------- outline: Matins' Nocturns and lessons, the Martyrology ---------- */
+.outline {
+  position: sticky; top: var(--topbar, 0px); z-index: 3;
+  display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; align-items: center;
+  margin: 0 -16px 12px; padding: 8px 16px; background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule); font: 13px var(--sans);
+}
+.outline[hidden] { display: none; }
+.ogroup { display: inline-flex; align-items: center; gap: 3px; }
+.outline button { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 7px; cursor: pointer; font: inherit; min-height: 30px; }
+.outline .ohead { padding: 4px 9px; font-weight: 600; }
+span.ohead { color: var(--muted); padding: 0 4px 0 0; }
+.outline .olesson { min-width: 30px; padding: 4px 6px; font-variant-numeric: tabular-nums; }
+.outline button:hover { border-color: var(--accent); }
+.officebar { gap: 8px; align-items: center; flex-wrap: wrap; }
+.officebar .pill { border: 1px solid var(--rule); background: var(--paper); border-radius: 9px; padding: 6px 12px; min-height: 36px; cursor: pointer; color: var(--ink); font: inherit; }
+.officebar .pill[hidden] { display: none; }
+.struct.nocturn { display: block; margin: 6px 0 2px; font: 600 15px var(--sans); font-style: normal; text-transform: uppercase; letter-spacing: .06em; }
+.struct.lesson { display: inline-block; margin-top: 10px; font-weight: 600; font-style: normal; }
+.struct.tedeum { display: block; margin-top: 10px; font-weight: 600; font-style: normal; }
+.text section.martyrology > h3::after {
+  content: "Read at Prime"; margin-left: 6px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--rule);
+  font-size: 11px; letter-spacing: .04em; color: var(--muted); text-transform: none;
+}
+.text .struct { scroll-margin-top: calc(var(--topbar, 0px) + 60px); }
+
+@media (max-width: 720px) {
+  .outline { top: 0; margin: 0 -16px 10px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
+  .ogroup { flex: none; }
+  .text .struct { scroll-margin-top: 56px; }
+  .text section, .text .commem { scroll-margin-top: 60px; }
+}
 .text .col { min-width: 0; overflow-wrap: anywhere; }
 
 body[data-display="latin"] .text .col.vn,
