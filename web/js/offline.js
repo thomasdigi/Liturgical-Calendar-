@@ -21,13 +21,13 @@ export function initOffline() {
   window.addEventListener('appinstalled', () => { installPrompt = null; syncInstall(); });
   const sync = () => {
     document.body.classList.toggle('is-offline', !navigator.onLine);
-    $('offline-state').hidden = navigator.onLine;
+    $('offline-badge').hidden = navigator.onLine;
+    $('net-state').textContent = navigator.onLine ? 'Connected.' : 'No connection: showing what is saved on this device.';
   };
   window.addEventListener('online', sync);
   window.addEventListener('offline', sync);
   sync();
 
-  $('offline-btn').onclick = openPanel;
   $('save-days').onclick = saveDays;
   $('save-cancel').onclick = () => { if (saving) saving.cancelled = true; };
   $('clear-saved').onclick = clearSaved;
@@ -61,7 +61,8 @@ async function syncStorage() {
   out.textContent = `Saved on this device: about ${(usage / 1e6).toFixed(usage > 1e7 ? 0 : 1)} MB.`;
 }
 
-function openPanel() {
+/** Fill in the Offline section of the Settings panel (called when the panel opens). */
+export function syncOfflinePanel() {
   syncInstall();
   const ok = canSave();
   $('save-days').disabled = !ok || !!saving;
@@ -71,8 +72,6 @@ function openPanel() {
     : 'Saving needs a secure (https) connection.';
   $('save-progress').hidden = !saving;
   syncStorage();
-  const dlg = $('offline-dlg');
-  if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
 }
 
 /** The data files a day needs, for one language: its index, every part, and the shared Latin. */

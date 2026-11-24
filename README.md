@@ -23,6 +23,11 @@ it needs https (GitHub Pages is) or localhost.
 **Matins** has an outline bar (Nocturns, lessons 1–9, Te Deum) to jump between lessons, and a
 **Martyrology** button opens Prime at the Martyrology.
 
+**Settings panel** (⚙): Light / Dark / Automatic appearance, offline and install, and **Print**
+(just the day's heading and the text, always in light colours). Tap a fasting mark (**F**, **A**)
+to see whether current Church law (1983 Code) still requires it or it's only suggested by the
+traditional discipline.
+
 Also: **search** across the texts (Mass propers and the Hours, accent-insensitive, phrases in
 quotes), **compare** mode (the same Mass or Hour in another calendar or version, side by
 side), labelled **commemorations and suffrages**, the **votive offices** (Office of the Dead:
@@ -109,8 +114,8 @@ The site is static: the viewer plus pre-built JSON. Any static host works.
 **GitHub Pages (automatic):** `.github/workflows/pages.yml` builds the texts with DO's engine
 and publishes them. One-time setup: repository **Settings → Pages → Source: GitHub Actions**.
 Then **Actions → Build and publish site → Run workflow**, choosing how many months, which
-calendars, versions and languages. It also re-runs on the 1st of each month to roll the dates
-forward. Pages sites should stay under 1 GB. Per calendar/version per day: about 0.7 MB of
+calendars, versions and languages. It also runs by itself when changes are merged into main, and on the 1st of each month
+to roll the dates forward. Pages sites should stay under 1 GB. Per calendar/version per day: about 0.7 MB of
 shared Latin plus about 0.65 MB per language (0.45 MB each without votive offices), search
 index included. The defaults, three months of General 1962 in 8 languages with all votive
 offices, come to about 0.55 GB.

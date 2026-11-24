@@ -18,6 +18,34 @@ export interface Fasting {
   reasons: string[];
   /** e.g. "until noon" on Holy Saturday. */
   note?: string;
+  /**
+   * Which of these current Church law (1983 Code, cann. 1250–1253) still requires.
+   * The rest are "suggested": kept by the traditional discipline, no longer obligatory.
+   */
+  required: { fast: boolean; abstinence: boolean };
+}
+
+/**
+ * Current law: fast and abstinence on Ash Wednesday and Good Friday; abstinence on
+ * Fridays unless the Friday is a solemnity. (Outside Lent, bishops' conferences may
+ * allow another penance instead of Friday abstinence, as in the USA; the viewer says so.)
+ */
+export function currentLaw(date: string): { fast: boolean; abstinence: boolean } {
+  const year = +date.slice(0, 4);
+  const md = date.slice(5);
+  const weekday = new Date(toUTC(date)).getUTCDay();
+  const fromEaster = daysBetween(easter(year), date);
+  const ashWednesday = fromEaster === -46;
+  const goodFriday = fromEaster === -2;
+  // Solemnities that can fall on a Friday (General Roman Calendar since 1969).
+  const solemnity =
+    ['01-01', '01-06', '03-19', '03-25', '06-24', '06-29', '08-15', '11-01', '12-08', '12-25'].includes(md) ||
+    fromEaster === 5 || // Friday in the Octave of Easter
+    fromEaster === 68; // Sacred Heart
+  return {
+    fast: ashWednesday || goodFriday,
+    abstinence: ashWednesday || goodFriday || (weekday === 5 && !solemnity),
+  };
 }
 
 /** Easter Sunday (Gregorian), as YYYY-MM-DD. */
@@ -91,8 +119,15 @@ export function fasting(date: string, isEmberDay: boolean): Fasting {
   }
 
   // Sundays and holy days of obligation lift both, except in Lent.
+  const now = currentLaw(date);
   if (!lent && (weekday === 0 || holyDay)) {
-    return { fast: false, abstinence: false, reasons: [] };
+    return { fast: false, abstinence: false, reasons: [], required: { fast: false, abstinence: false } };
   }
-  return { fast, abstinence, reasons, note: holySaturday ? 'until noon' : undefined };
+  return {
+    fast,
+    abstinence,
+    reasons,
+    note: holySaturday ? 'until noon' : undefined,
+    required: { fast: fast && now.fast, abstinence: abstinence && now.abstinence },
+  };
 }

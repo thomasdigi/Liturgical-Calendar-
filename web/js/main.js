@@ -1,5 +1,6 @@
 // Start-up and loading: wires the controls to the state.
-import { renderMonth, renderWeek } from './calendar.js';
+import { fastTipHtml, renderMonth, renderWeek } from './calendar.js';
+import { hideTip, initTips, showTip } from './tip.js';
 import { defaultComparison, fixComparison, openInfo, syncControls, syncMasses, syncOffice, updateUrl } from './controls.js';
 import { fetchDay } from './data.js';
 import { runSearch, syncSearchOptions } from './search.js';
@@ -7,6 +8,7 @@ import { RANGE, SIZES, avail, calendarHas, clampDate, comboBuilt, config, day, s
 import { render, setPendingScroll } from './text.js';
 import { initOffline, offlineHint } from './offline.js';
 import { scrollToTarget } from './outline.js';
+import { initSettings } from './settings.js';
 import { initTheme } from './theme.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
 
@@ -190,6 +192,29 @@ export function openHit({ date, part, section }) {
   window.scrollTo(0, 0);
 }
 
+// Fasting marks (F, A) open a small pop-up instead of following the day link they sit in.
+// Capture phase: runs before the day buttons' own click handlers.
+document.addEventListener('click', (e) => {
+  const mark = e.target.closest?.('.fastmark[data-kind]');
+  if (mark) {
+    e.preventDefault();
+    e.stopPropagation();
+    showTip(mark, fastTipHtml(mark));
+  } else if (!e.target.closest?.('.tip')) {
+    hideTip();
+  }
+}, true);
+document.addEventListener('keydown', (e) => {
+  const mark = e.target.closest?.('.fastmark[data-kind]');
+  if (mark && (e.key === 'Enter' || e.key === ' ')) {
+    e.preventDefault();
+    e.stopPropagation();
+    showTip(mark, fastTipHtml(mark));
+  }
+}, true);
+
 initTheme();
 initOffline();
+initSettings();
+initTips();
 init();
