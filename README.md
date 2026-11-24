@@ -14,7 +14,11 @@ side by side, or one language alone. Light and dark modes.
 Where a language has no translation of a part, an ⓘ marks it and the missing lines are
 shown in English, or in another language the reader picks.
 
-Also: a **month view** (Ordo-style list of every day), a **this week** strip, **fasting and
+Also: **search** across the texts (Mass propers and the Hours, accent-insensitive, phrases in
+quotes), **compare** mode (the same Mass or Hour in another calendar or version, side by
+side), labelled **commemorations and suffrages**, the **votive offices** (Office of the Dead:
+Matins, Lauds, Vespers; Little Office of Our Lady; Our Lady on Saturday, on Saturdays), a
+**month view** (Ordo-style list of every day), a **this week** strip, **fasting and
 abstinence** markers (general law of the 1917 Code: Fridays, Lent, Ember days and the four
 vigils; local law may differ), **text size**, a **reading mode** (hides verse numbers, notes
 and instructions), and a **jump-to** menu. The ⓘ pop-up is written in the language whose
@@ -41,6 +45,7 @@ npm start                     # http://localhost:3000, builds each day on demand
 npm run build -- 2026-12-01 2026-12-31                    # pre-build every version and language
 npm run build -- 2026 --calendar general --version 1962 --lang en   # one combination, whole year
 npm run build -- 2026-12-08 --refresh                     # rebuild cached days
+npm run build -- 2026-12 … --votive none                  # skip the votive offices (smaller)
 npm test                      # runs DO's engine on known days
 ```
 
@@ -96,9 +101,10 @@ The site is static: the viewer plus pre-built JSON. Any static host works.
 and publishes them. One-time setup: repository **Settings → Pages → Source: GitHub Actions**.
 Then **Actions → Build and publish site → Run workflow**, choosing how many months, which
 calendars, versions and languages. It also re-runs on the 1st of each month to roll the dates
-forward. Pages sites should stay under 1 GB: roughly 150 KB of shared Latin per
-calendar/version per day, plus about 180 KB per language per day (the defaults, three months
-of General + USA 1962 in 8 languages, come to about 0.4 GB).
+forward. Pages sites should stay under 1 GB. Per calendar/version per day: about 0.7 MB of
+shared Latin plus about 0.65 MB per language (0.45 MB each without votive offices), search
+index included. The defaults, three months of General 1962 in 8 languages with all votive
+offices, come to about 0.55 GB.
 
 **By hand:**
 ```bash
@@ -119,6 +125,7 @@ day the first time it's asked for and caches it.
 | `src/render.ts` | Runs DO's `missa.pl` (propers only, or full) or `officium.pl` as a CGI script |
 | `src/parse.ts` | **All knowledge of DO's HTML.** Turns a page into header + Latin/second-language sections |
 | `src/fasting.ts` | Fasting and abstinence rules (1917 Code) and the date of Easter |
+| `src/search.ts` | Search index: plain text per month (Latin shared, plus each language) |
 | `src/summary.ts` | A month at a glance: feast, class, colour, commemorations, fasting |
 | `scripts/site.ts` | Assembles the static site in `dist/` |
 | `src/day.ts` | Builds a whole day (Mass propers, full Mass, 8 Hours) for one version and language, cached in `data/` |

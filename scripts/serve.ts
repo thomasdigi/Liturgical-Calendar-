@@ -10,6 +10,7 @@ import { extname, resolve } from 'node:path';
 import { getCalendar, getLanguage, getVersion, publicConfig, type CalendarId, type LanguageId, type VersionId } from '../src/config.ts';
 import { DATA_DIR, getDay } from '../src/day.ts';
 import { getMonth } from '../src/summary.ts';
+import { getSearchMonth } from '../src/search.ts';
 
 const WEB = resolve(import.meta.dirname, '../web');
 const PORT = Number(process.env.PORT ?? 3000);
@@ -37,6 +38,13 @@ createServer(async (req, res) => {
     // data/<cal>/<ver>/summary/YYYY-MM.json
     const sm = /^\/data\/([\w-]+)\/([\w-]+)\/summary\/(\d{4}-\d{2})\.json$/.exec(path);
     if (sm) return sendJson(res, await getMonth(getCalendar(sm[1]).id as CalendarId, getVersion(sm[2]).id as VersionId, sm[3]));
+
+    // data/<cal>/<ver>/<lang|latin>/search/YYYY-MM.json (builds the month's days first if needed)
+    const se = /^\/data\/([\w-]+)\/([\w-]+)\/([\w-]+)\/search\/(\d{4}-\d{2})\.json$/.exec(path);
+    if (se) {
+      const lang = se[3] === 'latin' ? 'latin' : (getLanguage(se[3]).id as LanguageId);
+      return sendJson(res, await getSearchMonth(getCalendar(se[1]).id as CalendarId, getVersion(se[2]).id as VersionId, lang, se[4]));
+    }
 
     // data/<cal>/<ver>/<lang|latin>/YYYY/MM-DD/<file>.json
     const dm = /^\/data\/([\w-]+)\/([\w-]+)\/([\w-]+)\/(\d{4})\/(\d{2}-\d{2})\/([\w-]+)\.json$/.exec(path);

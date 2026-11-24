@@ -18,6 +18,11 @@ import {
   getLanguage,
   HOURS,
   PARTS,
+  VOTIVES,
+  getVotive,
+  votiveHours,
+  type HourId,
+  type VotiveId,
   type CalendarId,
   type LanguageId,
   type PartId,
@@ -27,7 +32,18 @@ import { parsePage, splitLines, type DayHeader, type Section } from './parse.ts'
 import { renderPart } from './render.ts';
 
 /** A part of the day: 'mass', 'massFull', an Hour, or another Mass of the day: 'mass-2', 'massFull-3'. */
-export type PartKey = PartId | `mass-${number}` | `massFull-${number}`;
+export type PartKey = PartId | `mass-${number}` | `massFull-${number}` | `${VotiveId}-${HourId}`;
+
+/**
+ * Which votive offices to build with each day: all by default; the build script's
+ * --votive option sets VOTIVES=dead,parvum or VOTIVES=none.
+ */
+function votivesToBuild(): VotiveId[] {
+  const env = process.env.VOTIVES;
+  if (!env) return VOTIVES.map((v) => v.id);
+  if (env === 'none') return [];
+  return env.split(',').map((id) => getVotive(id.trim()).id);
+}
 
 export interface PartData {
   id: PartKey;
@@ -51,6 +67,7 @@ export interface DayData {
   lang: LanguageId;
   header: DayHeader; // the day's office (from Lauds)
   masses: MassChoice[]; // empty on ordinary days
+  votives: { id: VotiveId; hours: HourId[] }[]; // votive offices built for this day
   parts: PartData[];
   source: string;
 }
@@ -70,13 +87,16 @@ export async function buildPart(
   lang: LanguageId,
   calendar: CalendarId = 'general',
   missanumber = 1,
+  votive?: VotiveId,
 ): Promise<PartData & { masses: string[] }> {
-  const page = parsePage(await renderPart(date, part, version, lang, calendar, missanumber));
+  const page = parsePage(await renderPart(date, part, version, lang, calendar, missanumber, votive));
   const isMass = part === 'mass' || part === 'massFull';
   const title = isMass
     ? { latin: page.title || 'Sancta Missa', label: part === 'mass' ? 'Mass · Propers' : 'Mass' }
-    : { latin: page.title || getHour(part).latin, label: getHour(part).label };
-  const id = isMass ? partKey(part, missanumber) : part;
+    : votive
+      ? { latin: page.title || getHour(part).latin, label: `${getVotive(votive).label} · ${getHour(part).label}` }
+      : { latin: page.title || getHour(part).latin, label: getHour(part).label };
+  const id: PartKey = isMass ? partKey(part, missanumber) : votive ? `${votive}-${part as HourId}` : part;
   return { id, title, header: page.header, sections: page.sections, masses: page.masses };
 }
 
@@ -116,7 +136,13 @@ export async function buildDay(date: string, calendar: CalendarId, version: Vers
       (['mass', 'massFull'] as const).map((p) => buildPart(date, p, version, lang, calendar, i + 2)),
     ),
   );
-  const parts: PartData[] = [...first, ...more].map(({ masses: _m, ...p }) => p);
+  const votives = votivesToBuild()
+    .map((id) => ({ id, hours: votiveHours(id, date) }))
+    .filter((v) => v.hours.length);
+  const votiveParts = await Promise.all(
+    votives.flatMap((v) => v.hours.map((h) => buildPart(date, h, version, lang, calendar, 1, v.id))),
+  );
+  const parts: PartData[] = [...first, ...more, ...votiveParts].map(({ masses: _m, ...p }) => p);
   const masses: MassChoice[] = names.map((label, i) => ({
     n: i + 1,
     label,
@@ -132,6 +158,7 @@ export async function buildDay(date: string, calendar: CalendarId, version: Vers
     lang,
     header: lauds.header,
     masses,
+    votives,
     parts,
     source: 'Divinum Officium (divinumofficium.com), MIT License',
   };

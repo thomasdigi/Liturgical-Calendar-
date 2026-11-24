@@ -107,6 +107,25 @@ export const HOURS = [
   { id: 'compline', command: 'prayCompletorium', latin: 'Ad Completorium', label: 'Compline' },
 ] as const;
 
+/**
+ * Votive and special offices, offered beside the Office of the day. `do` is DO's votive code
+ * (see the [votives] list in web/www/horas/horas.dialog); `hours` the Hours it has.
+ */
+export const VOTIVES = [
+  // DO, like the Breviary, gives the Office of the Dead as Vespers, Matins and Lauds only.
+  { id: 'dead', label: 'Office of the Dead', do: 'C9', hours: ['matins', 'lauds', 'vespers'] },
+  { id: 'parvum', label: 'Little Office of Our Lady', do: 'C12', hours: 'all' },
+  { id: 'sabbato', label: 'Our Lady on Saturday', do: 'C10', hours: 'all', saturdaysOnly: true },
+] as const;
+export type VotiveId = (typeof VOTIVES)[number]['id'];
+export const getVotive = (id: string) => find(VOTIVES, id, 'votive office');
+/** The Hours a votive office has (and, for Our Lady on Saturday, only on Saturdays). */
+export function votiveHours(id: VotiveId, date: string): HourId[] {
+  const v = getVotive(id);
+  if ('saturdaysOnly' in v && v.saturdaysOnly && new Date(`${date}T12:00:00Z`).getUTCDay() !== 6) return [];
+  return v.hours === 'all' ? HOURS.map((h) => h.id) : [...v.hours];
+}
+
 export type VersionId = (typeof VERSIONS)[number]['id'];
 export type CalendarId = (typeof CALENDARS)[number]['id'];
 export type LanguageId = (typeof LANGUAGES)[number]['id'];
@@ -160,5 +179,11 @@ export function publicConfig() {
     })),
     fallbackLanguage: FALLBACK_LANGUAGE,
     hours: HOURS.map(({ id, label, latin }) => ({ id, label, latin })),
+    votives: VOTIVES.map((v) => ({
+      id: v.id,
+      label: v.label,
+      hours: v.hours === 'all' ? HOURS.map((h) => h.id) : [...v.hours],
+      saturdaysOnly: 'saturdaysOnly' in v && v.saturdaysOnly,
+    })),
   };
 }

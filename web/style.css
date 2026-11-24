@@ -144,6 +144,10 @@ body:not([data-display="both"]) .text .col.vn { padding-top: 0; border-top: 0; }
 .text section.marker { display: block; padding: 8px 0; }
 .text h3 { grid-column: 1 / -1; margin: 0; font: 600 15px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--rubric); display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .text h3 .vn { color: var(--muted); font-weight: 400; }
+.text h3, .text h3 span { min-width: 0; overflow-wrap: anywhere; }
+/* Jump targets clear the sticky top bar (it scrolls away on phones). */
+.text section, .text .commem { scroll-margin-top: 130px; }
+@media (max-width: 720px) { .text section, .text .commem { scroll-margin-top: 12px; } }
 .text .col { min-width: 0; overflow-wrap: anywhere; }
 
 body[data-display="latin"] .text .col.vn,
@@ -236,7 +240,75 @@ body[data-reading="on"] .text .instr { display: none; }
 
 .fallback .local { display: block; margin-top: 4px; }
 
+/* ---------- votive offices ---------- */
+.officebar { display: flex; justify-content: center; margin: 0 0 10px; font: 14px var(--sans); }
+.officebar[hidden] { display: none; }
+.officebar select { border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; padding: 6px 10px; min-height: 36px; color: var(--ink); font: inherit; }
+.hours button:disabled { opacity: .35; cursor: default; }
+
+/* ---------- commemorations and suffrages ---------- */
+.commem {
+  display: block; margin: 10px 0 4px; padding: 4px 0 4px 10px; border-left: 3px solid var(--rubric);
+  font-style: normal; font-weight: 600;
+}
+.commem::before {
+  content: "Commemoration"; display: block; font: 600 11px var(--sans); letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.commem[data-kind="suffrage"]::before { content: "Suffrage"; }
+.col.vn .commem::before { content: none; }
+.text section.suffrage > h3::after {
+  content: "Suffrage"; margin-left: 6px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--rubric);
+  font-size: 11px; letter-spacing: .06em;
+}
+
+/* ---------- compare ---------- */
+.comparebar { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; justify-content: center; margin: -6px 0 16px; font: 14px var(--sans); color: var(--muted); }
+.comparebar[hidden] { display: none; }
+.comparebar select { border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; padding: 6px 10px; min-height: 36px; color: var(--ink); font: inherit; }
+.compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 28px; }
+.cmp-col { min-width: 0; }
+.cmp-col + .cmp-col { border-left: 1px solid var(--rule); padding-left: 28px; }
+.cmp-label { margin: 6px 0 4px; font: 600 12px var(--sans); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.cmp-head { padding: 0 0 10px; border-bottom: 1px solid var(--rule); }
+.cmp-title { margin: 0; font-weight: 600; font-size: 1.05em; }
+.cmp-meta { margin: 2px 0 0; display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: .9em; }
+.cmp-comm { margin: 2px 0 0; color: var(--muted); font-style: italic; font-size: .9em; }
+body.comparing .text section { grid-template-columns: 1fr !important; max-width: none; gap: 6px; }
+body.comparing .text .col.vn { padding-top: 6px; border-top: 1px dashed var(--rule); }
+body.comparing:not([data-display="both"]) .text .col.vn { padding-top: 0; border-top: 0; }
+body.comparing #layout { display: none; }
+
+/* ---------- search ---------- */
+.searchpage { max-width: 820px; margin: 0 auto; }
+.searchpage[hidden] { display: none; }
+.searchpage h1 { text-align: center; margin: 0 0 14px; font-size: clamp(24px, 4vw, 32px); }
+.searchform { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.searchform input, .searchform button, .searchopts select {
+  font: 16px var(--sans); color: var(--ink); border: 1px solid var(--rule); background: var(--paper); border-radius: 10px; padding: 9px 12px; min-height: 44px;
+}
+.searchform button { background: var(--accent); color: var(--on-accent); border-color: var(--accent); cursor: pointer; padding-inline: 18px; }
+.searchopts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 16px; font: 14px var(--sans); color: var(--muted); }
+.searchopts select { font-size: 14px; min-height: 36px; padding: 5px 8px; margin-left: 4px; max-width: 100%; }
+.searchhelp { color: var(--muted); font: 13px/1.5 var(--sans); margin: 10px 0; }
+.searchstatus { color: var(--muted); font: 14px var(--sans); min-height: 1.4em; }
+.results { list-style: none; margin: 0; padding: 0; }
+.results .rdate { margin: 18px 0 4px; font: 600 13px var(--sans); letter-spacing: .05em; text-transform: uppercase; color: var(--accent); }
+.results button {
+  display: block; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule);
+  padding: 10px 4px; cursor: pointer; color: var(--ink); font: inherit;
+}
+.results button:hover { background: var(--tab-bg); }
+.results .rwhere { display: block; font: 13px var(--sans); color: var(--muted); margin-bottom: 2px; }
+.results .rtext { font-size: .95em; }
+.results mark { background: color-mix(in srgb, var(--rubric) 22%, transparent); color: inherit; border-radius: 2px; padding: 0 1px; }
+.flash { animation: flash 2.4s ease-out; }
+@keyframes flash { 0%, 30% { background: color-mix(in srgb, var(--rubric) 14%, transparent); } 100% { background: transparent; } }
+@media (prefers-reduced-motion: reduce) { .flash { animation: none; outline: 2px solid var(--rubric); } }
+
 @media (max-width: 720px) {
+  .compare { gap: 0 12px; font-size: 14px; }
+  .cmp-col + .cmp-col { padding-left: 12px; }
   .week { grid-template-columns: repeat(7, minmax(4.6em, 1fr)); overflow-x: auto; padding-bottom: 4px; }
   .mrow button { grid-template-columns: 3.4em 1.2em minmax(0, 1fr) 2.8em; }
   .mrow .mr { grid-column: 3; grid-row: 2; white-space: normal; }

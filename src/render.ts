@@ -6,7 +6,7 @@ import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { doSettings, getHour, getLanguage, type CalendarId, type LanguageId, type PartId, type VersionId } from './config.ts';
+import { doSettings, getHour, getLanguage, getVotive, type CalendarId, type LanguageId, type PartId, type VersionId } from './config.ts';
 
 const run = promisify(execFile);
 
@@ -27,6 +27,7 @@ export async function renderPart(
   lang: LanguageId,
   calendar: CalendarId = 'general',
   missanumber = 1, // which Mass, on days with several (Christmas, All Souls, …)
+  votive?: string, // a votive office instead of the Office of the day (see VOTIVES)
 ): Promise<string> {
   const v = doSettings(calendar, version);
   if (!v) throw new Error(`The ${calendar} calendar has no ${version} version`);
@@ -37,7 +38,7 @@ export async function renderPart(
   const [dir, script, params] =
     part === 'mass' || part === 'massFull'
       ? ['missa', 'missa.pl', { date, version: v.mass, lang2, dioecesis, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '', missanumber: String(missanumber) }]
-      : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, dioecesis, command: getHour(part).command }];
+      : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, dioecesis, command: getHour(part).command, ...(votive ? { votive: getVotive(votive).do } : {}) }];
 
   const cwd = resolve(CGI, dir);
   if (!existsSync(resolve(cwd, script))) {

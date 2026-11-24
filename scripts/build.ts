@@ -25,20 +25,23 @@ import {
 } from '../src/config.ts';
 import { DATA_DIR, getDay } from '../src/day.ts';
 import { getMonth } from '../src/summary.ts';
+import { buildSearchMonth } from '../src/search.ts';
 
 const args = process.argv.slice(2);
-const FLAGS = ['--calendar', '--version', '--lang'];
+const FLAGS = ['--calendar', '--version', '--lang', '--votive'];
 const flag = (name: string) => {
   const i = args.indexOf(`--${name}`);
   return i >= 0 ? args[i + 1] : undefined;
 };
 const refresh = args.includes('--refresh');
+// Votive offices to build with each day (default all): --votive dead,parvum,sabbato | none
+if (flag('votive')) process.env.VOTIVES = flag('votive');
 const pos = args.filter((a, i) => !a.startsWith('--') && !FLAGS.includes(args[i - 1]));
 
 let [from, to] = pos;
 if (!from) {
   console.error(
-    'Usage: npm run build -- <year> | <from YYYY-MM-DD> <to YYYY-MM-DD> [--calendar general,usa,brazil,rome] [--version 1962,1954,1906] [--lang en,fr,...] [--refresh]',
+    'Usage: npm run build -- <year> | <from YYYY-MM-DD> <to YYYY-MM-DD> [--calendar general,usa,brazil,rome] [--version 1962,1954,1906] [--lang en,fr,...] [--votive dead,parvum,sabbato|none] [--refresh]',
   );
   process.exit(1);
 }
@@ -118,6 +121,27 @@ for (const calendar of calendars)
     }
   }
 console.log(`Month summaries: ${months.size} month(s) per calendar/version.`);
+
+// Search index: for each month in the range, from the days just built (English first: it writes the Latin).
+const rangeMonths = new Set<string>();
+for (let d = new Date(`${from}T12:00:00Z`); d <= new Date(`${to}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
+  rangeMonths.add(d.toISOString().slice(0, 7));
+}
+const searchLangs = [...new Set([FALLBACK_LANGUAGE as LanguageId, ...langs])];
+for (const calendar of calendars)
+  for (const version of versions) {
+    if (!doSettings(calendar, version)) continue;
+    for (const month of rangeMonths)
+      for (const lang of searchLangs) {
+        try {
+          await buildSearchMonth(calendar, version, lang, month, { onlyBuilt: true });
+        } catch (e) {
+          failed++;
+          console.error(`FAILED search ${calendar} ${version} ${lang} ${month}: ${(e as Error).message}`);
+        }
+      }
+  }
+console.log(`Search index: ${rangeMonths.size} month(s) × ${searchLangs.length} language(s) per calendar/version.`);
 const secs = Math.round((Date.now() - started) / 1000);
 console.log(`Built ${done}/${total} day files in ${secs}s${failed ? `, ${failed} failed` : ''}.`);
 process.exit(failed ? 1 : 0);

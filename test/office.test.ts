@@ -273,3 +273,67 @@ describe('storage', () => {
     expect(existsSync(resolve(dir, 'latin/2026/12-08/lauds.json'))).toBe(true);
   });
 });
+
+describe('commemorations and suffrages', () => {
+  it('labels a commemoration in the Office and the Mass, in both columns', async () => {
+    for (const part of ['lauds', 'mass'] as const) {
+      const o = await page('2026-12-10', part, '1962', 'de');
+      const la = o.sections.flatMap((s) => [...s.latin.matchAll(/data-kind="commemoration">([^<]*)/g)].map((m) => m[1]));
+      const vn = o.sections.flatMap((s) => [...s.vernacular.matchAll(/data-kind="commemoration">([^<]*)/g)].map((m) => m[1]));
+      expect(la[0]).toMatch(/Commemoratio S\. Melchiadis/);
+      expect(vn[0]).toMatch(/Melchiades/);
+    }
+  });
+  it('labels each suffrage (1906 Vespers)', async () => {
+    const o = await page('2026-10-26', 'vespers', '1906', 'en');
+    const labels = o.sections.flatMap((s) => [...s.latin.matchAll(/data-kind="suffrage">([^<]*)/g)].map((m) => m[1]));
+    expect(labels).toEqual(expect.arrayContaining(['De cruce', 'De Beata Maria', 'De Pace']));
+  });
+  it('does not label instructions that merely mention a commemoration', async () => {
+    const o = await page('2026-10-26', 'lauds', '1954', 'en');
+    expect(o.sections.some((s) => /data-kind/.test(s.latin))).toBe(false);
+  });
+});
+
+describe('votive offices', () => {
+  it('Office of the Dead has Matins, Lauds and Vespers', async () => {
+    const { votiveHours } = await import('../src/config.ts');
+    expect(votiveHours('dead', '2026-12-10')).toEqual(['matins', 'lauds', 'vespers']);
+    const { buildPart } = await import('../src/day.ts');
+    const p = await buildPart('2026-12-10', 'lauds', '1962', 'en', 'general', 1, 'dead');
+    expect(p.id).toBe('dead-lauds');
+    expect(p.header.title).toMatch(/Defunctorum/);
+  });
+  it('Little Office follows the season', async () => {
+    const { buildPart } = await import('../src/day.ts');
+    expect((await buildPart('2026-12-10', 'vespers', '1962', 'en', 'general', 1, 'parvum')).header.title).toMatch(/Parvum.*Adventus/);
+  });
+  it('Our Lady on Saturday only on Saturdays', async () => {
+    const { votiveHours } = await import('../src/config.ts');
+    expect(votiveHours('sabbato', '2026-12-10')).toEqual([]);
+    expect(votiveHours('sabbato', '2026-12-12')).toHaveLength(8);
+    const { buildPart } = await import('../src/day.ts');
+    expect((await buildPart('2026-12-12', 'lauds', '1962', 'en', 'general', 1, 'sabbato')).header.title).toMatch(/Mariæ Sabbato/);
+  });
+});
+
+describe('search index', () => {
+  it('plain text drops markup, verse numbers and notes', async () => {
+    const { plainText } = await import('../src/search.ts');
+    expect(plainText('<p class="note">{x}</p><span class="verse">92:1</span> Dóminus <span class="rubric">℣.</span> regnávit<br>est'))
+      .toBe('Dóminus ℣. regnávit est');
+  });
+  it('indexes the Mass and the Hours of each built day, not the Ordinary or votive offices', async () => {
+    const { buildSearchMonth } = await import('../src/search.ts');
+    const { getDay } = await import('../src/day.ts');
+    await getDay('2026-12-10', 'general', '1962', 'en');
+    const { latin, vernacular } = await buildSearchMonth('general', '1962', 'en', '2026-12', { onlyBuilt: true });
+    const parts = Object.keys(latin.days['10']);
+    expect(parts).toContain('mass');
+    expect(parts).toContain('lauds');
+    expect(parts).not.toContain('massFull');
+    expect(parts.some((p) => p.startsWith('dead-'))).toBe(false);
+    expect(JSON.stringify(latin.days['10'].lauds)).toMatch(/Melchiadis/);
+    expect(JSON.stringify(vernacular.days['10'].lauds)).toMatch(/Melchiades/);
+  });
+});

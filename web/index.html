@@ -20,6 +20,7 @@
       <div class="seg" id="page" role="group" aria-label="Day or month">
         <button type="button" data-page="day" aria-pressed="true">Day</button>
         <button type="button" data-page="month" aria-pressed="false">Month</button>
+        <button type="button" data-page="search" aria-pressed="false">Search</button>
       </div>
     </nav>
     <div class="settings">
@@ -48,6 +49,23 @@
       <ol class="month-list" id="month-list"></ol>
     </section>
 
+    <!-- Search -->
+    <section class="searchpage" id="searchpage" hidden aria-labelledby="search-title">
+      <h1 id="search-title">Search the texts</h1>
+      <form id="searchform" class="searchform" role="search">
+        <label class="sr" for="q">Words to find</label>
+        <input id="q" type="search" placeholder="e.g. Rorate caeli, or &quot;Lumen ad revelationem&quot;" autocomplete="off">
+        <button type="submit">Search</button>
+        <div class="searchopts">
+          <label>When <select id="scope"></select></label>
+          <label>In <select id="searchin"></select></label>
+        </div>
+      </form>
+      <p class="searchhelp">Finds sections containing all the words, in any order; put a phrase in quotes. Accents and æ/ae, j/i are ignored. Searches the Mass propers and the Hours of the day in the current calendar and version.</p>
+      <p class="searchstatus" id="searchstatus" aria-live="polite"></p>
+      <ol class="results" id="results"></ol>
+    </section>
+
     <!-- Day view -->
     <div id="dayview">
     <section class="day" aria-live="polite">
@@ -74,6 +92,9 @@
       <div class="masschoice" id="masschoice" role="group" aria-label="Which Mass" hidden></div>
     </div>
 
+    <div class="officebar" id="officebar">
+      <label class="select"><span>Office</span><select id="office"></select></label>
+    </div>
     <nav class="hours" id="hours" role="tablist" aria-label="Hours"></nav>
 
     <div class="toolbar" aria-label="Display">
@@ -94,6 +115,12 @@
       <label class="jump"><span class="sr">Jump to</span>
         <select id="jump"><option value="">Jump to…</option></select>
       </label>
+      <button type="button" id="compare" class="pill" aria-pressed="false" title="Show another calendar or version beside this one">Compare</button>
+    </div>
+    <div class="comparebar" id="comparebar" hidden>
+      <span>Compare with</span>
+      <label class="select"><span class="sr">Calendar</span><select id="cmp-calendar"></select></label>
+      <label class="select"><span class="sr">Version</span><select id="cmp-version"></select></label>
     </div>
 
     <p class="fallback" id="fallback" hidden></p>

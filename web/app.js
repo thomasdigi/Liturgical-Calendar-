@@ -31,7 +31,11 @@ const state = {
   layout: store.get('layout', 'interlinear'), // 'interlinear' | 'side'
   massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
   massN: Number(params.get('n')) || 1, // which Mass, on days with several
-  page: params.get('page') === 'month' ? 'month' : 'day',
+  page: ['month', 'search'].includes(params.get('page')) ? params.get('page') : 'day',
+  office: params.get('office') || 'day', // 'day' or a votive office id (dead, parvum, sabbato)
+  compare: !!params.get('cmp'), // show another calendar/version beside this one
+  cmpCalendar: (params.get('cmp') || '').split('/')[0] || null,
+  cmpVersion: (params.get('cmp') || '').split('/')[1] || null,
   size: Number(store.get('textSize', '0')) || 0, // steps from normal, see SIZES
   reading: store.get('reading', 'off') === 'on',
 };
@@ -150,6 +154,19 @@ async function init() {
     if (b.disabled) return;
     state.massMode = b.dataset.mass; store.set('massMode', state.massMode); syncControls(); render();
   }));
+  $('office').onchange = (e) => { state.office = e.target.value; syncControls(); render(); };
+  $('compare').onclick = () => {
+    state.compare = !state.compare;
+    if (state.compare && !state.cmpVersion) defaultComparison();
+    syncControls(); render();
+  };
+  $('cmp-calendar').onchange = (e) => { state.cmpCalendar = e.target.value; fixComparison(); syncControls(); render(); };
+  $('cmp-version').onchange = (e) => { state.cmpVersion = e.target.value; fixComparison(); syncControls(); render(); };
+  $('searchform').onsubmit = (e) => { e.preventDefault(); runSearch(); };
+  $('results').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-hit]');
+    if (b) openHit(JSON.parse(b.dataset.hit));
+  });
   $('masschoice').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-n]');
     if (!b) return;
@@ -214,13 +231,14 @@ async function getJson(path) {
   }
   return cache.get(path);
 }
-const dayDir = (langId) => `data/${state.calendar}/${state.version}/${langId}/${state.date.slice(0, 4)}/${state.date.slice(5)}`;
+const dayDir = (langId, cal = state.calendar, ver = state.version) =>
+  `data/${cal}/${ver}/${langId}/${state.date.slice(0, 4)}/${state.date.slice(5)}`;
 /** The day's index: header, the list of parts, and the Masses if there are several. */
-const fetchDay = (langId) => getJson(`${dayDir(langId)}/index.json`);
+const fetchDay = (langId, cal, ver) => getJson(`${dayDir(langId, cal, ver)}/index.json`);
 /** One part (an Hour or a Mass), with its Latin from the shared folder merged in. */
-async function fetchPart(langId, id) {
-  const own = await getJson(`${dayDir(langId)}/${id}.json`);
-  const latin = own.latin ?? (await getJson(`${dayDir('latin')}/${id}.json`)).sections;
+async function fetchPart(langId, id, cal, ver) {
+  const own = await getJson(`${dayDir(langId, cal, ver)}/${id}.json`);
+  const latin = own.latin ?? (await getJson(`${dayDir('latin', cal, ver)}/${id}.json`)).sections;
   return own.sections.map((s, i) => ({
     heading: { latin: latin[i]?.heading ?? '', vernacular: s.heading },
     latin: latin[i]?.latin ?? '',
@@ -329,6 +347,7 @@ async function load() {
   updateUrl();
   $('date').value = state.date;
   if (state.page === 'month') { renderMonth(); return; }
+  if (state.page === 'search') { syncSearchOptions(); return; }
   renderWeek();
   const shown = shownLangId();
   try {
@@ -349,6 +368,7 @@ async function load() {
   }
   if (state.massN > Math.max(1, day.masses?.length ?? 0)) state.massN = 1;
   syncMasses();
+  syncOffice();
   render();
 }
 
@@ -369,6 +389,7 @@ function go(date) { state.date = clampDate(date); load(); }
 function syncControls() {
   // Day or month page
   $('month').hidden = state.page !== 'month';
+  $('searchpage').hidden = state.page !== 'search';
   $('dayview').hidden = state.page !== 'day';
   document.querySelectorAll('#page button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
   $('prev').setAttribute('aria-label', 'Previous day');
@@ -415,6 +436,21 @@ function syncControls() {
   document.querySelectorAll('#view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
   $('hours').hidden = state.view !== 'office';
   $('massmode').hidden = state.view !== 'mass';
+  $('officebar').hidden = state.view !== 'office';
+  syncOffice();
+  // Compare: another calendar/version beside this one
+  $('compare').setAttribute('aria-pressed', String(state.compare));
+  $('comparebar').hidden = !state.compare;
+  if (state.compare) {
+    $('cmp-calendar').innerHTML = config.calendars.map((c) =>
+      `<option value="${c.id}"${c.versions.some((v) => comboBuilt(c.id, v)) ? '' : ' disabled'}>${esc(c.label)}</option>`).join('');
+    $('cmp-version').innerHTML = config.versions.map((v) => {
+      const ok = calendarHas(state.cmpCalendar, v.id) && comboBuilt(state.cmpCalendar, v.id);
+      return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(v.label)}</option>`;
+    }).join('');
+    $('cmp-calendar').value = state.cmpCalendar;
+    $('cmp-version').value = state.cmpVersion;
+  }
   if (RANGE) Object.assign($('date'), { min: RANGE.first, max: RANGE.last });
 
   const full = fullAvailable();
@@ -438,6 +474,48 @@ function syncControls() {
     : `<span>${esc(lang(state.lang).label)} isn't on this site for this calendar and version. Showing ${esc(lang(shownLangId()).label)} instead.</span>`;
   updateUrl();
 }
+
+/** The office selector: the Office of the day, or a votive office built for this day. */
+function syncOffice() {
+  const built = day?.votives ?? [];
+  const sat = new Date(`${state.date}T12:00:00Z`).getUTCDay() === 6;
+  // Only drop an unavailable choice once the day has loaded (a link may name one).
+  if (day && state.office !== 'day' && !built.some((v) => v.id === state.office)) state.office = 'day';
+  $('office').innerHTML = `<option value="day">Office of the day</option>` + (config.votives ?? []).map((v) => {
+    const ok = built.some((b) => b.id === v.id);
+    const why = v.saturdaysOnly && !sat ? ' (Saturdays only)' : ' (not on this site)';
+    return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(v.label + (ok ? '' : why))}</option>`;
+  }).join('');
+  $('office').value = state.office;
+}
+/** The Hours of the office being shown. */
+function officeHours() {
+  if (state.office === 'day') return config.hours.map((h) => h.id);
+  return day?.votives?.find((v) => v.id === state.office)?.hours ?? [];
+}
+
+/** Compare with 1954 if showing 1962, otherwise with 1962; same calendar where it exists. */
+function defaultComparison() {
+  const want = state.version === '1962' ? '1954' : '1962';
+  state.cmpCalendar = state.calendar;
+  state.cmpVersion = want;
+  fixComparison();
+}
+function fixComparison() {
+  if (!state.cmpCalendar || !config.calendars.some((c) => c.id === state.cmpCalendar)) state.cmpCalendar = state.calendar;
+  const ok = (cal, ver) => calendarHas(cal, ver) && comboBuilt(cal, ver);
+  if (!ok(state.cmpCalendar, state.cmpVersion)) {
+    state.cmpVersion = config.versions.map((v) => v.id).find((v) => ok(state.cmpCalendar, v)) ?? null;
+  }
+  if (!state.cmpVersion) {
+    for (const c of config.calendars) {
+      const v = config.versions.map((x) => x.id).find((x) => ok(c.id, x));
+      if (v) { state.cmpCalendar = c.id; state.cmpVersion = v; break; }
+    }
+  }
+}
+const comboLabel = (cal, ver) =>
+  `${config.calendars.find((c) => c.id === cal)?.label} · ${config.versions.find((v) => v.id === ver)?.label}`;
 
 // ---------- info pop-up ----------
 
@@ -470,7 +548,7 @@ function openInfo(kind) {
 
 /** The id of the part to show: an Hour, or the Mass (propers or full; 2nd/3rd Mass as 'mass-2' …). */
 function currentPartId() {
-  if (state.view !== 'mass') return state.hour;
+  if (state.view !== 'mass') return state.office === 'day' ? state.hour : `${state.office}-${state.hour}`;
   const base = showFull() ? 'massFull' : 'mass';
   return state.massN > 1 ? `${base}-${state.massN}` : base;
 }
@@ -494,29 +572,87 @@ function vernacularOf(s, i, altPart) {
   return s.fallback.length >= long ? a.vernacular : s.vernacular;
 }
 
+/** A part ready to show: its sections in the given language, gaps filled from the alternative. */
+async function loadPart(langId, id, cal = state.calendar, ver = state.version) {
+  const index = await fetchDay(langId, cal, ver);
+  const meta = index.parts.find((p) => p.id === id) || index.parts.find((p) => p.id === state.hour) || index.parts[0];
+  const sections = await fetchPart(langId, meta.id, cal, ver);
+  let altPart = null;
+  const alt = altLangId();
+  if (alt !== langId && alt !== config.fallbackLanguage && sections.some((s) => s.fallback) && built(alt, cal, ver)) {
+    try { altPart = { sections: await fetchPart(alt, meta.id, cal, ver) }; } catch { altPart = null; }
+  }
+  return { index, part: { ...meta, sections }, altPart };
+}
+
+/** HTML for a part's sections. `prefix` keeps ids unique when two parts are shown side by side. */
+function sectionsHtml(part, altPart, L, notes, prefix) {
+  const out = [];
+  part.sections.forEach((s, i) => {
+    const hl = s.heading.latin, hv = s.heading.vernacular && s.heading.vernacular !== hl ? s.heading.vernacular : '';
+    const sid = `${prefix}${i}`;
+    const info = notes && s.fallback
+      ? `<button type="button" class="info" data-kind="section" aria-label="Not fully translated: choose a language for the missing text" title="Not fully translated">${INFO_ICON}</button>`
+      : '';
+    const head = hl || hv || info
+      ? `<h3><span class="la">${hl}</span>${hv ? `<span class="vn"> · ${hv}</span>` : ''}${info}</h3>`
+      : '';
+    const jump = hl ? ` data-jump="${esc(hv ? `${hl} · ${hv}` : hl)}"` : '';
+    const cls = [
+      s.fallback && notes ? 'partial' : '',
+      /^Suffragi/i.test(hl) ? 'suffrage' : '',
+      /data-kind="commemoration"/.test(s.latin) ? 'has-commem' : '',
+    ].filter(Boolean).join(' ');
+    if (!s.latin && !s.vernacular) {
+      out.push(`<section class="marker" id="${sid}"${jump}>${head}</section>`); // e.g. "Gloria", "Credo" in the Mass
+      return;
+    }
+    const vn = vernacularOf(s, i, altPart);
+    out.push(`<section id="${sid}"${jump}${cls ? ` class="${cls}"` : ''}>${head}<div class="col la" lang="la">${s.latin}</div><div class="col vn" lang="${L.htmlLang}"${L.rtl ? ' dir="auto"' : ''}>${vn}</div></section>`);
+  });
+  return out.join('');
+}
+
+const headerHtml = (h) =>
+  `<p class="cmp-title">${esc(h.title)}</p><p class="cmp-meta"><span class="swatch" style="background:${COLORS[h.color] || 'transparent'}"></span>${esc([h.rank, COLOR_NAMES[h.color]].filter(Boolean).join(' · '))}</p>` +
+  (h.commemorations.length ? `<p class="cmp-comm">Com. ${esc(h.commemorations.join('; '))}</p>` : '');
+
 let renderSeq = 0;
+let pendingScroll = null; // a section to scroll to once drawn (from a search result)
 async function render() {
   if (!day) return;
   const seq = ++renderSeq;
+  if (state.view === 'office' && !officeHours().includes(state.hour)) state.hour = officeHours()[0] ?? 'lauds';
   const id = currentPartId();
-  const meta = day.parts.find((p) => p.id === id) || day.parts.find((p) => p.id === state.hour) || day.parts[0];
   const shown = shownLangId();
-  let part;
+  let main;
   try {
-    part = { ...meta, sections: await fetchPart(shown, meta.id) };
+    main = await loadPart(shown, id);
   } catch {
     if (seq !== renderSeq) return;
     $('text').innerHTML = '<p class="msg">This part could not be loaded.</p>';
     return;
   }
-  // The alternative language is only needed where it differs from the English DO already shows.
-  let altPart = null;
-  const alt = altLangId();
-  if (alt !== shown && alt !== config.fallbackLanguage && part.sections.some((s) => s.fallback)) {
-    try { altPart = { sections: await fetchPart(alt, meta.id) }; } catch { altPart = null; }
+  // Compare: the same part in another calendar/version, in the same language where it's there.
+  let other = null;
+  let otherLang = null;
+  if (state.compare && state.cmpCalendar && state.cmpVersion) {
+    otherLang = built(shown, state.cmpCalendar, state.cmpVersion) ? shown
+      : built(config.fallbackLanguage, state.cmpCalendar, state.cmpVersion) ? config.fallbackLanguage : null;
+    if (otherLang) {
+      // Use the corresponding part there: the same Hour, or the same Mass if it has that many.
+      let oid = id;
+      try {
+        const oi = await fetchDay(otherLang, state.cmpCalendar, state.cmpVersion);
+        if (!oi.parts.some((p) => p.id === oid)) oid = oid.replace(/-\d+$/, '');
+        other = await loadPart(otherLang, oid, state.cmpCalendar, state.cmpVersion);
+      } catch { other = null; }
+    }
   }
   if (seq !== renderSeq) return;
-  const h = state.view === 'mass' ? part.header : day.header;
+
+  const { part, altPart } = main;
+  const h = state.view === 'mass' || state.office !== 'day' ? part.header : day.header;
   const d = new Date(`${day.date}T12:00:00Z`);
   $('weekday').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   $('title').textContent = h.title;
@@ -525,14 +661,16 @@ async function render() {
   $('comm').textContent = h.commemorations.length ? `Commemoration: ${h.commemorations.join('; ')}` : '';
   $('source-version').textContent = state.view === 'mass' ? `Missal: ${day.versionName.mass}.` : `Breviary: ${day.versionName.office}.`;
 
-  // Hour tabs
+  // Hour tabs (a votive office may have only some Hours)
+  const hours = officeHours();
   $('hours').innerHTML = '';
   for (const hr of config.hours) {
     const b = document.createElement('button');
     b.type = 'button';
     b.setAttribute('role', 'tab');
     b.textContent = hr.label;
-    b.title = hr.latin;
+    b.title = hours.includes(hr.id) ? hr.latin : `Not part of this office`;
+    b.disabled = !hours.includes(hr.id);
     b.setAttribute('aria-selected', String(hr.id === state.hour));
     b.onclick = () => { state.hour = hr.id; updateUrl(); render(); };
     $('hours').append(b);
@@ -540,46 +678,239 @@ async function render() {
 
   // Per-section notes only make sense when the chosen language is the one shown.
   const notes = offers(state.lang);
-  const L = lang(shownLangId());
-  const out = [`<h2 class="part-title"><span class="la">${part.title.latin}</span><span class="vn">${part.title.label}</span></h2>`];
-  const jumps = [];
-  part.sections.forEach((s, i) => {
-    const hl = s.heading.latin, hv = s.heading.vernacular && s.heading.vernacular !== hl ? s.heading.vernacular : '';
-    const sid = `s${i}`;
-    if (hl) jumps.push([sid, hv ? `${hl} · ${hv}` : hl]);
-    const info = notes && s.fallback
-      ? `<button type="button" class="info" data-kind="section" aria-label="Not fully translated: choose a language for the missing text" title="Not fully translated">${INFO_ICON}</button>`
-      : '';
-    const head = hl || hv || info
-      ? `<h3><span class="la">${hl}</span>${hv ? `<span class="vn"> · ${hv}</span>` : ''}${info}</h3>`
-      : '';
-    if (!s.latin && !s.vernacular) {
-      out.push(`<section class="marker" id="${sid}">${head}</section>`); // e.g. "Gloria", "Credo" in the Mass
-      return;
-    }
-    const vn = vernacularOf(s, i, altPart);
-    out.push(`<section id="${sid}"${s.fallback && notes ? ' class="partial"' : ''}>${head}<div class="col la" lang="la">${s.latin}</div><div class="col vn" lang="${L.htmlLang}"${L.rtl ? ' dir="auto"' : ''}>${vn}</div></section>`);
-  });
-  $('text').innerHTML = out.join('');
+  const L = lang(shown);
+  const title = `<h2 class="part-title"><span class="la">${part.title.latin}</span><span class="vn">${part.title.label}</span></h2>`;
+  if (state.compare) {
+    const right = other
+      ? `<div class="cmp-head">${headerHtml(other.part.header)}</div>${sectionsHtml(other.part, other.altPart, lang(otherLang), false, 'c')}`
+      : `<p class="msg">Not available for ${esc(comboLabel(state.cmpCalendar, state.cmpVersion))} on this day${RANGE ? ' on this site' : ''}.</p>`;
+    $('text').innerHTML = `${title}<div class="compare">
+      <div class="cmp-col"><p class="cmp-label">${esc(comboLabel(state.calendar, state.version))}</p>
+        <div class="cmp-head">${headerHtml(part.header)}</div>${sectionsHtml(part, altPart, L, notes, 's')}</div>
+      <div class="cmp-col"><p class="cmp-label">${esc(comboLabel(state.cmpCalendar, state.cmpVersion))}</p>${right}</div>
+    </div>`;
+  } else {
+    $('text').innerHTML = title + sectionsHtml(part, altPart, L, notes, 's');
+  }
+  document.body.classList.toggle('comparing', state.compare);
+
   // Reading mode hides instructions: longer red rubrics ("Secreto", "Deinde, clara voce…"),
-  // but keeps the short markers (℣. ℟. Ant.).
+  // but keeps the short markers (℣. ℟. Ant.) and the commemoration/suffrage labels.
   $('text').querySelectorAll('.rubric').forEach((el) => {
+    if (el.classList.contains('commem')) return;
     if (el.classList.contains('small') || el.textContent.trim().length > 14) el.classList.add('instr');
   });
+  // Jump menu: the headings, plus each commemoration and suffrage (in the main column).
+  const jumps = [];
+  const mainCol = state.compare ? $('text').querySelector('.cmp-col') : $('text');
+  mainCol.querySelectorAll('section[data-jump], .col.la .commem').forEach((el, n) => {
+    if (el.matches('section')) jumps.push([el.id, el.dataset.jump]);
+    else {
+      el.id = el.id || `cm${n}`;
+      const kind = el.dataset.kind === 'suffrage' ? 'Suffrage' : 'Commemoration';
+      const name = el.textContent.replace(/^Commemoratio\s*/, '').trim();
+      jumps.push([el.id, `  ↳ ${kind}: ${name}`]);
+    }
+  });
   $('jump').innerHTML = `<option value="">Jump to…</option>` +
-    jumps.map(([id, label]) => `<option value="${id}">${esc(label)}</option>`).join('');
+    jumps.map(([jid, label]) => `<option value="${jid}">${esc(label)}</option>`).join('');
   $('jump').disabled = jumps.length < 2;
+
+  if (pendingScroll) {
+    const el = document.getElementById(pendingScroll);
+    pendingScroll = null;
+    if (el) {
+      el.scrollIntoView({ block: 'center' });
+      el.classList.add('flash');
+      setTimeout(() => el.classList.remove('flash'), 2400);
+    }
+  }
 }
 
 function updateUrl() {
   const p = new URLSearchParams({ date: state.date, view: state.view, calendar: state.calendar, version: state.version, lang: state.lang });
-  if (state.page === 'month') p.set('page', 'month');
-  if (state.view === 'office') p.set('hour', state.hour);
+  if (state.page !== 'day') p.set('page', state.page);
+  if (state.view === 'office') {
+    p.set('hour', state.hour);
+    if (state.office !== 'day') p.set('office', state.office);
+  }
   else {
     p.set('mass', showFull() ? 'full' : 'propers');
     if (state.massN > 1) p.set('n', String(state.massN));
   }
+  if (state.compare && state.cmpCalendar && state.cmpVersion) p.set('cmp', `${state.cmpCalendar}/${state.cmpVersion}`);
   try { history.replaceState(null, '', `?${p}`); } catch { /* sandboxed */ }
+}
+
+// ---------- search ----------
+
+const addMonths = (month, n) => {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1 + n, 1)).toISOString().slice(0, 7);
+};
+const monthLabel = (month) => {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+};
+/** The search language: the chosen one if it was built, else English. */
+const searchLangId = () => (built(state.lang) ? state.lang : config.fallbackLanguage);
+
+function syncSearchOptions() {
+  const m = monthOf(state.date);
+  const opts = [['1', monthLabel(m)], ['3', `${monthLabel(m)} and the next two months`]];
+  if (avail) opts.push(['all', `All dates on this site (${avail.first} to ${avail.last})`]);
+  const scope = $('scope').value || '1';
+  $('scope').innerHTML = opts.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+  $('scope').value = opts.some(([v]) => v === scope) ? scope : '1';
+  const L = lang(searchLangId());
+  const within = $('searchin').value || 'both';
+  $('searchin').innerHTML = [['both', `Latin and ${L.label}`], ['latin', 'Latin only'], ['vernacular', `${L.label} only`]]
+    .map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
+  $('searchin').value = within;
+  setTimeout(() => $('q').focus(), 0);
+}
+function scopeMonths() {
+  const v = $('scope').value;
+  if (v === 'all' && avail) {
+    const out = [];
+    for (let m = monthOf(avail.first); m <= monthOf(avail.last); m = addMonths(m, 1)) out.push(m);
+    return out;
+  }
+  return Array.from({ length: Number(v) || 1 }, (_, i) => addMonths(monthOf(state.date), i));
+}
+
+/** Lower case, no accents, æ→ae, œ→oe, j→i; with a map back to positions in the original. */
+function normalize(text) {
+  let out = '';
+  const map = [];
+  for (let i = 0; i < text.length; i++) {
+    let c = text[i].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    c = c.replace(/æ/g, 'ae').replace(/œ/g, 'oe').replace(/j/g, 'i');
+    for (const ch of c) { out += ch; map.push(i); }
+  }
+  return { out, map };
+}
+/** Words to find; a "quoted phrase" counts as one term. */
+function parseQuery(q) {
+  const terms = [];
+  q.replace(/"([^"]+)"|(\S+)/g, (_, phrase, word) => { terms.push(normalize(phrase || word).out.trim()); return ''; });
+  return terms.filter(Boolean);
+}
+/** A short extract around the first match, with every match marked. */
+function snippet(text, terms) {
+  const { out, map } = normalize(text);
+  const spans = [];
+  for (const t of terms) {
+    let i = out.indexOf(t);
+    while (i >= 0) { spans.push([map[i], map[i + t.length - 1] + 1]); i = out.indexOf(t, i + t.length); }
+  }
+  if (!spans.length) return '';
+  spans.sort((a, b) => a[0] - b[0]);
+  const from = Math.max(0, spans[0][0] - 70);
+  const to = Math.min(text.length, spans[0][1] + 140);
+  let html = '';
+  let pos = from;
+  for (const [a, b] of spans) {
+    if (a < pos || b > to) continue;
+    html += esc(text.slice(pos, a)) + `<mark>${esc(text.slice(a, b))}</mark>`;
+    pos = b;
+  }
+  html += esc(text.slice(pos, to));
+  return (from > 0 ? '…' : '') + html + (to < text.length ? '…' : '');
+}
+
+const partLabel = (id) => {
+  if (id === 'mass') return 'Mass';
+  const m = /^mass-(\d+)$/.exec(id);
+  if (m) return `Mass ${m[1]}`;
+  return config.hours.find((h) => h.id === id)?.label ?? id;
+};
+
+let searchSeq = 0;
+const MAX_HITS = 300;
+async function runSearch() {
+  const seq = ++searchSeq;
+  const terms = parseQuery($('q').value);
+  if (!terms.length) { $('searchstatus').textContent = 'Type a word or phrase to find.'; return; }
+  const within = $('searchin').value;
+  const langId = searchLangId();
+  const hits = [];
+  $('results').innerHTML = '';
+  const months = scopeMonths();
+  for (const month of months) {
+    $('searchstatus').textContent = `Searching ${monthLabel(month)}…${avail ? '' : ' (the first search of a month builds its index, which can take a minute)'}`;
+    const base = `data/${state.calendar}/${state.version}`;
+    const [la, vn] = await Promise.all([
+      within === 'vernacular' ? null : getJson(`${base}/latin/search/${month}.json`).catch(() => null),
+      within === 'latin' ? null : getJson(`${base}/${langId}/search/${month}.json`).catch(() => null),
+    ]);
+    if (seq !== searchSeq) return;
+    const days = new Set([...Object.keys(la?.days ?? {}), ...Object.keys(vn?.days ?? {})]);
+    for (const dd of [...days].sort()) {
+      const parts = new Set([...Object.keys(la?.days[dd] ?? {}), ...Object.keys(vn?.days[dd] ?? {})]);
+      for (const pid of parts) {
+        const laS = la?.days[dd]?.[pid] ?? [];
+        const vnS = vn?.days[dd]?.[pid] ?? [];
+        for (let i = 0; i < Math.max(laS.length, vnS.length); i++) {
+          const texts = [laS[i]?.[1] ?? '', vnS[i]?.[1] ?? ''];
+          const n = normalize(texts.join(' \n ')).out;
+          if (!terms.every((t) => n.includes(t))) continue;
+          const which = snippet(texts[0], terms) ? 0 : 1;
+          hits.push({
+            date: `${month}-${dd}`,
+            part: pid,
+            section: i,
+            heading: laS[i]?.[0] || vnS[i]?.[0] || '',
+            html: snippet(texts[which], terms) || snippet(texts[1 - which], terms),
+            lang: which === 0 ? 'la' : lang(langId).htmlLang,
+          });
+          if (hits.length >= MAX_HITS) break;
+        }
+        if (hits.length >= MAX_HITS) break;
+      }
+      if (hits.length >= MAX_HITS) break;
+    }
+    renderHits(hits, terms);
+    if (hits.length >= MAX_HITS) break;
+  }
+  if (seq !== searchSeq) return;
+  $('searchstatus').textContent = hits.length
+    ? `${hits.length >= MAX_HITS ? `First ${MAX_HITS}` : hits.length} result${hits.length === 1 ? '' : 's'} in ${months.length === 1 ? monthLabel(months[0]) : `${monthLabel(months[0])} to ${monthLabel(months.at(-1))}`}.`
+    : 'Nothing found. Try fewer words, or a longer period.';
+}
+
+function renderHits(hits) {
+  let lastDate = '';
+  $('results').innerHTML = hits.map((h) => {
+    const dt = new Date(`${h.date}T12:00:00Z`);
+    const dateHead = h.date !== lastDate
+      ? `<li class="rdate">${esc(dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }))}</li>` : '';
+    lastDate = h.date;
+    return `${dateHead}<li><button type="button" data-hit='${esc(JSON.stringify({ date: h.date, part: h.part, section: h.section }))}'>
+      <span class="rwhere">${esc(partLabel(h.part))}${h.heading ? ` · ${esc(h.heading)}` : ''}</span>
+      <span class="rtext" lang="${h.lang}">${h.html}</span></button></li>`;
+  }).join('');
+}
+
+/** Open a search result: its day, Mass or Hour, scrolled to the section. */
+function openHit({ date, part, section }) {
+  state.date = clampDate(date);
+  state.page = 'day';
+  state.compare = false;
+  const m = /^mass(?:-(\d+))?$/.exec(part);
+  if (m) {
+    state.view = 'mass';
+    state.massMode = 'propers';
+    state.massN = Number(m[1] || 1);
+  } else {
+    state.view = 'office';
+    state.office = 'day';
+    state.hour = part;
+  }
+  pendingScroll = `s${section}`;
+  syncControls();
+  load();
+  window.scrollTo(0, 0);
 }
 
 init();

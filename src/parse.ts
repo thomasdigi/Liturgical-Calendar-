@@ -95,6 +95,8 @@ export function parsePage(html: string): ParsedPage {
     sections.push({ heading: { latin: la.heading, vernacular: vn.heading }, latin: la.html, vernacular: vn.html });
   });
 
+  for (const sec of sections) markCommemorations(sec);
+
   // DO prints the version it actually used next to its own title (it silently falls
   // back to its default for an unknown version name, so callers can check this).
   const versionShown = $('font[color="RED"][size="+1"], font[color="red"][size="+1"]')
@@ -176,4 +178,40 @@ function cleanCell($: cheerio.CheerioAPI, td: cheerio.Cheerio<AnyNode>): { headi
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+
+/**
+ * Labels commemorations and suffrages, which DO prints as plain red lines:
+ * "Commemoratio S. N." (Mass and Office), and in the Suffragium section
+ * "De Cruce", "De Beata Maria", "De sancto Joseph", … The red line becomes
+ * <span class="rubric commem" data-kind="commemoration|suffrage">. The same line of
+ * the translation is labelled too, when the two columns line up.
+ */
+export function markCommemorations(sec: Section): void {
+  const suffrage = /^Suffragi/i.test(sec.heading.latin);
+  const RUBRIC = /<span class="rubric">([^<]*)<\/span>/;
+  const la = splitLines(sec.latin);
+  const vn = splitLines(sec.vernacular);
+  const hits: [number, string][] = [];
+  la.forEach((line, i) => {
+    const m = RUBRIC.exec(line);
+    if (!m) return;
+    const text = m[1].trim();
+    // The rubric must be the whole line (apart from DO's {notes}), not part of an instruction.
+    const rest = line.replace(/<p class="note">[^<]*<\/p>/, '').replace(m[0], '').replace(/<[^>]+>/g, '').trim();
+    if (rest) return;
+    const kind = /^Commemoratio\b/.test(text) ? 'commemoration' : suffrage && /^De\s/.test(text) ? 'suffrage' : '';
+    if (!kind) return;
+    la[i] = line.replace(m[0], `<span class="rubric commem" data-kind="${kind}">${m[1]}</span>`);
+    hits.push([i, kind]);
+  });
+  if (!hits.length) return;
+  sec.latin = la.join('<br>');
+  if (vn.length === la.length) {
+    for (const [i, kind] of hits) {
+      vn[i] = vn[i].replace(RUBRIC, (_, t) => `<span class="rubric commem" data-kind="${kind}">${t}</span>`);
+    }
+    sec.vernacular = vn.join('<br>');
+  }
 }
