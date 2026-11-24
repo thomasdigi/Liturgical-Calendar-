@@ -56,6 +56,28 @@ const langLabel = () => currentLang().label;
 const fullAvailable = () => currentLang().fullMass;
 const showFull = () => state.massMode === 'full' && fullAvailable();
 
+// ---------- light / dark ----------
+// No saved choice: follow the system setting. Clicking stores an explicit choice.
+const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+function isDark() {
+  const t = document.documentElement.dataset.theme;
+  return t ? t === 'dark' : !!darkQuery?.matches;
+}
+function syncTheme() {
+  const dark = isDark();
+  $('theme').setAttribute('aria-pressed', String(dark));
+  $('theme').querySelector('.theme-label').textContent = dark ? 'Dark mode: on' : 'Dark mode: off';
+}
+function toggleTheme() {
+  const next = isDark() ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  store.set('theme', next);
+  syncTheme();
+}
+$('theme').onclick = toggleTheme;
+darkQuery?.addEventListener?.('change', syncTheme);
+syncTheme();
+
 // ---------- loading ----------
 
 async function init() {

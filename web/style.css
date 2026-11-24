@@ -46,6 +46,9 @@ button, input, select { font: inherit; color: inherit; }
   border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; padding: 6px 10px;
   cursor: pointer; min-height: 36px;
 }
+.top .theme { display: inline-flex; align-items: center; gap: 6px; }
+.theme-icon { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid currentColor; background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+.top .theme[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .select { display: inline-flex; align-items: center; gap: 6px; }
 .select span { color: var(--muted); font-size: 13px; }
 

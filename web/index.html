@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Divine Office and Mass</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Apply a saved light/dark choice before first paint (no saved choice = follow the system).
+    try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch {}
+  </script>
 </head>
 <body>
   <header class="top">
@@ -28,6 +32,9 @@
         <button type="button" data-display="latin" aria-pressed="false">Latin</button>
         <button type="button" data-display="vernacular" aria-pressed="false" id="vernacular-btn">English</button>
       </div>
+      <button type="button" id="theme" class="theme" aria-pressed="false" title="Switch between light and dark">
+        <span class="theme-icon" aria-hidden="true"></span><span class="theme-label">Dark mode</span>
+      </button>
     </div>
   </header>
 
