@@ -1,0 +1,32 @@
+{
+  "name": "liturgical-calendar",
+  "version": "1.0.0",
+  "description": "1962 Divine Office (Lauds, Sext, Vespers, Compline) using Divinum Officium",
+  "scripts": {
+    "start": "tsx scripts/serve.ts",
+    "build": "tsx scripts/build.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "site": "tsx scripts/site.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thomasdigi/Liturgical-Calendar-.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thomasdigi/Liturgical-Calendar-/issues"
+  },
+  "homepage": "https://github.com/thomasdigi/Liturgical-Calendar-#readme",
+  "dependencies": {
+    "cheerio": "^1.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  },
+  "private": true,
+  "type": "module"
+}

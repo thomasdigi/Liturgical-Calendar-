@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Divine Office and Mass</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="theme-color" content="#7a1f1a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Office & Mass">
+  <script>
+    // Apply a saved light/dark choice before first paint (no saved choice = follow the system).
+    try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch {}
+  </script>
+</head>
+<body>
+  <header class="top">
+    <nav class="datenav" aria-label="Date">
+      <button id="prev" type="button" aria-label="Previous day">‹</button>
+      <input id="date" type="date" aria-label="Date">
+      <button id="next" type="button" aria-label="Next day">›</button>
+      <button id="today" type="button">Today</button>
+      <div class="seg" id="page" role="group" aria-label="Day or month">
+        <button type="button" data-page="day" aria-pressed="true">Day</button>
+        <button type="button" data-page="month" aria-pressed="false">Month</button>
+        <button type="button" data-page="search" aria-pressed="false">Search</button>
+      </div>
+    </nav>
+    <div class="settings">
+      <label class="select"><span>Calendar</span><select id="calendar"></select></label>
+      <label class="select"><span>Version</span><select id="version"></select></label>
+      <label class="select"><span>Language</span><select id="lang"></select></label>
+      <button type="button" id="offline-btn" class="offline-btn" title="Install the app and save days to use without a connection">
+        <span class="offline-dot" aria-hidden="true"></span>Offline<span id="offline-state" class="offline-state" hidden>: no connection</span>
+      </button>
+      <button type="button" id="theme" class="theme" aria-pressed="false" title="Switch between light and dark">
+        <span class="theme-icon" aria-hidden="true"></span><span class="theme-label">Dark mode</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Month view -->
+    <section class="month" id="month" hidden aria-labelledby="month-title">
+      <div class="month-head">
+        <button type="button" id="month-prev" aria-label="Previous month">‹</button>
+        <h1 id="month-title">Month</h1>
+        <button type="button" id="month-next" aria-label="Next month">›</button>
+      </div>
+      <p class="legend">
+        <span class="fastmark fast">F</span> fast
+        <span class="fastmark abst">A</span> abstinence
+        <span class="legend-note">General law of the 1917 Code of Canon Law; local law may differ.</span>
+      </p>
+      <ol class="month-list" id="month-list"></ol>
+    </section>
+
+    <!-- Search -->
+    <section class="searchpage" id="searchpage" hidden aria-labelledby="search-title">
+      <h1 id="search-title">Search the texts</h1>
+      <form id="searchform" class="searchform" role="search">
+        <label class="sr" for="q">Words to find</label>
+        <input id="q" type="search" placeholder="e.g. Rorate caeli, or &quot;Lumen ad revelationem&quot;" autocomplete="off">
+        <button type="submit">Search</button>
+        <div class="searchopts">
+          <label>When <select id="scope"></select></label>
+          <label>In <select id="searchin"></select></label>
+        </div>
+      </form>
+      <p class="searchhelp">Finds sections containing all the words, in any order; put a phrase in quotes. Accents and æ/ae, j/i are ignored. Searches the Mass propers and the Hours of the day in the current calendar and version.</p>
+      <p class="searchstatus" id="searchstatus" aria-live="polite"></p>
+      <ol class="results" id="results"></ol>
+    </section>
+
+    <!-- Day view -->
+    <div id="dayview">
+    <section class="day" aria-live="polite">
+      <p class="weekday" id="weekday"></p>
+      <h1 id="title">Loading…</h1>
+      <p class="meta"><span class="swatch" id="swatch"></span><span id="rank"></span></p>
+      <p class="comm" id="comm"></p>
+      <p class="fastline" id="fastline" hidden></p>
+    </section>
+
+    <nav class="week" id="week" aria-label="This week"></nav>
+
+    <div class="view seg big" id="view" role="group" aria-label="Mass or Office">
+      <button type="button" data-view="mass" aria-pressed="false">Mass</button>
+      <button type="button" data-view="office" aria-pressed="true">Divine Office</button>
+    </div>
+
+    <div class="massmode" id="massmode">
+      <div class="seg" role="group" aria-label="Parts of the Mass">
+        <button type="button" data-mass="propers" aria-pressed="true">Propers only</button>
+        <button type="button" data-mass="full" aria-pressed="false" id="full-btn">Full Mass</button>
+      </div>
+      <p class="hint" id="full-hint" hidden></p>
+      <div class="masschoice" id="masschoice" role="group" aria-label="Which Mass" hidden></div>
+    </div>
+
+    <div class="officebar" id="officebar">
+      <label class="select"><span>Office</span><select id="office"></select></label>
+      <button type="button" id="martyrology" class="pill" title="Open the Martyrology, read at Prime">Martyrology</button>
+    </div>
+    <nav class="hours" id="hours" role="tablist" aria-label="Hours"></nav>
+
+    <div class="toolbar" aria-label="Display">
+      <div class="seg" id="display" role="group" aria-label="Languages shown">
+        <button type="button" data-display="both" aria-pressed="true">Both</button>
+        <button type="button" data-display="latin" aria-pressed="false">Latin</button>
+        <button type="button" data-display="vernacular" aria-pressed="false" id="vernacular-btn">English</button>
+      </div>
+      <div class="seg" id="layout" role="group" aria-label="Layout">
+        <button type="button" data-layout="interlinear" aria-pressed="true">Interlinear</button>
+        <button type="button" data-layout="side" aria-pressed="false">Side by side</button>
+      </div>
+      <div class="seg" id="size" role="group" aria-label="Text size">
+        <button type="button" data-size="-1" aria-label="Smaller text">A−</button>
+        <button type="button" data-size="1" aria-label="Larger text">A+</button>
+      </div>
+      <button type="button" id="reading" class="pill" aria-pressed="false" title="Hide verse numbers, notes and instructions">Reading mode</button>
+      <label class="jump"><span class="sr">Jump to</span>
+        <select id="jump"><option value="">Jump to…</option></select>
+      </label>
+      <button type="button" id="compare" class="pill" aria-pressed="false" title="Show another calendar or version beside this one">Compare</button>
+    </div>
+    <div class="comparebar" id="comparebar" hidden>
+      <span>Compare with</span>
+      <label class="select"><span class="sr">Calendar</span><select id="cmp-calendar"></select></label>
+      <label class="select"><span class="sr">Version</span><select id="cmp-version"></select></label>
+    </div>
+
+    <nav class="outline" id="outline" aria-label="In this Hour" hidden></nav>
+
+    <p class="fallback" id="fallback" hidden></p>
+
+    <article id="text" class="text"></article>
+    </div>
+  </main>
+
+  <button type="button" id="totop" class="totop" hidden aria-label="Back to top">↑</button>
+
+  <footer>
+    Texts generated by <a href="https://www.divinumofficium.com/">Divinum Officium</a> (MIT License).
+    <span id="source-version"></span>
+  </footer>
+
+  <dialog id="info" class="info-dialog" aria-labelledby="info-title">
+    <form method="dialog">
+      <h2 id="info-title">Not fully translated</h2>
+      <p id="info-text"></p>
+      <label class="info-alt">
+        <span>Show the missing text in</span>
+        <select id="alt-lang"></select>
+      </label>
+      <p class="info-note">Your choice is remembered for every page.</p>
+      <div class="info-actions"><button type="submit" id="info-close">Done</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="offline-dlg" class="info-dialog offline-dlg" aria-labelledby="offline-title">
+    <form method="dialog">
+      <h2 id="offline-title">Use without a connection</h2>
+      <h3>Install</h3>
+      <p id="install-how"></p>
+      <p><button type="button" id="install-app" hidden>Install app</button></p>
+      <h3>Save days ahead</h3>
+      <p id="save-what"></p>
+      <div class="save-row">
+        <label class="sr" for="save-range">How many days</label>
+        <select id="save-range">
+          <option value="7">The next 7 days (about 10 MB)</option>
+          <option value="30">The next 30 days (about 45 MB)</option>
+        </select>
+        <button type="button" id="save-days">Save</button>
+      </div>
+      <div id="save-progress" class="save-progress" hidden>
+        <progress id="save-bar" max="1" value="0"></progress>
+        <p id="save-status" aria-live="polite"></p>
+        <button type="button" id="save-cancel" hidden>Stop</button>
+      </div>
+      <p class="info-note">Days you open are also saved as you read them. <span id="saved-size"></span></p>
+      <div class="info-actions">
+        <button type="button" id="clear-saved" class="quiet">Remove saved texts</button>
+        <button type="submit">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="i18n.js"></script>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
