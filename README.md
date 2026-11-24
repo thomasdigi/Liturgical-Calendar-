@@ -6,7 +6,13 @@ For any date:
 - the **Divine Office**: Matins, Lauds, Prime, Terce, Sext, None, Vespers, Compline
 
 Versions: **1962 (Rubrics 1960)**, **Divino Afflatu 1954** and **Tridentine 1906**.
-Texts are in Latin beside any of DO's 16 translations, or one language alone.
+Calendars: **General Roman**, **USA** (DO's "Rubrics 1960 - 2020 USA"; 1962 only),
+**Brazil** and the **Diocese of Rome**.
+Texts are in Latin beside the Bea psalter or any of DO's translations, interlinear or
+side by side, or one language alone. Light and dark modes.
+
+Where a language has no translation of a part, an ⓘ marks it and the missing lines are
+shown in English, or in another language the reader picks.
 
 The texts are produced by [Divinum Officium](https://www.divinumofficium.com/)'s
 own engine (MIT License). It's vendored as a git submodule and run locally, so we
@@ -26,21 +32,23 @@ npm install
 ```bash
 npm start                     # http://localhost:3000, builds each day on demand
 npm run build -- 2026-12-01 2026-12-31                    # pre-build every version and language
-npm run build -- 2026 --version 1962 --lang en            # one version and language, whole year (~3.5 min)
+npm run build -- 2026 --calendar general --version 1962 --lang en   # one combination, whole year
 npm run build -- 2026-12-08 --refresh                     # rebuild cached days
 npm test                      # runs DO's engine on known days
 ```
 
-Files are `data/<version>/<lang>/YYYY/MM-DD.json` (one day: the Mass plus all 8 Hours,
+Files are `data/<calendar>/<version>/<lang>/YYYY/MM-DD.json` (one day: the Mass plus all 8 Hours,
 about 400 KB) and `data/config.json`. For static hosting, build the dates you want and
 serve `web/` with `data/` next to it. A full year in every version and language is
 about 19,000 files and 7 GB, so build only what you need (or let `npm start` build on demand).
 
-## Adding a version or a language
+## Adding a version, calendar or language
 
 Edit `src/config.ts`; the builder, server and viewer pick it up from there.
 - **Version:** add an entry with DO's names for it (see `vendor/divinum-officium/web/www/Tabulae/data.txt`).
   The `office` name goes to the breviary script and the `mass` name to the missal script.
+- **Calendar:** add an entry with DO's `dioecesis` name (see the `[dioecesis]` list in
+  `vendor/divinum-officium/web/www/horas/horas.dialog`).
 - **Language:** add an entry whose `do` is the folder name under
   `vendor/divinum-officium/web/www/horas/` (e.g. `Italiano`, `Espanol`, `Polski`).
 
@@ -58,12 +66,16 @@ sample days (1962), share of each part in the language itself:
 | Čeština | 98% | 81% | 66% | 100% |
 | Tiếng Việt | 100% | 78% | 40% | 100% |
 | Nederlands | 30% | 61% | 92% | 100% |
-| Čeština (Schaller) | 3% | 28% | 62% | 100% |
 | Українська | 0% (no Office) | 0% | 78% | 100% |
 | Dansk, Magyar (Káldi), Polski (newer), עברית | ~100% | 54–98% | 0% (no Mass) | 0% |
 
-The viewer says when a whole section is in English, and greys out **Full Mass** for
-languages without DO's translation of the Ordinary.
+Languages are greyed out where DO has no translation at all (Dansk, Magyar Káldi,
+Polski newer, Hebrew and the Bea psalter for the Mass; Ukrainian for the Office), and
+**Full Mass** is greyed out without DO's translation of the Ordinary. The Bea psalter
+uses the standard Latin wherever it has no text of its own.
+
+To find untranslated lines, each day in a language is compared line by line with
+DO's English for the same day (`markFallback` in `src/day.ts`).
 
 ## How it works
 

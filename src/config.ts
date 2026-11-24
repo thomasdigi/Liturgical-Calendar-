@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 /**
- * Everything the app offers, in one place. To add a version or a language,
+ * Everything the app offers, in one place. To add a version, calendar or language,
  * add an entry here; the builder, server and viewer pick it up automatically.
  */
 
@@ -30,14 +30,34 @@ export const VERSIONS = [
 ] as const;
 
 /**
+ * Calendars (which local feasts are kept). `dioecesis` is DO's calendar setting.
+ * A calendar may replace DO's version names for some versions, and if it lists
+ * `versions`, it exists only for those.
+ */
+export const CALENDARS = [
+  { id: 'general', label: 'General Roman', dioecesis: 'Generale' },
+  {
+    id: 'usa',
+    label: 'USA',
+    dioecesis: 'Generale',
+    // In DO the USA calendar is its own version of the 1960 rubrics, with later saints added.
+    // The missal reports it as "Rubrics 1960 Newcalendar".
+    versions: { '1962': { office: 'Rubrics 1960 - 2020 USA', mass: 'Rubrics 1960 Newcalendar' } },
+  },
+  { id: 'brazil', label: 'Brazil', dioecesis: 'Brasilia' },
+  { id: 'rome', label: 'Diocese of Rome', dioecesis: 'Urbis' },
+] as const;
+
+/**
  * Second languages shown beside the Latin: every translation DO offers for the Office
  * or the Mass. `do` is DO's folder name under web/www/horas and web/www/missa.
- * Where DO lacks a text in a language, it shows the English instead.
+ * Where DO lacks a text in a language, it shows the English instead
+ * (for the Bea psalter, the standard Latin).
  */
 export const LANGUAGES = [
   { id: 'en', label: 'English', do: 'English' },
+  { id: 'la-bea', label: 'Latina (Bea psalter)', do: 'Latin-Bea' },
   { id: 'cs', label: 'Čeština', do: 'Bohemice' },
-  { id: 'cs-schaller', label: 'Čeština (Schaller)', do: 'Cesky-Schaller' },
   { id: 'da', label: 'Dansk', do: 'Dansk' },
   { id: 'de', label: 'Deutsch', do: 'Deutsch' },
   { id: 'es', label: 'Español', do: 'Espanol' },
@@ -54,11 +74,14 @@ export const LANGUAGES = [
   { id: 'he', label: 'עברית', do: 'Hebrew', rtl: true },
 ] as const;
 
+/** Languages whose gaps DO fills with English; these get "not fully translated" notes. */
+export const FALLBACK_LANGUAGE = 'en';
+
 const DO_WWW = resolve(import.meta.dirname, '../vendor/divinum-officium/web/www');
 
 /**
  * The languages DO itself offers for the Office ('horas') or the Mass ('missa'),
- * read from its own menu files. Others fall back to English there.
+ * read from its own menu files.
  */
 export function doOffers(kind: 'horas' | 'missa'): Set<string> {
   const dialog = readFileSync(resolve(DO_WWW, kind, `${kind}.dialog`), 'utf8');
@@ -85,6 +108,7 @@ export const HOURS = [
 ] as const;
 
 export type VersionId = (typeof VERSIONS)[number]['id'];
+export type CalendarId = (typeof CALENDARS)[number]['id'];
 export type LanguageId = (typeof LANGUAGES)[number]['id'];
 export type HourId = (typeof HOURS)[number]['id'];
 /** A "part" of a day: the Mass propers, the full Mass (with the Ordinary), or one Hour. */
@@ -97,22 +121,44 @@ function find<T extends { id: string }>(list: readonly T[], id: string, what: st
   return x;
 }
 export const getVersion = (id: string) => find(VERSIONS, id, 'version');
+export const getCalendar = (id: string) => find(CALENDARS, id, 'calendar');
 export const getLanguage = (id: string) => find(LANGUAGES, id, 'language');
 export const getHour = (id: string) => find(HOURS, id, 'hour');
+
+/** DO's settings for a calendar + version, or null if that calendar has no such version. */
+export function doSettings(calendar: string, version: string): { office: string; mass: string; dioecesis: string } | null {
+  const c = getCalendar(calendar);
+  const v = getVersion(version);
+  if ('versions' in c) {
+    const o = (c.versions as Record<string, { office: string; mass: string }>)[v.id];
+    return o ? { ...o, dioecesis: c.dioecesis } : null;
+  }
+  return { office: v.office, mass: v.mass, dioecesis: c.dioecesis };
+}
+
+/** Is this language offered by DO for the Office / the Mass? */
+export function languageOffers(id: string) {
+  const l = getLanguage(id);
+  return { office: doOffers('horas').has(l.do), mass: doOffers('missa').has(l.do), fullMass: hasOrdinary(l.do) };
+}
 
 /** What the viewer needs to know (served as data/config.json). */
 export function publicConfig() {
   return {
     versions: VERSIONS.map(({ id, label }) => ({ id, label })),
+    calendars: CALENDARS.map((c) => ({
+      id: c.id,
+      label: c.label,
+      versions: VERSIONS.filter((v) => doSettings(c.id, v.id)).map((v) => v.id),
+    })),
     languages: LANGUAGES.map((l) => ({
       id: l.id,
       label: l.label,
       htmlLang: l.id.split('-')[0],
       rtl: 'rtl' in l && l.rtl,
-      office: doOffers('horas').has(l.do), // false: DO shows English for the Office
-      mass: doOffers('missa').has(l.do), // false: DO shows English for the Mass
-      fullMass: hasOrdinary(l.do),
+      ...languageOffers(l.id), // office / mass false: greyed out there
     })),
+    fallbackLanguage: FALLBACK_LANGUAGE,
     hours: HOURS.map(({ id, label, latin }) => ({ id, label, latin })),
   };
 }

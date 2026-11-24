@@ -1,11 +1,11 @@
 // Runs DO's real Perl engine, so these are integration tests (~0.3s per page).
 import { describe, expect, it } from 'vitest';
-import { HOURS, LANGUAGES, publicConfig, VERSIONS, type LanguageId, type PartId, type VersionId } from '../src/config.ts';
+import { CALENDARS, doSettings, HOURS, LANGUAGES, publicConfig, VERSIONS, type CalendarId, type LanguageId, type PartId, type VersionId } from '../src/config.ts';
 import { parsePage } from '../src/parse.ts';
 import { renderPart, toDoDate } from '../src/render.ts';
 
-const page = async (date: string, part: PartId, version: VersionId = '1962', lang: LanguageId = 'en') =>
-  parsePage(await renderPart(date, part, version, lang));
+const page = async (date: string, part: PartId, version: VersionId = '1962', lang: LanguageId = 'en', calendar: CalendarId = 'general') =>
+  parsePage(await renderPart(date, part, version, lang, calendar));
 const text = (p: Awaited<ReturnType<typeof page>>, col: 'latin' | 'vernacular' = 'latin') =>
   p.sections.map((s) => s[col].replace(/<[^>]+>/g, '')).join(' '); // plain text
 
@@ -156,5 +156,63 @@ describe('Gloria and Credo markers', () => {
     const feria = await heads('2026-12-01');
     expect(feria).not.toContain('Gloria');
     expect(feria).not.toContain('Credo');
+  });
+});
+
+describe('calendars', () => {
+  it('USA exists only for 1962 and renders as DO\'s USA version', async () => {
+    expect(doSettings('usa', '1954')).toBeNull();
+    expect(doSettings('usa', '1906')).toBeNull();
+    expect(publicConfig().calendars.find((c) => c.id === 'usa')?.versions).toEqual(['1962']);
+    const o = await page('2026-12-12', 'lauds', '1962', 'en', 'usa');
+    expect(o.versionShown).toBe('Rubrics 1960 - 2020 USA');
+    expect(o.header.title).toMatch(/Guadalupe/);
+    expect((await page('2026-12-12', 'mass', '1962', 'en', 'usa')).versionShown).toBe('Rubrics 1960 Newcalendar');
+  });
+  it('General calendar keeps the Advent feria on Dec 12', async () => {
+    expect((await page('2026-12-12', 'lauds')).header.title).toMatch(/Adventus/);
+  });
+  it.each(['1962', '1954', '1906'] as const)('Brazil keeps Our Lady of Aparecida on Oct 12 (%s)', async (v) => {
+    expect((await page('2026-10-12', 'lauds', v, 'en', 'brazil')).header.title).toMatch(/Apparecida/);
+    expect((await page('2026-10-12', 'mass', v, 'en', 'brazil')).header.title).toMatch(/Apparecida/);
+  });
+  it('Diocese of Rome adds its own saints (1954)', async () => {
+    expect((await page('2026-01-03', 'lauds', '1954', 'en', 'rome')).header.title).toMatch(/Antherus/);
+    expect((await page('2026-01-03', 'lauds', '1954', 'en', 'general')).header.title).not.toMatch(/Antherus/);
+  });
+  it('every calendar/version pair that exists renders', async () => {
+    for (const c of CALENDARS) for (const v of VERSIONS) {
+      if (!doSettings(c.id, v.id)) continue;
+      const o = await page('2026-12-09', 'vespers', v.id, 'en', c.id);
+      expect(o.sections.length, `${c.id} ${v.id}`).toBeGreaterThan(4);
+    }
+  });
+});
+
+describe('Bea psalter', () => {
+  it('is offered for the Office only', () => {
+    const bea = publicConfig().languages.find((l) => l.id === 'la-bea')!;
+    expect(bea.office).toBe(true);
+    expect(bea.mass).toBe(false);
+  });
+  it('uses the Bea psalms, and the standard Latin elsewhere', async () => {
+    const o = await page('2026-12-08', 'lauds', '1962', 'la-bea');
+    const psalm = o.sections.find((s) => /Psalmus 99/.test(s.latin))!;
+    expect(psalm.vernacular.replace(/<[^>]+>/g, '')).not.toBe(psalm.latin.replace(/<[^>]+>/g, '')); // Bea text differs
+    const prayer = o.sections.find((s) => s.heading.latin === 'Oratio')!;
+    expect(prayer.vernacular).toBe(prayer.latin); // no Bea text: standard Latin
+  });
+});
+
+describe('fallback marking', () => {
+  it('flags English lines in a partial translation, and nothing in English itself', async () => {
+    const { getDay } = await import('../src/day.ts');
+    const de = await getDay('2026-12-08', 'general', '1962', 'de', { refresh: true });
+    const mass = de.parts.find((p) => p.id === 'mass')!;
+    expect(mass.sections.some((s) => s.fallback?.length)).toBe(true); // German Mass propers are mostly English
+    const fr = await getDay('2026-12-08', 'general', '1962', 'fr', { refresh: true });
+    expect(fr.parts.find((p) => p.id === 'lauds')!.sections.filter((s) => s.fallback).length).toBe(0);
+    const en = await getDay('2026-12-08', 'general', '1962', 'en');
+    expect(en.parts.every((p) => p.sections.every((s) => !s.fallback))).toBe(true);
   });
 });

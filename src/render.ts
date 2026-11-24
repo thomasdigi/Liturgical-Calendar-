@@ -6,7 +6,7 @@ import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { getHour, getLanguage, getVersion, type LanguageId, type PartId, type VersionId } from './config.ts';
+import { doSettings, getHour, getLanguage, type CalendarId, type LanguageId, type PartId, type VersionId } from './config.ts';
 
 const run = promisify(execFile);
 
@@ -20,15 +20,23 @@ export function toDoDate(iso: string): string {
   return `${m[2]}-${m[3]}-${m[1]}`;
 }
 
-export async function renderPart(isoDate: string, part: PartId, version: VersionId, lang: LanguageId): Promise<string> {
-  const v = getVersion(version);
+export async function renderPart(
+  isoDate: string,
+  part: PartId,
+  version: VersionId,
+  lang: LanguageId,
+  calendar: CalendarId = 'general',
+): Promise<string> {
+  const v = doSettings(calendar, version);
+  if (!v) throw new Error(`The ${calendar} calendar has no ${version} version`);
   const lang2 = getLanguage(lang).do;
   const date = toDoDate(isoDate);
+  const { dioecesis } = v;
 
   const [dir, script, params] =
     part === 'mass' || part === 'massFull'
-      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '' }]
-      : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, command: getHour(part).command }];
+      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, dioecesis, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '' }]
+      : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, dioecesis, command: getHour(part).command }];
 
   const cwd = resolve(CGI, dir);
   if (!existsSync(resolve(cwd, script))) {

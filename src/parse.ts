@@ -19,6 +19,13 @@ export interface Section {
   heading: { latin: string; vernacular: string }; // e.g. Psalmi / Psalms
   latin: string; // clean HTML
   vernacular: string;
+  /** Line numbers (see splitLines) of `vernacular` that DO filled with English: not translated. */
+  fallback?: number[];
+}
+
+/** Splits a section's HTML into lines. The viewer splits the same way (on <br>). */
+export function splitLines(html: string): string[] {
+  return html.split(/<br\s*\/?>/i);
 }
 
 export interface ParsedPage {

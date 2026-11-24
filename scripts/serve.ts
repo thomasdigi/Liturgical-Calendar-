@@ -5,7 +5,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
-import { getLanguage, getVersion, publicConfig, type LanguageId, type VersionId } from '../src/config.ts';
+import { getCalendar, getLanguage, getVersion, publicConfig, type CalendarId, type LanguageId, type VersionId } from '../src/config.ts';
 import { getDay } from '../src/day.ts';
 
 const WEB = resolve(import.meta.dirname, '../web');
@@ -27,11 +27,12 @@ createServer(async (req, res) => {
   try {
     // Same paths as the static build.
     if (url.pathname === '/data/config.json') return json(res, publicConfig());
-    const m = /^\/data\/([\w-]+)\/([\w-]+)\/(\d{4})\/(\d{2}-\d{2})\.json$/.exec(url.pathname);
+    const m = /^\/data\/([\w-]+)\/([\w-]+)\/([\w-]+)\/(\d{4})\/(\d{2}-\d{2})\.json$/.exec(url.pathname);
     if (m) {
-      const version = getVersion(m[1]).id as VersionId;
-      const lang = getLanguage(m[2]).id as LanguageId;
-      return json(res, await getDay(`${m[3]}-${m[4]}`, version, lang));
+      const calendar = getCalendar(m[1]).id as CalendarId;
+      const version = getVersion(m[2]).id as VersionId;
+      const lang = getLanguage(m[3]).id as LanguageId;
+      return json(res, await getDay(`${m[4]}-${m[5]}`, calendar, version, lang));
     }
     const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
     const path = resolve(WEB, file);
@@ -41,7 +42,7 @@ createServer(async (req, res) => {
     res.end(body);
   } catch (e) {
     const err = e as NodeJS.ErrnoException;
-    const notFound = err.code === 'ENOENT' || /^Unknown /.test(err.message);
+    const notFound = err.code === 'ENOENT' || /^Unknown |calendar has no/.test(err.message);
     res.writeHead(notFound ? 404 : 500, { 'content-type': 'text/plain' });
     res.end(notFound ? 'Not found' : `Error: ${err.message}`);
   }
