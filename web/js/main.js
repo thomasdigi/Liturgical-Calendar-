@@ -5,6 +5,7 @@ import { fetchDay } from './data.js';
 import { runSearch, syncSearchOptions } from './search.js';
 import { RANGE, SIZES, avail, calendarHas, clampDate, comboBuilt, config, day, setAvail, setConfig, setDay, setRANGE, shownLangId, state } from './state.js';
 import { render, setPendingScroll } from './text.js';
+import { initOffline, offlineHint } from './offline.js';
 import { scrollToTarget } from './outline.js';
 import { initTheme } from './theme.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
@@ -154,7 +155,9 @@ export async function load() {
     $('rank').textContent = ''; $('comm').textContent = ''; $('swatch').style.background = 'transparent';
     $('hours').innerHTML = '';
     $('fallback').hidden = true;
-    $('text').innerHTML = `<p class="msg">No texts for ${state.date} in this calendar, version and language${RANGE ? ' on this site' : ' yet'}.</p>`;
+    $('text').innerHTML = navigator.onLine
+      ? `<p class="msg">No texts for ${state.date} in this calendar, version and language${RANGE ? ' on this site' : ' yet'}.</p>`
+      : `<p class="msg">${offlineHint().trim()}</p>`;
     $('masschoice').hidden = true;
     return;
   }
@@ -188,4 +191,5 @@ export function openHit({ date, part, section }) {
 }
 
 initTheme();
+initOffline();
 init();

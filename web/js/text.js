@@ -2,6 +2,7 @@
 import { updateUrl } from './controls.js';
 import { fetchDay, fetchPart } from './data.js';
 import { RANGE, altLangId, built, comboLabel, config, currentPartId, day, lang, offers, officeHours, shownLangId, state } from './state.js';
+import { offlineHint } from './offline.js';
 import { markStructure, renderOutline } from './outline.js';
 import { $, COLORS, COLOR_NAMES, INFO_ICON, esc } from './util.js';
 
@@ -84,7 +85,7 @@ export async function render() {
     main = await loadPart(shown, id);
   } catch {
     if (seq !== renderSeq) return;
-    $('text').innerHTML = '<p class="msg">This part could not be loaded.</p>';
+    $('text').innerHTML = `<p class="msg">${navigator.onLine ? 'This part could not be loaded.' : offlineHint().trim()}</p>`;
     return;
   }
   // Compare: the same part in another calendar/version, in the same language where it's there.

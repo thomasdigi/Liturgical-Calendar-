@@ -173,6 +173,26 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 }
 .text .struct { scroll-margin-top: calc(var(--topbar, 0px) + 60px); }
 
+/* ---------- offline ---------- */
+.top .offline-btn { display: inline-flex; align-items: center; gap: 6px; }
+.offline-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-green); }
+body.is-offline .offline-dot { background: var(--rubric); }
+body.is-offline .top .offline-btn { border-color: var(--rubric); color: var(--rubric); }
+.offline-state[hidden] { display: none; }
+.offline-dlg h3 { margin: 14px 0 4px; font: 600 13px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.offline-dlg button { font: inherit; color: inherit; border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 7px 12px; min-height: 38px; cursor: pointer; }
+.offline-dlg #install-app, .offline-dlg #save-days { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.offline-dlg button:disabled { opacity: .5; cursor: default; }
+.offline-dlg button[hidden] { display: none; }
+.save-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.save-row select { flex: 1 1 14em; min-width: 0; font: inherit; color: inherit; border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 7px 10px; min-height: 38px; }
+.save-progress { margin-top: 10px; }
+.save-progress[hidden] { display: none; }
+.save-progress progress { width: 100%; accent-color: var(--accent); }
+.save-progress p { margin: 4px 0 6px; font-size: 14px; }
+.info-actions { gap: 8px; }
+.info-actions .quiet { background: none; color: var(--muted); margin-right: auto; }
+
 @media (max-width: 720px) {
   .outline { top: 0; margin: 0 -16px 10px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
   .ogroup { flex: none; }

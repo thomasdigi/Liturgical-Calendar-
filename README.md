@@ -6,13 +6,22 @@ For any date:
 - the **Divine Office**: Matins, Lauds, Prime, Terce, Sext, None, Vespers, Compline
 
 Versions: **1962 (Rubrics 1960)**, **Divino Afflatu 1954** and **Tridentine 1906**.
-Calendars: **General Roman**, **USA** (DO's "Rubrics 1960 - 2020 USA"; 1962 only),
-**Brazil** and the **Diocese of Rome**.
+Calendars: **General Roman**, **USA** (DO's "Rubrics 1960 - 2020 USA"; 1962 only) and
+**Brazil**. (The **Diocese of Rome** is set aside but kept working: in `src/config.ts`,
+delete its `hidden: true` to bring it back.)
 Texts are in Latin beside the Bea psalter or any of DO's translations, interlinear or
 side by side, or one language alone. Light and dark modes.
 
 Where a language has no translation of a part, an ⓘ marks it and the missing lines are
 shown in English, or in another language the reader picks.
+
+**Use it on a phone without a connection:** the site installs as an app (Add to Home Screen),
+keeps working offline, saves every day you open, and **Offline → Save** downloads the next 7
+or 30 days ahead (about 10 MB / 45 MB for one language). See `web/sw.js` and `web/js/offline.js`;
+it needs https (GitHub Pages is) or localhost.
+
+**Matins** has an outline bar (Nocturns, lessons 1–9, Te Deum) to jump between lessons, and a
+**Martyrology** button opens Prime at the Martyrology.
 
 Also: **search** across the texts (Mass propers and the Hours, accent-insensitive, phrases in
 quotes), **compare** mode (the same Mass or Hour in another calendar or version, side by
@@ -131,7 +140,17 @@ day the first time it's asked for and caches it.
 | `src/day.ts` | Builds a whole day (Mass propers, full Mass, 8 Hours) for one version and language, cached in `data/` |
 | `scripts/build.ts` | Builds a date range in parallel |
 | `scripts/serve.ts` | Local server: viewer + on-demand day JSON |
-| `web/` | Viewer (plain HTML/CSS/JS) |
+| `web/` | Viewer: `index.html`, `style.css`, `i18n.js`, the service worker `sw.js`, and `js/` |
+| `web/js/main.js` | Start-up and loading; wires the controls to the state |
+| `web/js/state.js` | Settings and what's loaded; which languages/versions are available |
+| `web/js/data.js` | Fetching and caching the JSON files |
+| `web/js/text.js` | Drawing a Mass or Hour (and two side by side in compare mode) |
+| `web/js/outline.js` | Matins' Nocturns and lessons, the Martyrology |
+| `web/js/controls.js` | Menus and buttons; the translation pop-up; the page address |
+| `web/js/calendar.js` | Week strip, month view, fasting marks |
+| `web/js/search.js` | Search |
+| `web/js/offline.js` | Install, save for offline, offline notice |
+| `web/js/theme.js`, `util.js` | Dark mode; small shared helpers |
 
 To update the texts, run `git submodule update --remote vendor/divinum-officium`,
 then `npm run build -- <year> --refresh`.
