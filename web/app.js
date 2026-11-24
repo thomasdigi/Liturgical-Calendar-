@@ -23,6 +23,7 @@ const state = {
   version: params.get('version') || store.get('version', '1962'),
   lang: params.get('lang') || store.get('lang', 'en'),
   display: store.get('display', 'both'),
+  massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
 };
 
 function isoToday() {
@@ -49,7 +50,11 @@ function shift(iso, n) {
   d.setUTCDate(d.getUTCDate() + n);
   return d.toISOString().slice(0, 10);
 }
-const langLabel = () => config.languages.find((l) => l.id === state.lang)?.label ?? 'Translation';
+const currentLang = () => config.languages.find((l) => l.id === state.lang) || config.languages[0];
+const langLabel = () => currentLang().label;
+// The full Mass needs DO's translation of the Ordinary; without it, only the propers are offered.
+const fullAvailable = () => currentLang().fullMass;
+const showFull = () => state.massMode === 'full' && fullAvailable();
 
 // ---------- loading ----------
 
@@ -72,6 +77,10 @@ async function init() {
   $('lang').onchange = (e) => { state.lang = e.target.value; store.set('lang', state.lang); syncControls(); load(); };
   document.querySelectorAll('#display button').forEach((b) => (b.onclick = () => {
     state.display = b.dataset.display; store.set('display', state.display); syncControls();
+  }));
+  document.querySelectorAll('#massmode button').forEach((b) => (b.onclick = () => {
+    if (b.disabled) return;
+    state.massMode = b.dataset.mass; store.set('massMode', state.massMode); syncControls(); render();
   }));
   document.querySelectorAll('#view button').forEach((b) => (b.onclick = () => {
     state.view = b.dataset.view; store.set('view', state.view); syncControls(); render();
@@ -129,12 +138,24 @@ function syncControls() {
   document.querySelectorAll('#display button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.display === state.display)));
   document.querySelectorAll('#view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
   $('hours').hidden = state.view !== 'office';
+  $('massmode').hidden = state.view !== 'mass';
+  const full = fullAvailable();
+  $('full-btn').disabled = !full;
+  $('full-btn').title = full ? 'Show the Ordinary of the Mass as well' : `The Ordinary of the Mass is not translated into ${langLabel()} in Divinum Officium`;
+  $('full-hint').hidden = full;
+  const offered = state.view === 'mass' ? currentLang().mass : currentLang().office;
+  $('fallback').hidden = offered;
+  $('fallback').textContent = offered ? '' :
+    `Divinum Officium has no ${langLabel()} translation of the ${state.view === 'mass' ? 'Mass' : 'Divine Office'}, so the second column is in English.`;
+  $('full-hint').textContent = full ? '' : `Full Mass is not available in ${langLabel()}.`;
+  document.querySelectorAll('#massmode button').forEach((b) =>
+    b.setAttribute('aria-pressed', String(b.dataset.mass === (showFull() ? 'full' : 'propers'))));
   updateUrl();
 }
 
 function currentPart() {
   if (!day) return null;
-  const id = state.view === 'mass' ? 'mass' : state.hour;
+  const id = state.view === 'mass' ? (showFull() ? 'massFull' : 'mass') : state.hour;
   return day.parts.find((p) => p.id === id) || day.parts.find((p) => p.id !== 'mass');
 }
 
@@ -172,7 +193,8 @@ function render() {
       out.push(`<section class="marker">${head}</section>`); // e.g. "Gloria", "Credo" in the Mass
       continue;
     }
-    out.push(`<section>${head}<div class="col la" lang="la">${s.latin}</div><div class="col vn" lang="${state.lang}">${s.vernacular}</div></section>`);
+    const L = currentLang();
+    out.push(`<section>${head}<div class="col la" lang="la">${s.latin}</div><div class="col vn" lang="${L.htmlLang}"${L.rtl ? ' dir="auto"' : ''}>${s.vernacular}</div></section>`);
   }
   $('text').innerHTML = out.join('');
 }
@@ -180,6 +202,7 @@ function render() {
 function updateUrl() {
   const p = new URLSearchParams({ date: state.date, view: state.view, version: state.version, lang: state.lang });
   if (state.view === 'office') p.set('hour', state.hour);
+  else p.set('mass', showFull() ? 'full' : 'propers');
   try { history.replaceState(null, '', `?${p}`); } catch { /* sandboxed */ }
 }
 

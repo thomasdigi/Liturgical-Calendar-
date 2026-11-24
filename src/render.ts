@@ -26,8 +26,8 @@ export async function renderPart(isoDate: string, part: PartId, version: Version
   const date = toDoDate(isoDate);
 
   const [dir, script, params] =
-    part === 'mass'
-      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, command: 'praySanctaMissa', Propers: '1' }]
+    part === 'mass' || part === 'massFull'
+      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '' }]
       : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, command: getHour(part).command }];
 
   const cwd = resolve(CGI, dir);

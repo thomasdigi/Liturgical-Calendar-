@@ -24,6 +24,7 @@ export interface Section {
 export interface ParsedPage {
   header: DayHeader;
   title: string; // e.g. "Ad Laudes", "Sancta Missa"
+  versionShown: string; // the version DO says it rendered, e.g. "Rubrics 1960 - 1960"
   sections: Section[];
 }
 
@@ -85,7 +86,15 @@ export function parsePage(html: string): ParsedPage {
     sections.push({ heading: { latin: la.heading, vernacular: vn.heading }, latin: la.html, vernacular: vn.html });
   });
 
-  return { header, title, sections };
+  // DO prints the version it actually used next to its own title (it silently falls
+  // back to its default for an unknown version name, so callers can check this).
+  const versionShown = $('font[color="RED"][size="+1"], font[color="red"][size="+1"]')
+    .filter((_, el) => /\d{4}/.test($(el).text()))
+    .first()
+    .text()
+    .trim();
+
+  return { header, title, versionShown, sections };
 }
 
 /** Convert one DO table cell into our minimal HTML, pulling out its heading. */

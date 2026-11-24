@@ -35,8 +35,8 @@ export function dayPath(date: string, version: VersionId, lang: LanguageId): str
 export async function buildPart(date: string, part: PartId, version: VersionId, lang: LanguageId): Promise<PartData> {
   const page = parsePage(await renderPart(date, part, version, lang));
   const title =
-    part === 'mass'
-      ? { latin: page.title || 'Sancta Missa', label: 'Mass' }
+    part === 'mass' || part === 'massFull'
+      ? { latin: page.title || 'Sancta Missa', label: part === 'mass' ? 'Mass · Propers' : 'Mass' }
       : { latin: page.title || getHour(part).latin, label: getHour(part).label };
   return { id: part, title, header: page.header, sections: page.sections };
 }

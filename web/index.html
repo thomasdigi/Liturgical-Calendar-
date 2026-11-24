@@ -44,7 +44,17 @@
       <button type="button" data-view="office" aria-pressed="true">Divine Office</button>
     </div>
 
+    <div class="massmode" id="massmode">
+      <div class="seg" role="group" aria-label="Parts of the Mass">
+        <button type="button" data-mass="propers" aria-pressed="true">Propers only</button>
+        <button type="button" data-mass="full" aria-pressed="false" id="full-btn">Full Mass</button>
+      </div>
+      <p class="hint" id="full-hint" hidden></p>
+    </div>
+
     <nav class="hours" id="hours" role="tablist" aria-label="Hours"></nav>
+
+    <p class="fallback" id="fallback" hidden></p>
 
     <article id="text" class="text"></article>
   </main>

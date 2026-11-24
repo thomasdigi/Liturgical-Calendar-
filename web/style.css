@@ -74,7 +74,16 @@ main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 48px; }
   display: flex; gap: 2px; justify-content: center; flex-wrap: wrap;
   border-bottom: 1px solid var(--rule); margin-bottom: 20px;
 }
-.hours[hidden] { display: none; }
+.hours[hidden], .massmode[hidden] { display: none; }
+.massmode { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 0 0 18px; font: 15px var(--sans); }
+.massmode .seg button { border: 0; background: none; padding: 7px 14px; cursor: pointer; color: var(--muted); min-height: 34px; }
+.massmode .seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.seg button:disabled { opacity: .4; cursor: not-allowed; }
+.fallback { margin: 0 auto 16px; max-width: 720px; padding: 8px 12px; border: 1px dashed var(--rule); border-radius: 8px; color: var(--muted); font: 14px/1.45 var(--sans); text-align: center; }
+.fallback[hidden] { display: none; }
+.hint { margin: 0; color: var(--muted); font-size: 13px; }
+/* Right-to-left languages may mix in English fallback lines: set direction per line. */
+.col.vn[dir="auto"] { unicode-bidi: plaintext; text-align: start; }
 .hours button {
   border: 0; background: none; padding: 8px 12px; cursor: pointer; color: var(--muted);
   border-bottom: 3px solid transparent; margin-bottom: -1px; font-size: 17px;

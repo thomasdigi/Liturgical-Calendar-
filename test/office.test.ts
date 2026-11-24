@@ -1,6 +1,6 @@
 // Runs DO's real Perl engine, so these are integration tests (~0.3s per page).
 import { describe, expect, it } from 'vitest';
-import { HOURS, LANGUAGES, VERSIONS, type LanguageId, type PartId, type VersionId } from '../src/config.ts';
+import { HOURS, LANGUAGES, publicConfig, VERSIONS, type LanguageId, type PartId, type VersionId } from '../src/config.ts';
 import { parsePage } from '../src/parse.ts';
 import { renderPart, toDoDate } from '../src/render.ts';
 
@@ -76,6 +76,15 @@ describe('Mass propers', () => {
 });
 
 describe('versions', () => {
+  // DO silently uses its default version for a name it doesn't know, so check each one took.
+  it.each(VERSIONS.map((v) => [v.id, v.office, v.mass] as const))('%s renders as itself', async (id, office, mass) => {
+    expect((await page('2026-12-08', 'lauds', id)).versionShown).toBe(office);
+    expect((await page('2026-12-08', 'mass', id)).versionShown).toBe(mass);
+    expect((await page('2026-12-08', 'massFull', id)).versionShown).toBe(mass);
+  });
+  it('1954 uses Divino Afflatu ranks', async () => {
+    expect((await page('2026-12-08', 'lauds', '1954')).header.rank).toBe('Duplex I. classis');
+  });
   it('1906 uses the old ranks', async () => {
     const o = await page('2026-12-08', 'lauds', '1906');
     expect(o.header.rank).toBe('Duplex I. classis');
@@ -96,8 +105,26 @@ describe('languages', () => {
     expect(text(await page('2026-12-08', 'lauds', '1962', 'fr'), 'vernacular')).toMatch(/Marie/);
     expect(text(await page('2026-12-08', 'lauds', '1962', 'de'), 'vernacular')).toMatch(/Maria/);
   });
+  it('Hebrew is marked right-to-left, and full Mass availability follows DO', () => {
+    const langs = publicConfig().languages;
+    expect(langs.find((l) => l.id === 'he')?.rtl).toBe(true);
+    expect(langs.find((l) => l.id === 'en')?.fullMass).toBe(true);
+    expect(langs.find((l) => l.id === 'fr')?.fullMass).toBe(true);
+    expect(langs.find((l) => l.id === 'he')?.fullMass).toBe(false);
+    expect(langs.find((l) => l.id === 'da')?.fullMass).toBe(false);
+  });
   it('French Mass collect is in French', async () => {
     expect(text(await page('2026-12-08', 'mass', '1962', 'fr'), 'vernacular')).toMatch(/Prions/);
+  });
+});
+
+describe('full Mass', () => {
+  it('includes the Ordinary around the propers', async () => {
+    const m = await page('2026-12-08', 'massFull');
+    const heads = m.sections.map((s) => s.heading.latin.trim()).filter(Boolean);
+    for (const h of ['Incipit', 'Introitus', 'Kyrie', 'Evangelium', 'Canon', 'Communio', 'Postcommunio']) expect(heads).toContain(h);
+    expect(text(m)).toMatch(/Te ígitur/);
+    expect(text(m)).toMatch(/Gaudens gaudébo/);
   });
 });
 

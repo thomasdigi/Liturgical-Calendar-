@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 /**
  * Everything the app offers, in one place. To add a version or a language,
  * add an entry here; the builder, server and viewer pick it up automatically.
@@ -12,6 +15,12 @@ export const VERSIONS = [
     mass: 'Rubrics 1960 - 1960',
   },
   {
+    id: '1954',
+    label: 'Divino Afflatu 1954',
+    office: 'Divino Afflatu - 1954',
+    mass: 'Divino Afflatu - 1954',
+  },
+  {
     id: '1906',
     label: 'Tridentine 1906',
     office: 'Tridentine - 1906',
@@ -20,12 +29,48 @@ export const VERSIONS = [
   },
 ] as const;
 
-/** Second languages shown beside the Latin. `do` is DO's folder name under web/www/horas and web/www/missa. */
+/**
+ * Second languages shown beside the Latin: every translation DO offers for the Office
+ * or the Mass. `do` is DO's folder name under web/www/horas and web/www/missa.
+ * Where DO lacks a text in a language, it shows the English instead.
+ */
 export const LANGUAGES = [
   { id: 'en', label: 'English', do: 'English' },
-  { id: 'fr', label: 'Français', do: 'Francais' },
+  { id: 'cs', label: 'Čeština', do: 'Bohemice' },
+  { id: 'cs-schaller', label: 'Čeština (Schaller)', do: 'Cesky-Schaller' },
+  { id: 'da', label: 'Dansk', do: 'Dansk' },
   { id: 'de', label: 'Deutsch', do: 'Deutsch' },
+  { id: 'es', label: 'Español', do: 'Espanol' },
+  { id: 'fr', label: 'Français', do: 'Francais' },
+  { id: 'it', label: 'Italiano', do: 'Italiano' },
+  { id: 'hu', label: 'Magyar', do: 'Magyar' },
+  { id: 'hu-kaldi', label: 'Magyar (Káldi)', do: 'Magyar-Kaldi' },
+  { id: 'nl', label: 'Nederlands', do: 'Nederlands' },
+  { id: 'pl', label: 'Polski', do: 'Polski' },
+  { id: 'pl-newer', label: 'Polski (newer)', do: 'Polski-Newer' },
+  { id: 'pt', label: 'Português', do: 'Portugues' },
+  { id: 'vi', label: 'Tiếng Việt', do: 'Vietnamice' },
+  { id: 'uk', label: 'Українська', do: 'Ukrainian' },
+  { id: 'he', label: 'עברית', do: 'Hebrew', rtl: true },
 ] as const;
+
+const DO_WWW = resolve(import.meta.dirname, '../vendor/divinum-officium/web/www');
+
+/**
+ * The languages DO itself offers for the Office ('horas') or the Mass ('missa'),
+ * read from its own menu files. Others fall back to English there.
+ */
+export function doOffers(kind: 'horas' | 'missa'): Set<string> {
+  const dialog = readFileSync(resolve(DO_WWW, kind, `${kind}.dialog`), 'utf8');
+  const block = /^\[languages\]\s*\n([^\n]*)/m.exec(dialog)?.[1] ?? '';
+  // Entries look like "Français/Francais" (label/folder) or just "Deutsch".
+  return new Set(block.split(',').map((e) => e.split('/').pop()!.trim()).filter(Boolean));
+}
+
+/** True when DO has this language's own translation of the Ordinary of the Mass. */
+export function hasOrdinary(doName: string): boolean {
+  return doOffers('missa').has(doName) && existsSync(resolve(DO_WWW, 'missa', doName, 'Ordo/Ordo.txt'));
+}
 
 /** The Hours of the Office, in order. `command` is DO's officium.pl command. */
 export const HOURS = [
@@ -42,9 +87,9 @@ export const HOURS = [
 export type VersionId = (typeof VERSIONS)[number]['id'];
 export type LanguageId = (typeof LANGUAGES)[number]['id'];
 export type HourId = (typeof HOURS)[number]['id'];
-/** A "part" of a day: the Mass, or one Hour. */
-export type PartId = 'mass' | HourId;
-export const PARTS: PartId[] = ['mass', ...HOURS.map((h) => h.id)];
+/** A "part" of a day: the Mass propers, the full Mass (with the Ordinary), or one Hour. */
+export type PartId = 'mass' | 'massFull' | HourId;
+export const PARTS: PartId[] = ['mass', 'massFull', ...HOURS.map((h) => h.id)];
 
 function find<T extends { id: string }>(list: readonly T[], id: string, what: string): T {
   const x = list.find((i) => i.id === id);
@@ -59,7 +104,15 @@ export const getHour = (id: string) => find(HOURS, id, 'hour');
 export function publicConfig() {
   return {
     versions: VERSIONS.map(({ id, label }) => ({ id, label })),
-    languages: LANGUAGES.map(({ id, label }) => ({ id, label })),
+    languages: LANGUAGES.map((l) => ({
+      id: l.id,
+      label: l.label,
+      htmlLang: l.id.split('-')[0],
+      rtl: 'rtl' in l && l.rtl,
+      office: doOffers('horas').has(l.do), // false: DO shows English for the Office
+      mass: doOffers('missa').has(l.do), // false: DO shows English for the Mass
+      fullMass: hasOrdinary(l.do),
+    })),
     hours: HOURS.map(({ id, label, latin }) => ({ id, label, latin })),
   };
 }
