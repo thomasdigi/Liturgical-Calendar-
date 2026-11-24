@@ -11,6 +11,7 @@ import { getCalendar, getLanguage, getVersion, publicConfig, type CalendarId, ty
 import { DATA_DIR, getDay } from '../src/day.ts';
 import { getMonth } from '../src/summary.ts';
 import { getSearchMonth } from '../src/search.ts';
+import { buildIcs } from '../src/ical.ts';
 
 const WEB = resolve(import.meta.dirname, '../web');
 const PORT = Number(process.env.PORT ?? 3000);
@@ -41,6 +42,21 @@ createServer(async (req, res) => {
     // data/<cal>/<ver>/summary/YYYY-MM.json
     const sm = /^\/data\/([\w-]+)\/([\w-]+)\/summary\/(\d{4}-\d{2})\.json$/.exec(path);
     if (sm) return sendJson(res, await getMonth(getCalendar(sm[1]).id as CalendarId, getVersion(sm[2]).id as VersionId, sm[3]));
+
+    // data/<cal>/<ver>/(calendar|fasting).ics: last month to two months ahead
+    const ic = /^\/data\/([\w-]+)\/([\w-]+)\/(calendar|fasting)\.ics$/.exec(path);
+    if (ic) {
+      const calendar = getCalendar(ic[1]).id as CalendarId;
+      const version = getVersion(ic[2]).id as VersionId;
+      const now = new Date();
+      const days = [];
+      for (let k = -1; k <= 2; k++) {
+        const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + k, 1)).toISOString().slice(0, 7);
+        days.push(...(await getMonth(calendar, version, month)).days);
+      }
+      res.writeHead(200, { 'content-type': 'text/calendar; charset=utf-8' });
+      return res.end(buildIcs(days, { calendar, version, kind: ic[3] as 'calendar' | 'fasting', siteUrl: `http://localhost:${PORT}/` }));
+    }
 
     // data/<cal>/<ver>/<lang|latin>/search/YYYY-MM.json (builds the month's days first if needed)
     const se = /^\/data\/([\w-]+)\/([\w-]+)\/([\w-]+)\/search\/(\d{4}-\d{2})\.json$/.exec(path);

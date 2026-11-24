@@ -55,8 +55,10 @@ jobs:
       VERSIONS: ${{ inputs.versions || '1962' }}
       LANGUAGES: ${{ inputs.languages || 'en,la-bea,es,fr,de,it,pt,pl' }}
       VOTIVE_OFFICES: ${{ inputs.votives || 'dead,parvum,sabbato' }}
+      # The site's address, so calendar events can link back to their day.
+      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
 
@@ -66,7 +68,7 @@ jobs:
           sudo apt-get install -y -qq libcgi-pm-perl libdate-calc-perl libtimedate-perl liburi-perl \
             liburl-encode-perl libalgorithm-diff-perl libcgi-session-perl
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -86,7 +88,7 @@ jobs:
       - name: Assemble site
         run: npm run site
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -98,4 +100,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

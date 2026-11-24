@@ -26,6 +26,7 @@ import {
 import { DATA_DIR, getDay } from '../src/day.ts';
 import { getMonth } from '../src/summary.ts';
 import { buildSearchMonth } from '../src/search.ts';
+import { buildIcs } from '../src/ical.ts';
 
 const args = process.argv.slice(2);
 const FLAGS = ['--calendar', '--version', '--lang', '--votive'];
@@ -142,6 +143,26 @@ for (const calendar of calendars)
       }
   }
 console.log(`Search index: ${rangeMonths.size} month(s) × ${searchLangs.length} language(s) per calendar/version.`);
+
+// Calendar files for phone/computer calendars (all days, and fast days only), for the built months.
+// SITE_URL (set by the publishing workflow) lets each event link back to its day.
+for (const calendar of calendars)
+  for (const version of versions) {
+    if (!doSettings(calendar, version)) continue;
+    const days = [];
+    for (const month of [...rangeMonths].sort()) {
+      try {
+        days.push(...(await getMonth(calendar, version, month)).days);
+      } catch (e) {
+        failed++;
+        console.error(`FAILED calendar file ${calendar} ${version} ${month}: ${(e as Error).message}`);
+      }
+    }
+    for (const kind of ['calendar', 'fasting'] as const) {
+      await writeFile(resolve(DATA_DIR, calendar, version, `${kind}.ics`), buildIcs(days, { calendar, version, kind, siteUrl: process.env.SITE_URL }));
+    }
+  }
+console.log('Calendar files: calendar.ics and fasting.ics per calendar/version.');
 const secs = Math.round((Date.now() - started) / 1000);
 console.log(`Built ${done}/${total} day files in ${secs}s${failed ? `, ${failed} failed` : ''}.`);
 process.exit(failed ? 1 : 0);

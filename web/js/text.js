@@ -2,6 +2,7 @@
 import { updateUrl } from './controls.js';
 import { fetchDay, fetchPart } from './data.js';
 import { RANGE, altLangId, built, comboLabel, config, currentPartId, day, lang, offers, officeHours, shownLangId, state } from './state.js';
+import { rememberPlace } from './lastread.js';
 import { offlineHint } from './offline.js';
 import { markStructure, renderOutline } from './outline.js';
 import { $, COLORS, COLOR_NAMES, INFO_ICON, esc } from './util.js';
@@ -177,16 +178,22 @@ export async function render() {
   $('jump').disabled = jumps.length < 2;
 
   if (pendingScroll) {
-    // An element id, or 'martyrology' (the Martyrology shortcut).
-    const el = pendingScroll === 'martyrology'
+    // An element id (a search result: scroll there and flash it), 'martyrology' (the Martyrology
+    // shortcut), or { id, flash: false } (coming back to where you were reading).
+    const want = typeof pendingScroll === 'object' ? pendingScroll : { id: pendingScroll, flash: true };
+    const el = want.id === 'martyrology'
       ? mainCol.querySelector('section.martyrology')
-      : document.getElementById(pendingScroll);
+      : document.getElementById(want.id);
     pendingScroll = null;
     if (el) {
       el.scrollIntoView({ block: 'start' }); // scroll-margin keeps it clear of the bars
-      el.classList.add('flash');
-      setTimeout(() => el.classList.remove('flash'), 2400);
+      if (want.offset) window.scrollBy(0, want.offset); // back to the same point inside a long section
+      if (want.flash) {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 2400);
+      }
     }
   }
+  rememberPlace(); // this day's Mass or Hour, for next time
 }
 export function setPendingScroll(value) { pendingScroll = value; }

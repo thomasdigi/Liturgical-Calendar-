@@ -1,7 +1,7 @@
 // The week strip, the month view, and fasting marks.
 import { fetchMonth, summariesFor } from './data.js';
 import { RANGE, day, inRange, state } from './state.js';
-import { $, COLORS, COLOR_NAMES, esc, monthOf, shift } from './util.js';
+import { $, COLORS, COLOR_NAMES, esc, isoToday, monthOf, shift } from './util.js';
 
 export function fastText(f) {
   if (!f || (!f.fast && !f.abstinence)) return '';
@@ -58,7 +58,8 @@ export async function renderWeek() {
     const s = sums[i];
     const wd = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
     const usable = s && inRange(date);
-    return `<button type="button" class="wday${date === state.date ? ' current' : ''}" data-date="${date}"${usable ? '' : ' disabled'}
+    const today = date === isoToday() ? ' today' : '';
+    return `<button type="button" class="wday${date === state.date ? ' current' : ''}${today}" data-date="${date}"${usable ? '' : ' disabled'}
       ${date === state.date ? 'aria-current="date"' : ''} title="${esc(s ? `${s.title} · ${s.rank}` : date)}">
       <span class="wd">${wd} ${+date.slice(8)}</span>
       <span class="wt"><span class="dot" style="background:${s ? COLORS[s.color] : 'transparent'}"></span>${esc(s ? s.title : '—')}</span>
@@ -96,7 +97,7 @@ export async function renderMonth() {
     const dt = new Date(`${s.date}T12:00:00Z`);
     const sunday = dt.getUTCDay() === 0;
     const ok = inRange(s.date);
-    return `<li class="mrow${sunday ? ' sunday' : ''}${s.date === state.date ? ' current' : ''}">
+    return `<li class="mrow${sunday ? ' sunday' : ''}${s.date === state.date ? ' current' : ''}${s.date === isoToday() ? ' today' : ''}">
       <button type="button" data-date="${s.date}"${ok ? '' : ' disabled'}>
         <span class="md"><b>${dt.getUTCDate()}</b> ${dt.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}</span>
         <span class="mc"><span class="swatch" style="background:${COLORS[s.color]}" title="${COLOR_NAMES[s.color]}"></span></span>

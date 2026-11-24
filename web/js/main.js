@@ -4,11 +4,12 @@ import { hideTip, initTips, showTip } from './tip.js';
 import { defaultComparison, fixComparison, openInfo, syncControls, syncMasses, syncOffice, updateUrl } from './controls.js';
 import { fetchDay } from './data.js';
 import { runSearch, syncSearchOptions } from './search.js';
-import { RANGE, SIZES, avail, calendarHas, clampDate, comboBuilt, config, day, setAvail, setConfig, setDay, setRANGE, shownLangId, state } from './state.js';
+import { RANGE, SIZES, avail, calendarHas, clampDate, comboBuilt, config, day, params, setAvail, setConfig, setDay, setRANGE, shownLangId, state } from './state.js';
 import { render, setPendingScroll } from './text.js';
 import { initOffline, offlineHint } from './offline.js';
 import { scrollToTarget } from './outline.js';
 import { initSettings } from './settings.js';
+import { restorePlace, trackReading } from './lastread.js';
 import { initTheme } from './theme.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
 
@@ -102,9 +103,11 @@ export async function init() {
   const openDay = (e) => {
     const b = e.target.closest('button[data-date]');
     if (!b || b.disabled) return;
-    state.date = b.dataset.date; state.page = 'day'; syncControls(); load(); window.scrollTo(0, 0);
+    state.page = 'day';
+    go(b.dataset.date);
   };
   $('month-list').addEventListener('click', openDay);
+  $('month-today').onclick = () => go(isoToday());
   $('week').addEventListener('click', openDay);
   document.querySelectorAll('#size button').forEach((b) => (b.onclick = () => {
     state.size = Math.min(SIZES.length - 3, Math.max(-2, state.size + Number(b.dataset.size)));
@@ -131,6 +134,8 @@ export async function init() {
     if (e.key === 'ArrowRight') go(shift(state.date, 1));
   });
 
+  // Opened without naming a Mass or Hour: continue where this day was left.
+  if (!params.has('view') && !params.has('hour') && state.page === 'day') restorePlace(state.date);
   syncControls();
   load();
 }
@@ -169,7 +174,52 @@ export async function load() {
   render();
 }
 
-export function go(date) { state.date = clampDate(date); load(); }
+/**
+ * Move to another day. It opens where you left off reading that day (see lastread.js),
+ * otherwise on the same Mass or Hour as now, at the top of the page.
+ */
+export function go(date, { animate = 0 } = {}) {
+  const changed = clampDate(date) !== state.date;
+  state.date = clampDate(date);
+  if (changed && state.page === 'day') {
+    const back = restorePlace(state.date);
+    if (!back) window.scrollTo(0, 0);
+    syncControls();
+  }
+  if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const el = state.page === 'month' ? $('month') : $('dayview');
+    el.classList.remove('swipe-next', 'swipe-prev');
+    void el.offsetWidth; // restart the animation
+    el.classList.add(animate > 0 ? 'swipe-next' : 'swipe-prev');
+  }
+  load();
+}
+
+/** Swipe left or right on the page: next or previous day (in the month view, month). */
+function initSwipe() {
+  let start = null;
+  const ignore = (t) => t.closest('.week, .outline, .hours, .top, dialog, input, select, textarea, .tip');
+  document.addEventListener('touchstart', (e) => {
+    start = e.touches.length === 1 && !ignore(e.target)
+      ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
+  }, { passive: true });
+  document.addEventListener('touchend', (e) => {
+    if (!start || state.page === 'search') return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    const quick = Date.now() - start.t < 700;
+    start = null;
+    if (!quick || Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+    if (String(window.getSelection?.() ?? '').length) return; // selecting text, not swiping
+    const dir = dx < 0 ? 1 : -1; // swipe left = next
+    if (state.page === 'month') {
+      const [y, m] = monthOf(state.date).split('-').map(Number);
+      go(new Date(Date.UTC(y, m - 1 + dir, 1)).toISOString().slice(0, 10), { animate: dir });
+    } else {
+      go(shift(state.date, dir), { animate: dir });
+    }
+  }, { passive: true });
+}
 
 /** Open a search result: its day, Mass or Hour, scrolled to the section. */
 export function openHit({ date, part, section }) {
@@ -217,4 +267,6 @@ initTheme();
 initOffline();
 initSettings();
 initTips();
+initSwipe();
+trackReading();
 init();

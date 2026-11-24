@@ -196,6 +196,17 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .tip-status.suggested { border: 1px solid var(--muted); color: var(--muted); }
 .tip-small { color: var(--muted); font-size: 12.5px; }
 
+/* ---------- today, and swiping between days ---------- */
+.wday.today .wd::after { content: " · Today"; color: var(--accent-ink); font-weight: 600; }
+.mrow.today .md b { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.month-today { text-align: center; margin: 0 0 10px; }
+.month-today button { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 6px 16px; min-height: 36px; cursor: pointer; font: 15px var(--sans); }
+.swipe-next { animation: swipe-next .22s ease-out; }
+.swipe-prev { animation: swipe-prev .22s ease-out; }
+@keyframes swipe-next { from { transform: translateX(28px); opacity: .5; } to { transform: none; opacity: 1; } }
+@keyframes swipe-prev { from { transform: translateX(-28px); opacity: .5; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .swipe-next, .swipe-prev { animation: none; } }
+
 /* ---------- Settings panel (slides in from the right) ---------- */
 .drawer {
   margin: 0 0 0 auto; padding: 0; border: 0; border-left: 1px solid var(--rule);
@@ -230,6 +241,17 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .drawer .theme-seg button { flex: 1; border: 0; border-radius: 0; background: none; }
 .drawer .theme-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .drawer .offline-dot { display: inline-block; vertical-align: 1px; }
+
+.drawer .btn {
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: var(--ink);
+  border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 7px 14px; min-height: 40px;
+}
+.drawer .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.drawer .btn.disabled { opacity: .45; pointer-events: none; }
+.ical-feed { margin-bottom: 10px; }
+.ical-name { margin-bottom: 4px !important; font-weight: 600; }
+.ical-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.drawer #ical-status { word-break: break-all; }
 
 /* ---------- offline ---------- */
 .top .offline-btn { display: inline-flex; align-items: center; gap: 6px; }

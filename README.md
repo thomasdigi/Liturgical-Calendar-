@@ -28,6 +28,12 @@ it needs https (GitHub Pages is) or localhost.
 to see whether current Church law (1983 Code) still requires it or it's only suggested by the
 traditional discipline.
 
+On a phone, **swipe** left or right to change day (or month). Each day **reopens where you
+left off** (the Mass or Hour, and how far down). The month view has a **Today** button and
+circles today. **Add to your calendar** (Settings): subscribe to, or download, an iCalendar
+feed of every day's feast or of fast days only (`data/<calendar>/<version>/calendar.ics`,
+`fasting.ics`, built for the same dates as the site; `src/ical.ts`).
+
 Also: **search** across the texts (Mass propers and the Hours, accent-insensitive, phrases in
 quotes), **compare** mode (the same Mass or Hour in another calendar or version, side by
 side), labelled **commemorations and suffrages**, the **votive offices** (Office of the Dead:

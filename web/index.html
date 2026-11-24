@@ -53,6 +53,7 @@
         <h1 id="month-title">Month</h1>
         <button type="button" id="month-next" aria-label="Next month">›</button>
       </div>
+      <p class="month-today"><button type="button" id="month-today">Today</button></p>
       <p class="legend">
         <span class="fastmark fast">F</span> fast
         <span class="fastmark abst">A</span> abstinence
@@ -201,6 +202,31 @@
         </div>
         <p class="hint">Days you open are also saved as you read them. <span id="saved-size"></span></p>
         <p><button type="button" id="clear-saved" class="quiet">Remove saved texts</button></p>
+      </section>
+
+      <section aria-labelledby="set-ical">
+        <h3 id="set-ical">Add to your calendar</h3>
+        <p id="ical-what"></p>
+        <div class="ical-feed">
+          <p class="ical-name">Every day: feast, class, colour, fasting</p>
+          <p class="ical-buttons">
+            <a id="ical-sub-all" class="btn primary">Subscribe</a>
+            <a id="ical-dl-all" class="btn" download>Download</a>
+            <button type="button" class="copy-link" data-feed="calendar">Copy link</button>
+          </p>
+        </div>
+        <div class="ical-feed">
+          <p class="ical-name">Fast days only</p>
+          <p class="ical-buttons">
+            <a id="ical-sub-fast" class="btn primary">Subscribe</a>
+            <a id="ical-dl-fast" class="btn" download>Download</a>
+            <button type="button" class="copy-link" data-feed="fasting">Copy link</button>
+          </p>
+        </div>
+        <p class="hint" id="ical-status" aria-live="polite"></p>
+        <p class="hint"><b>iPhone:</b> tap Subscribe, then confirm in the Calendar app.
+          <b>Android (Google Calendar):</b> tap Copy link; then, on a computer, open calendar.google.com → Other calendars + → From URL, and paste it.
+          A subscribed calendar updates itself as new months are added; a downloaded one doesn't.</p>
       </section>
 
       <section aria-labelledby="set-print">
