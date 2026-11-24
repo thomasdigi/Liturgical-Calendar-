@@ -14,6 +14,13 @@ side by side, or one language alone. Light and dark modes.
 Where a language has no translation of a part, an ⓘ marks it and the missing lines are
 shown in English, or in another language the reader picks.
 
+Also: a **month view** (Ordo-style list of every day), a **this week** strip, **fasting and
+abstinence** markers (general law of the 1917 Code: Fridays, Lent, Ember days and the four
+vigils; local law may differ), **text size**, a **reading mode** (hides verse numbers, notes
+and instructions), and a **jump-to** menu. The ⓘ pop-up is written in the language whose
+translation is missing (`web/i18n.js`; these translations would benefit from review by
+native speakers).
+
 The texts are produced by [Divinum Officium](https://www.divinumofficium.com/)'s
 own engine (MIT License). It's vendored as a git submodule and run locally, so we
 never call their website. That site is behind a Cloudflare bot check anyway.
@@ -37,7 +44,8 @@ npm run build -- 2026-12-08 --refresh                     # rebuild cached days
 npm test                      # runs DO's engine on known days
 ```
 
-Files are `data/<calendar>/<version>/<lang>/YYYY/MM-DD.json` (one day: the Mass plus all 8 Hours,
+Month summaries are `data/<calendar>/<version>/summary/YYYY-MM.json` (built alongside
+the days). Day files are `data/<calendar>/<version>/<lang>/YYYY/MM-DD.json` (one day: the Mass plus all 8 Hours,
 about 400 KB) and `data/config.json`. For static hosting, build the dates you want and
 serve `web/` with `data/` next to it. A full year in every version and language is
 about 19,000 files and 7 GB, so build only what you need (or let `npm start` build on demand).
@@ -84,6 +92,8 @@ DO's English for the same day (`markFallback` in `src/day.ts`).
 | `src/config.ts` | Versions, languages and Hours on offer; reads DO's own language lists |
 | `src/render.ts` | Runs DO's `missa.pl` (propers only, or full) or `officium.pl` as a CGI script |
 | `src/parse.ts` | **All knowledge of DO's HTML.** Turns a page into header + Latin/second-language sections |
+| `src/fasting.ts` | Fasting and abstinence rules (1917 Code) and the date of Easter |
+| `src/summary.ts` | A month at a glance: feast, class, colour, commemorations, fasting |
 | `src/day.ts` | Builds a whole day (Mass propers, full Mass, 8 Hours) for one version and language, cached in `data/` |
 | `scripts/build.ts` | Builds a date range in parallel |
 | `scripts/serve.ts` | Local server: viewer + on-demand day JSON |

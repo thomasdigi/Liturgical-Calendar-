@@ -216,3 +216,16 @@ describe('fallback marking', () => {
     expect(en.parts.every((p) => p.sections.every((s) => !s.fallback))).toBe(true);
   });
 });
+
+describe('month summary', () => {
+  it('lists every day with its feast and fasting', async () => {
+    const { getMonth } = await import('../src/summary.ts');
+    const m = await getMonth('general', '1962', '2026-12', { refresh: true });
+    expect(m.days).toHaveLength(31);
+    const d = (n: number) => m.days[n - 1];
+    expect(d(8).title).toMatch(/Conceptione Immaculata/);
+    expect(d(18).fasting.reasons).toContain('Ember day'); // Ember Friday, found from DO's own title
+    expect(d(4).fasting).toMatchObject({ fast: false, abstinence: true });
+    expect(d(25).fasting).toMatchObject({ fast: false, abstinence: false });
+  });
+});

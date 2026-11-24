@@ -24,6 +24,7 @@ import {
   type VersionId,
 } from '../src/config.ts';
 import { DATA_DIR, getDay } from '../src/day.ts';
+import { getMonth } from '../src/summary.ts';
 
 const args = process.argv.slice(2);
 const FLAGS = ['--calendar', '--version', '--lang'];
@@ -93,6 +94,30 @@ async function runAll(jobs: Job[]) {
 }
 await runAll(first);
 await runAll(rest);
+
+// Month summaries (for the month view and week strip), one per calendar/version/month.
+// The week strip can reach into the next or previous month, so include those too.
+const months = new Set<string>();
+for (let d = new Date(`${from}T12:00:00Z`); d <= new Date(`${to}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
+  for (const k of [-6, 0, 6]) {
+    const x = new Date(d);
+    x.setUTCDate(x.getUTCDate() + k);
+    months.add(x.toISOString().slice(0, 7));
+  }
+}
+for (const calendar of calendars)
+  for (const version of versions) {
+    if (!doSettings(calendar, version)) continue;
+    for (const month of [...months].sort()) {
+      try {
+        await getMonth(calendar, version, month, { refresh });
+      } catch (e) {
+        failed++;
+        console.error(`FAILED summary ${calendar} ${version} ${month}: ${(e as Error).message}`);
+      }
+    }
+  }
+console.log(`Month summaries: ${months.size} month(s) per calendar/version.`);
 const secs = Math.round((Date.now() - started) / 1000);
 console.log(`Built ${done}/${total} day files in ${secs}s${failed ? `, ${failed} failed` : ''}.`);
 process.exit(failed ? 1 : 0);

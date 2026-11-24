@@ -29,7 +29,12 @@ const state = {
   display: store.get('display', 'both'),
   layout: store.get('layout', 'interlinear'), // 'interlinear' | 'side'
   massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
+  page: params.get('page') === 'month' ? 'month' : 'day',
+  size: Number(store.get('textSize', '0')) || 0, // steps from normal, see SIZES
+  reading: store.get('reading', 'off') === 'on',
 };
+const SIZES = [0.85, 0.92, 1, 1.12, 1.25, 1.4, 1.6]; // text scale; index 2 is normal
+const sizeIndex = () => Math.min(SIZES.length - 1, Math.max(0, 2 + state.size));
 
 function isoToday() {
   const d = new Date();
@@ -129,6 +134,30 @@ async function init() {
   document.querySelectorAll('#view button').forEach((b) => (b.onclick = () => {
     state.view = b.dataset.view; store.set('view', state.view); syncControls(); load();
   }));
+  document.querySelectorAll('#page button').forEach((b) => (b.onclick = () => {
+    state.page = b.dataset.page; syncControls(); load(); window.scrollTo(0, 0);
+  }));
+  $('month-prev').onclick = () => { const [y, m] = monthOf(state.date).split('-').map(Number); go(new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 10)); };
+  $('month-next').onclick = () => { const [y, m] = monthOf(state.date).split('-').map(Number); go(new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10)); };
+  const openDay = (e) => {
+    const b = e.target.closest('button[data-date]');
+    if (!b || b.disabled) return;
+    state.date = b.dataset.date; state.page = 'day'; syncControls(); load(); window.scrollTo(0, 0);
+  };
+  $('month-list').addEventListener('click', openDay);
+  $('week').addEventListener('click', openDay);
+  document.querySelectorAll('#size button').forEach((b) => (b.onclick = () => {
+    state.size = Math.min(SIZES.length - 3, Math.max(-2, state.size + Number(b.dataset.size)));
+    store.set('textSize', String(state.size)); syncControls();
+  }));
+  $('reading').onclick = () => { state.reading = !state.reading; store.set('reading', state.reading ? 'on' : 'off'); syncControls(); };
+  $('jump').onchange = (e) => {
+    const el = document.getElementById(e.target.value);
+    if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    e.target.value = '';
+  };
+  $('totop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  window.addEventListener('scroll', () => { $('totop').hidden = window.scrollY < 600 || state.page !== 'day'; }, { passive: true });
   $('prev').onclick = () => go(shift(state.date, -1));
   $('next').onclick = () => go(shift(state.date, 1));
   $('today').onclick = () => go(isoToday());
@@ -160,11 +189,107 @@ async function fetchDay(langId) {
   return cache.get(key);
 }
 
+// ---------- month summaries (month view, week strip, fasting) ----------
+
+const monthOf = (iso) => iso.slice(0, 7);
+async function fetchMonth(month) {
+  const key = `${state.calendar}/${state.version}/summary/${month}`;
+  if (!cache.has(key)) {
+    const res = await fetch(`data/${key}.json`);
+    if (!res.ok) throw new Error(String(res.status));
+    cache.set(key, await res.json());
+  }
+  return cache.get(key);
+}
+/** Summaries for these dates (null where unavailable). */
+async function summariesFor(dates) {
+  const months = [...new Set(dates.map(monthOf))];
+  const loaded = await Promise.all(months.map((m) => fetchMonth(m).catch(() => null)));
+  const byDate = new Map();
+  for (const m of loaded) if (m) for (const d of m.days) byDate.set(d.date, d);
+  return dates.map((d) => byDate.get(d) || null);
+}
+const inRange = (d) => !RANGE || (d >= RANGE.first && d <= RANGE.last);
+
+function fastText(f) {
+  if (!f || (!f.fast && !f.abstinence)) return '';
+  const what = f.fast && f.abstinence ? 'Fast and abstinence' : f.fast ? 'Fast' : 'Abstinence';
+  return `${what}${f.note ? ` ${f.note}` : ''}${f.reasons.length ? ` · ${f.reasons.join(', ')}` : ''}`;
+}
+function fastMarks(f) {
+  if (!f) return '';
+  return (f.fast ? '<span class="fastmark fast" title="Fast">F</span>' : '') +
+    (f.abstinence ? '<span class="fastmark abst" title="Abstinence">A</span>' : '');
+}
+
+let weekSeq = 0;
+/** The week (Sunday to Saturday) around the current date, plus today's fasting line. */
+async function renderWeek() {
+  const seq = ++weekSeq;
+  const d = new Date(`${state.date}T12:00:00Z`);
+  const start = shift(state.date, -d.getUTCDay());
+  const dates = Array.from({ length: 7 }, (_, i) => shift(start, i));
+  const sums = await summariesFor(dates);
+  if (seq !== weekSeq) return;
+  $('week').innerHTML = dates.map((date, i) => {
+    const s = sums[i];
+    const wd = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+    const usable = s && inRange(date);
+    return `<button type="button" class="wday${date === state.date ? ' current' : ''}" data-date="${date}"${usable ? '' : ' disabled'}
+      ${date === state.date ? 'aria-current="date"' : ''} title="${esc(s ? `${s.title} · ${s.rank}` : date)}">
+      <span class="wd">${wd} ${+date.slice(8)}</span>
+      <span class="wt"><span class="dot" style="background:${s ? COLORS[s.color] : 'transparent'}"></span>${esc(s ? s.title : '—')}</span>
+      <span class="wf">${fastMarks(s?.fasting)}</span>
+    </button>`;
+  }).join('');
+  // On narrow screens the strip scrolls: bring the current day into view.
+  const cur = $('week').querySelector('.current');
+  if (cur && $('week').scrollWidth > $('week').clientWidth) {
+    const w = $('week'), r = cur.getBoundingClientRect(), wr = w.getBoundingClientRect();
+    w.scrollLeft += r.left - wr.left - (w.clientWidth - r.width) / 2;
+  }
+  const today = sums[dates.indexOf(state.date)];
+  const ft = fastText(today?.fasting);
+  $('fastline').hidden = !ft;
+  $('fastline').innerHTML = ft ? `${fastMarks(today.fasting)} <span>${esc(ft)}</span>` : '';
+}
+
+let monthSeq = 0;
+async function renderMonth() {
+  const seq = ++monthSeq;
+  const month = monthOf(state.date);
+  const [y, m] = month.split('-').map(Number);
+  $('month-title').textContent = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  $('month-list').innerHTML = '<li class="msg">Loading…</li>';
+  let data;
+  try { data = await fetchMonth(month); } catch { data = null; }
+  if (seq !== monthSeq) return;
+  if (!data) {
+    $('month-list').innerHTML = `<li class="msg">No calendar for this month${RANGE ? ' in this demo' : ' yet'}.</li>`;
+    return;
+  }
+  $('month-list').innerHTML = data.days.map((s) => {
+    const dt = new Date(`${s.date}T12:00:00Z`);
+    const sunday = dt.getUTCDay() === 0;
+    const ok = inRange(s.date);
+    return `<li class="mrow${sunday ? ' sunday' : ''}${s.date === state.date ? ' current' : ''}">
+      <button type="button" data-date="${s.date}"${ok ? '' : ' disabled'}>
+        <span class="md"><b>${dt.getUTCDate()}</b> ${dt.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}</span>
+        <span class="mc"><span class="swatch" style="background:${COLORS[s.color]}" title="${COLOR_NAMES[s.color]}"></span></span>
+        <span class="mt">${esc(s.title)}${s.commemorations.length ? `<small>Com. ${esc(s.commemorations.join('; '))}</small>` : ''}</span>
+        <span class="mr">${esc(s.rank)}</span>
+        <span class="mf">${fastMarks(s.fasting)}</span>
+      </button></li>`;
+  }).join('');
+}
+
 let loadSeq = 0;
 async function load() {
   const seq = ++loadSeq;
   updateUrl();
   $('date').value = state.date;
+  if (state.page === 'month') { renderMonth(); return; }
+  renderWeek();
   const shown = shownLangId();
   try {
     const d = await fetchDay(shown);
@@ -197,6 +322,17 @@ function go(date) { state.date = clampDate(date); load(); }
 // ---------- controls ----------
 
 function syncControls() {
+  // Day or month page
+  $('month').hidden = state.page !== 'month';
+  $('dayview').hidden = state.page !== 'day';
+  document.querySelectorAll('#page button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
+  $('prev').setAttribute('aria-label', 'Previous day');
+  // Text size and reading mode
+  document.body.style.setProperty('--text-scale', String(SIZES[sizeIndex()]));
+  document.querySelector('#size [data-size="-1"]').disabled = sizeIndex() === 0;
+  document.querySelector('#size [data-size="1"]').disabled = sizeIndex() === SIZES.length - 1;
+  document.body.dataset.reading = state.reading ? 'on' : 'off';
+  $('reading').setAttribute('aria-pressed', String(state.reading));
   const viewWord = state.view === 'mass' ? 'Mass' : 'Office';
   $('calendar').innerHTML = config.calendars.map((c) => {
     const ok = c.versions.includes(state.version);
@@ -242,20 +378,35 @@ function syncControls() {
   // Whole view not offered in the chosen language: say so, with the ⓘ to pick the alternative.
   const offered = offers(state.lang);
   $('fallback').hidden = offered;
+  const t = i18n(state.lang);
+  const local = t === window.I18N.en ? '' :
+    `<span class="local" lang="${lang(state.lang).htmlLang}"${lang(state.lang).rtl ? ' dir="rtl"' : ''}>${esc(state.view === 'mass' ? t.viewMass : t.viewOffice)}</span>`;
   $('fallback').innerHTML = offered ? '' :
     `<button type="button" class="info" aria-label="About this translation">${INFO_ICON}</button>
-     <span>Divinum Officium has no ${esc(lang(state.lang).label)} translation of ${viewName()}. Showing ${esc(lang(shownLangId()).label)} instead.</span>`;
+     <span><span>Divinum Officium has no ${esc(lang(state.lang).label)} translation of ${viewName()}. Showing ${esc(lang(shownLangId()).label)} instead.</span>${local}</span>`;
   updateUrl();
 }
 
 // ---------- info pop-up ----------
 
+/** Pop-up wording in the given language (the one with the gap), English if we have none. */
+function i18n(langId) {
+  const all = window.I18N || {};
+  return all[lang(langId).htmlLang] || all.en;
+}
+
 function openInfo(kind) {
-  const chosen = lang(state.lang).label;
-  $('info-title').textContent = kind === 'view' ? 'Not available in this language' : 'Not fully translated';
-  $('info-text').textContent = kind === 'view'
-    ? `Divinum Officium has no ${chosen} translation of ${viewName()}. Choose the language to read it in instead.`
-    : `Divinum Officium does not have a complete ${chosen} translation of this part. The untranslated lines are shown in another language, which you can choose here.`;
+  // Written in the language whose translation is missing, so its readers can understand it.
+  const L = lang(state.lang);
+  const t = i18n(state.lang);
+  const dlg = $('info');
+  dlg.setAttribute('lang', t === window.I18N.en ? 'en' : L.htmlLang);
+  dlg.setAttribute('dir', L.rtl && t !== window.I18N.en ? 'rtl' : 'ltr');
+  $('info-title').textContent = kind === 'view' ? t.viewTitle : t.partialTitle;
+  $('info-text').textContent = kind === 'view' ? (state.view === 'mass' ? t.viewMass : t.viewOffice) : t.partial;
+  dlg.querySelector('.info-alt span').textContent = t.label;
+  dlg.querySelector('.info-note').textContent = t.note;
+  $('info-close').textContent = t.done;
   $('alt-lang').innerHTML = config.languages
     .filter((l) => l.id !== state.lang && l[viewKey()])
     .map((l) => `<option value="${l.id}">${esc(l.label)}</option>`).join('');
@@ -320,8 +471,11 @@ function render() {
   const notes = offers(state.lang);
   const L = lang(shownLangId());
   const out = [`<h2 class="part-title"><span class="la">${part.title.latin}</span><span class="vn">${part.title.label}</span></h2>`];
+  const jumps = [];
   part.sections.forEach((s, i) => {
     const hl = s.heading.latin, hv = s.heading.vernacular && s.heading.vernacular !== hl ? s.heading.vernacular : '';
+    const sid = `s${i}`;
+    if (hl) jumps.push([sid, hv ? `${hl} · ${hv}` : hl]);
     const info = notes && s.fallback
       ? `<button type="button" class="info" data-kind="section" aria-label="Not fully translated: choose a language for the missing text" title="Not fully translated">${INFO_ICON}</button>`
       : '';
@@ -329,17 +483,26 @@ function render() {
       ? `<h3><span class="la">${hl}</span>${hv ? `<span class="vn"> · ${hv}</span>` : ''}${info}</h3>`
       : '';
     if (!s.latin && !s.vernacular) {
-      out.push(`<section class="marker">${head}</section>`); // e.g. "Gloria", "Credo" in the Mass
+      out.push(`<section class="marker" id="${sid}">${head}</section>`); // e.g. "Gloria", "Credo" in the Mass
       return;
     }
     const vn = vernacularOf(s, i, altPart);
-    out.push(`<section${s.fallback && notes ? ' class="partial"' : ''}>${head}<div class="col la" lang="la">${s.latin}</div><div class="col vn" lang="${L.htmlLang}"${L.rtl ? ' dir="auto"' : ''}>${vn}</div></section>`);
+    out.push(`<section id="${sid}"${s.fallback && notes ? ' class="partial"' : ''}>${head}<div class="col la" lang="la">${s.latin}</div><div class="col vn" lang="${L.htmlLang}"${L.rtl ? ' dir="auto"' : ''}>${vn}</div></section>`);
   });
   $('text').innerHTML = out.join('');
+  // Reading mode hides instructions: longer red rubrics ("Secreto", "Deinde, clara voce…"),
+  // but keeps the short markers (℣. ℟. Ant.).
+  $('text').querySelectorAll('.rubric').forEach((el) => {
+    if (el.classList.contains('small') || el.textContent.trim().length > 14) el.classList.add('instr');
+  });
+  $('jump').innerHTML = `<option value="">Jump to…</option>` +
+    jumps.map(([id, label]) => `<option value="${id}">${esc(label)}</option>`).join('');
+  $('jump').disabled = jumps.length < 2;
 }
 
 function updateUrl() {
   const p = new URLSearchParams({ date: state.date, view: state.view, calendar: state.calendar, version: state.version, lang: state.lang });
+  if (state.page === 'month') p.set('page', 'month');
   if (state.view === 'office') p.set('hour', state.hour);
   else p.set('mass', showFull() ? 'full' : 'propers');
   try { history.replaceState(null, '', `?${p}`); } catch { /* sandboxed */ }

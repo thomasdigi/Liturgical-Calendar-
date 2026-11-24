@@ -7,6 +7,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import { getCalendar, getLanguage, getVersion, publicConfig, type CalendarId, type LanguageId, type VersionId } from '../src/config.ts';
 import { getDay } from '../src/day.ts';
+import { getMonth } from '../src/summary.ts';
 
 const WEB = resolve(import.meta.dirname, '../web');
 const PORT = Number(process.env.PORT ?? 3000);
@@ -27,6 +28,10 @@ createServer(async (req, res) => {
   try {
     // Same paths as the static build.
     if (url.pathname === '/data/config.json') return json(res, publicConfig());
+    const sm = /^\/data\/([\w-]+)\/([\w-]+)\/summary\/(\d{4}-\d{2})\.json$/.exec(url.pathname);
+    if (sm) {
+      return json(res, await getMonth(getCalendar(sm[1]).id as CalendarId, getVersion(sm[2]).id as VersionId, sm[3]));
+    }
     const m = /^\/data\/([\w-]+)\/([\w-]+)\/([\w-]+)\/(\d{4})\/(\d{2}-\d{2})\.json$/.exec(url.pathname);
     if (m) {
       const calendar = getCalendar(m[1]).id as CalendarId;

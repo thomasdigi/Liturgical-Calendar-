@@ -151,7 +151,86 @@ body[data-display="vernacular"] .text .col.la { display: none; }
 footer { text-align: center; color: var(--muted); font: 13px/1.5 var(--sans); padding: 24px 16px 40px; }
 footer a { color: inherit; }
 
+
+/* ---------- text size and reading mode ---------- */
+.text { font-size: calc(1em * var(--text-scale, 1)); }
+body[data-reading="on"] .text .verse,
+body[data-reading="on"] .text .note,
+body[data-reading="on"] .text .small,
+body[data-reading="on"] .text .instr { display: none; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.toolbar .pill, .toolbar select {
+  border: 1px solid var(--rule); background: var(--paper); border-radius: 9px; padding: 6px 12px;
+  min-height: 36px; cursor: pointer; font: inherit; color: var(--muted);
+}
+.toolbar .pill[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.toolbar select { color: var(--ink); max-width: 14em; }
+.toolbar select:disabled { opacity: .5; cursor: default; }
+
+.totop {
+  position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  font: 20px var(--sans); cursor: pointer; box-shadow: 0 4px 14px rgb(0 0 0 / .15); z-index: 4;
+}
+.totop[hidden] { display: none; }
+
+/* ---------- fasting marks ---------- */
+.fastmark {
+  display: inline-grid; place-items: center; width: 1.35em; height: 1.35em; border-radius: 4px;
+  font: 700 11px/1 var(--sans); vertical-align: middle;
+}
+.fastmark.fast { background: var(--rubric); color: var(--paper); }
+.fastmark.abst { border: 1.5px solid var(--rubric); color: var(--rubric); }
+.fastline { margin: 8px 0 0; display: flex; justify-content: center; gap: 6px; align-items: center; color: var(--rubric); font: 14px var(--sans); }
+.fastline[hidden] { display: none; }
+
+/* ---------- this week ---------- */
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin: 0 0 18px; }
+.wday {
+  display: flex; flex-direction: column; gap: 3px; align-items: stretch; text-align: left; min-width: 0;
+  border: 1px solid var(--rule); background: var(--paper); border-radius: 10px; padding: 7px 8px; cursor: pointer;
+  font: 12px/1.3 var(--sans); color: var(--ink);
+}
+.wday:disabled { opacity: .45; cursor: default; }
+.wday.current { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.wday .wd { color: var(--muted); text-transform: uppercase; letter-spacing: .04em; font-size: 11px; }
+.wday .wt { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font: 13px/1.3 var(--serif); }
+.wday .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; border: 1px solid var(--rule); margin-right: 4px; vertical-align: 1px; }
+.wday .wf { display: flex; gap: 3px; min-height: 1.35em; }
+
+/* ---------- month ---------- */
+.month { max-width: 900px; margin: 0 auto; }
+.month[hidden], #dayview[hidden] { display: none; }
+.month-head { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 6px; }
+.month-head h1 { margin: 0; font-size: clamp(24px, 4vw, 32px); min-width: 9em; text-align: center; }
+.month-head button { border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; width: 40px; height: 40px; cursor: pointer; font-size: 20px; }
+.legend { text-align: center; color: var(--muted); font: 13px var(--sans); margin: 0 0 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; align-items: center; }
+.legend-note { flex-basis: 100%; }
+.month-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.mrow button {
+  display: grid; grid-template-columns: 4.2em 1.4em minmax(0, 1fr) auto 3.2em; gap: 10px; align-items: baseline;
+  width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule);
+  padding: 10px 6px; cursor: pointer; color: var(--ink); font: inherit;
+}
+.mrow button:hover { background: var(--tab-bg); }
+.mrow button:disabled { cursor: default; opacity: .55; }
+.mrow.current button { background: var(--tab-bg); }
+.mrow.sunday .mt { font-weight: 600; }
+.mrow .md { font: 14px var(--sans); color: var(--muted); }
+.mrow .md b { color: var(--ink); font-size: 16px; margin-right: 2px; font-variant-numeric: tabular-nums; }
+.mrow .mc .swatch { vertical-align: -1px; }
+.mrow .mt small { display: block; color: var(--muted); font-style: italic; font-size: .85em; }
+.mrow .mr { color: var(--muted); font: 13px var(--sans); white-space: nowrap; }
+.mrow .mf { display: flex; gap: 3px; justify-content: flex-end; }
+.month-list .msg { list-style: none; }
+
+.fallback .local { display: block; margin-top: 4px; }
+
 @media (max-width: 720px) {
+  .week { grid-template-columns: repeat(7, minmax(4.6em, 1fr)); overflow-x: auto; padding-bottom: 4px; }
+  .mrow button { grid-template-columns: 3.4em 1.2em minmax(0, 1fr) 2.8em; }
+  .mrow .mr { grid-column: 3; grid-row: 2; white-space: normal; }
+  .mrow .mf { grid-row: 1; grid-column: 4; }
   body { font-size: 17px; }
   /* Controls scroll away on phones so the text gets the screen. */
   .top { position: static; justify-content: center; padding-block: 8px; }
