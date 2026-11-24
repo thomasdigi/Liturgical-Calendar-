@@ -1,5 +1,5 @@
 /**
- * Turns a Divinum Officium Office page into clean data.
+ * Turns a Divinum Officium page (an Hour of the Office, or the Mass propers) into clean data.
  * ALL knowledge of DO's HTML lives in this file.
  */
 import * as cheerio from 'cheerio';
@@ -14,16 +14,17 @@ export interface DayHeader {
   commemorations: string[];
 }
 
-export interface OfficeSection {
-  heading: { latin: string; english: string }; // e.g. Psalmi / Psalms
+/** One part of the text: Latin plus the chosen second ("vernacular") language. */
+export interface Section {
+  heading: { latin: string; vernacular: string }; // e.g. Psalmi / Psalms
   latin: string; // clean HTML
-  english: string;
+  vernacular: string;
 }
 
-export interface ParsedOffice {
+export interface ParsedPage {
   header: DayHeader;
-  hourTitle: string; // e.g. "Ad Laudes"
-  sections: OfficeSection[];
+  title: string; // e.g. "Ad Laudes", "Sancta Missa"
+  sections: Section[];
 }
 
 /**
@@ -42,7 +43,7 @@ const COLOR_MAP: Record<string, LiturgicalColor> = {
   green: 'green',
 };
 
-export function parseOffice(html: string): ParsedOffice {
+export function parsePage(html: string): ParsedPage {
   const $ = cheerio.load(html);
 
   // --- Day header: first centered paragraph inside the form.
@@ -62,21 +63,29 @@ export function parseOffice(html: string): ParsedOffice {
     commemorations,
   };
 
-  const hourTitle = $('h2').first().text().trim();
+  // Office pages have <H2>Ad Laudes</H2>; the Mass page a "Sancta Missa" paragraph.
+  const title =
+    $('h2').first().text().trim() || $('form p b i').filter((_, el) => /Missa/.test($(el).text())).first().text().trim();
 
-  // --- Sections: each row of the main table = one part of the Hour, Latin | English.
-  const sections: OfficeSection[] = [];
-  $('h2').first().nextAll('table').first().find('tr').each((_, tr) => {
+  // --- Sections: each two-cell row of the main table is one part, Latin | second language.
+  const table = $('table.contrastbg')
+    .filter((_, t) => $(t).find('td[width="50%"]').length > 0)
+    .first();
+  const sections: Section[] = [];
+  table.find('tr').each((_, tr) => {
     const tds = $(tr).children('td');
     if (tds.length < 2) return;
-    const [la, en] = [cleanCell($, tds.eq(0)), cleanCell($, tds.eq(1))];
-    if (!la.html && !en.html) return;
+    const [la, vn] = [cleanCell($, tds.eq(0)), cleanCell($, tds.eq(1))];
+    // Heading-only rows are markers such as "Gloria" / "Credo" in the Mass: keep them.
+    if (!la.html && !vn.html && !la.heading) return;
     // DO marks parts that are not said today with {omittitur}; skip them.
     if (/\{omittitur\}/.test(la.html) && la.html.replace(/<[^>]+>/g, '').length < 80) return;
-    sections.push({ heading: { latin: la.heading, english: en.heading }, latin: la.html, english: en.html });
+    // In the Mass, an omitted Gloria/Credo is a row whose only text is "omit.".
+    if (/^\s*omit\.?\s*$/i.test(la.html.replace(/<[^>]+>/g, ''))) return;
+    sections.push({ heading: { latin: la.heading, vernacular: vn.heading }, latin: la.html, vernacular: vn.html });
   });
 
-  return { header, hourTitle, sections };
+  return { header, title, sections };
 }
 
 /** Convert one DO table cell into our minimal HTML, pulling out its heading. */

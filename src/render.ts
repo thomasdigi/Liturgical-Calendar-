@@ -1,17 +1,17 @@
 /**
- * Renders an Hour by running Divinum Officium's own officium.pl (vendored as a
- * git submodule) as a CGI script. Same output as divinumofficium.com, no network.
+ * Renders a Mass or an Hour by running Divinum Officium's own CGI scripts
+ * (vendored as a git submodule). Same output as divinumofficium.com, no network.
  */
 import { execFile } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { getHour, VERSION, type HourId } from './hours.ts';
+import { getHour, getLanguage, getVersion, type LanguageId, type PartId, type VersionId } from './config.ts';
 
 const run = promisify(execFile);
 
 export const DO_ROOT = resolve(import.meta.dirname, '../vendor/divinum-officium');
-const HORAS_DIR = resolve(DO_ROOT, 'web/cgi-bin/horas');
+const CGI = resolve(DO_ROOT, 'web/cgi-bin');
 
 /** DO wants MM-DD-YYYY. Input is ISO YYYY-MM-DD. */
 export function toDoDate(iso: string): string {
@@ -20,21 +20,30 @@ export function toDoDate(iso: string): string {
   return `${m[2]}-${m[3]}-${m[1]}`;
 }
 
-export async function renderHour(isoDate: string, hour: HourId, lang2 = 'English'): Promise<string> {
-  if (!existsSync(resolve(HORAS_DIR, 'officium.pl'))) {
+export async function renderPart(isoDate: string, part: PartId, version: VersionId, lang: LanguageId): Promise<string> {
+  const v = getVersion(version);
+  const lang2 = getLanguage(lang).do;
+  const date = toDoDate(isoDate);
+
+  const [dir, script, params] =
+    part === 'mass'
+      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, command: 'praySanctaMissa', Propers: '1' }]
+      : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, command: getHour(part).command }];
+
+  const cwd = resolve(CGI, dir);
+  if (!existsSync(resolve(cwd, script))) {
     throw new Error('Divinum Officium not found. Run: git submodule update --init --depth 1');
   }
-  const params = new URLSearchParams({
-    date1: toDoDate(isoDate),
-    version: VERSION,
-    lang2,
-    command: getHour(hour).command,
-  });
-  const { stdout } = await run('perl', ['officium.pl'], {
-    cwd: HORAS_DIR,
-    env: { ...process.env, REQUEST_METHOD: 'GET', QUERY_STRING: params.toString(), HTTP_COOKIE: '' },
-    maxBuffer: 32 * 1024 * 1024,
-    timeout: 60_000,
+  const { stdout } = await run('perl', [script], {
+    cwd,
+    env: {
+      ...process.env,
+      REQUEST_METHOD: 'GET',
+      QUERY_STRING: new URLSearchParams(params).toString(),
+      HTTP_COOKIE: '',
+    },
+    maxBuffer: 64 * 1024 * 1024,
+    timeout: 120_000,
   });
   // CGI output starts with HTTP headers; drop everything before the HTML.
   const start = stdout.search(/<!DOCTYPE|<HTML/i);
