@@ -7,6 +7,11 @@ and display it in our own clean, Ordo-style interface.
 **Phase 1:** the **Mass** text for each day (1962 rubrics).
 **Phase 2** (once Phase 1 works): **Lauds** from the 1962 Breviary.
 
+> **Status (Nov 2026):** divinumofficium.com sits behind a Cloudflare bot check,
+> so scripted fetching from it is blocked. We now **run DO's own engine locally**
+> (git submodule, MIT) instead: same output, no network. **Lauds, Sext, Vespers
+> and Compline are built.** See README. The Mass (`missa.pl`) can be added the same way.
+>
 > An earlier version of this plan (building the calendar engine from scratch)
 > is in the git history.
 
