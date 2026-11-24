@@ -1,141 +1,143 @@
-# Liturgical Calendar — Project Plan
+# Liturgical Calendar — Plan: fetching from Divinum Officium
 
-Goal: a 1962 (traditional Roman Rite) liturgical calendar in the spirit of the
-FSSPX Ordo (ordo.fsspx.org), built on the open data of Divinum Officium (DO).
+**Approach:** we don't build the liturgy ourselves. We assume
+**divinumofficium.com stays live and correct**, fetch the text it generates,
+and display it in our own clean, Ordo-style interface.
 
-**Phase 1 scope:** pick a date → see the day's feast, rank and color, the **Mass
-readings**, and the **1962 Breviary** (Divine Office) for that day.
+**Phase 1:** the **Mass** text for each day (1962 rubrics).
+**Phase 2** (once Phase 1 works): **Lauds** from the 1962 Breviary.
 
----
-
-## 1. What Divinum Officium gives us
-
-Source: <https://github.com/DivinumOfficium/divinum-officium> — **MIT licensed**,
-so we can reuse both data and code (keep the copyright notice).
-
-| Path | Contents |
-|---|---|
-| `web/www/Tabulae/data.txt` | Rubrical versions. The one we need is **`Rubrics 1960 - 1960`** (= the 1962 books). |
-| `web/www/Tabulae/Kalendaria/1960.txt` | Sanctoral calendar for 1960 rubrics (stored as a *diff* against `1955` → `1954` …, so the chain must be resolved). |
-| `web/www/Tabulae/Transfer`, `Stransfer` | Rules for feasts moved by the date of Easter / occurrence. |
-| `web/www/missa/<Lang>/Tempora`, `Sancti`, `Commune` | Mass propers, one file per day (e.g. `Tempora/Adv1-0.txt` = 1st Sunday of Advent). Sections: `[Rank]`, `[Rule]`, `[Introitus]`, `[Oratio]`, `[Lectio]` (Epistle), `[Graduale]`, `[Evangelium]`, `[Offertorium]`, `[Secreta]`, `[Communio]`, `[Postcommunio]`… |
-| `web/www/horas/<Lang>/Tempora`, `Sancti`, `Commune`, `Psalterium` | Office propers, the psalter, hymns, commons. |
-| `web/cgi-bin/horas/*.pl`, `missa/*.pl` | Perl engine: precedence, commemorations, and assembly of each Hour. |
-
-Languages: Latin plus English and many others, so Latin/English side by side is possible.
-
-### Notes on the file format
-- Each file holds `[Section]` blocks. Inside them: `!` scripture citation, `v.`/`R.`/`V.` versicles, `&Gloria`/`$Qui vivis` macros that expand from shared files, and `@Path:Section` references to other files (heavily used, e.g. a saint's day referencing a Common).
-- Some sections carry conditionals such as `(sed rubrica 1960 …)`, which change text depending on the rubrical version.
-- `[Rank]` encodes title, class/rank, and a numeric precedence weight.
+> An earlier version of this plan (building the calendar engine from scratch)
+> is in the git history.
 
 ---
 
-## 2. The hard part (and how to sidestep it in Phase 1)
+## 1. How Divinum Officium serves pages
 
-| Component | Difficulty | Why |
+From reading DO's source (`web/cgi-bin/missa/missa.pl`, `horas/officium.pl`,
+`www/missa/missa.dialog`):
+
+| What | Script | Key parameters |
 |---|---|---|
-| Calendar engine (which feast wins on a date) | **Medium** | Easter computus, temporal cycle, sanctoral, 1960 table of precedence, transfers. Well defined and testable. |
-| Mass propers for the day | **Medium–low** | Once the day's office is known, it's one file plus `@` references and Commons. |
-| **Breviary hours** (Matins → Compline) | **Very high** | Psalter scheme, antiphons by season, hymns, commemorations, *preces*, suffrages, Matins lessons, first/second Vespers concurrence… DO's Perl is around 20k lines of special cases built up over years. |
+| Mass | `https://www.divinumofficium.com/cgi-bin/missa/missa.pl` | `date` (MM-DD-YYYY), `version`, `lang2`, `command` |
+| Office (Phase 2) | `https://www.divinumofficium.com/cgi-bin/horas/officium.pl` | `date1` (MM-DD-YYYY), `version`, `lang2`, `command=prayLaudes` |
 
-**Recommendation:** don't rewrite the Office engine in Phase 1. Use a hybrid approach:
+- **Version** for the 1962 books: `Rubrics 1960 - 1960`.
+- **lang2:** the second column. `English` sits beside the Latin, which is always column 1.
+- Dates use **`MM-DD-YYYY`** (the script also accepts `/`).
+- The page is old-style HTML: a header with a form and options, then a **table where each row is one part of the Mass**, with a Latin cell and an English cell.
+- Settings not given in the URL fall back to DO's defaults or cookies, so **every parameter we rely on must always be sent explicitly**.
 
-1. **Write our own calendar engine** (TypeScript) for the Ordo view. It's tractable, and owning it gives us full control of the UI and data.
-2. **Mass readings:** parse DO's `missa` files directly with our own parser.
-3. **Breviary:** run **DO itself as a backend service** (its repo ships a `Dockerfile` and `docker-compose.yml`), call it for a date + version `Rubrics 1960 - 1960` + hour, and restyle the HTML it returns. Later phases can port the Office assembly piece by piece, using DO's output as the test oracle.
-
-Bonus: the DO engine is also the **oracle for our calendar engine**. We can generate DO's ordo for many years and diff it against ours in CI.
+⚠️ **Not yet verified against the live site.** divinumofficium.com is blocked from
+the cloud environment this plan was written in. Step 1 below is to confirm these
+URLs work.
 
 ---
 
-## 3. Architecture
+## 2. Phase 1: Mass text
 
+### Step 1: Confirm the URL (≈1 hour)
+Open in a browser, then with `curl`:
 ```
-┌──────────────────────────┐      ┌───────────────────────────┐
-│  Web app (Next.js/React) │◄────►│  API (Node/TypeScript)     │
-│  Month list · Day page   │      │  /api/day/:date            │
-└──────────────────────────┘      │  /api/month/:yyyy-mm       │
-                                  │  /api/mass/:date           │
-                                  │  /api/office/:date/:hour   │
-                                  └──────┬──────────────┬──────┘
-                                         │              │
-                              ┌──────────▼───┐   ┌──────▼──────────────┐
-                              │ Calendar     │   │ DO service (Perl,   │
-                              │ engine (TS)  │   │ Docker), proxied +  │
-                              │ + DO data    │   │ cached; Office HTML │
-                              │ (git submod.)│   └─────────────────────┘
-                              └──────────────┘
+https://www.divinumofficium.com/cgi-bin/missa/missa.pl?date=12-08-2026&version=Rubrics%201960%20-%201960&lang2=English&command=
 ```
+Check:
+- [ ] The right feast appears (Dec 8 = Immaculate Conception).
+- [ ] Latin and English appear side by side.
+- [ ] The same result comes back with no cookies (`curl` only).
+- [ ] Note the exact names of any parameters that differ (e.g. `date` vs `date1`). Save 3–4 sample pages to `samples/` as test fixtures: a Sunday, a 1st-class feast, a feria, and a day in Holy Week.
 
-- **DO data** comes in as a git submodule (or a pinned download), so upstream corrections are easy to pull in.
-- **Build step:** a script turns DO's text files into normalized JSON (resolving `@` references and keeping only the 1960 conditionals), committed or cached.
-- **Caching:** the liturgical year is deterministic, so whole years can be precomputed and served statically. A static-site build is entirely viable for the calendar and Mass.
+### Step 2: Fetcher (`src/fetch.ts`)
+- `fetchMass(date: Date, lang2 = 'English'): Promise<string>` returns the raw HTML.
+- Builds the URL with every parameter set explicitly.
+- Sends a clear `User-Agent` naming the project, a timeout, and one retry.
+- **Throttled:** at most 1 request per second. DO is a volunteer-run site.
 
-### Day data model (sketch)
+### Step 3: Cache (`cache/mass/YYYY-MM-DD.en.html`)
+- Before fetching, check the cache. A given date + version + language never changes, so cached pages stay valid indefinitely.
+- Add a `--refresh` option for when DO corrects something.
+- This also keeps our site working if DO is briefly down.
+
+### Step 4: Parser (`src/parseMass.ts`)
+Turn DO's HTML into clean data:
 ```ts
-interface LiturgicalDay {
-  date: string;              // 2026-12-08
-  celebration: string;       // "Immaculate Conception of the BVM"
-  latinTitle: string;
-  class: 1 | 2 | 3 | 4;      // 1960 classes
-  color: 'white'|'red'|'green'|'violet'|'black'|'rose';
-  season: string;            // Advent, Christmastide, …
-  commemorations: string[];
-  massFile: string;          // e.g. "Sancti/12-08"
-  officeFile: string;
-  notes?: string[];          // Ember day, fast, vigil, etc.
+interface MassDay {
+  date: string;            // "2026-12-08"
+  title: string;           // "In Conceptione Immaculata B.M.V." / English title
+  rank?: string;           // e.g. "I classis"
+  color?: string;          // if DO shows it
+  sections: {
+    name: string;          // "Introitus", "Oratio", "Lectio", "Evangelium" …
+    latin: string;         // cleaned HTML or text
+    english: string;
+  }[];
+  source: string;          // the DO URL, for attribution and a "view on DO" link
 }
 ```
+- Use `cheerio` (a server-side HTML parser).
+- Drop the header form and navigation. Keep the table rows.
+- Normalize DO's formatting (red rubrics, `V.`/`R.` markers, scripture citations) into our own CSS classes. Keep it minimal: don't try to understand the liturgy, just restructure the text.
+- **All parsing lives in this one file**, so if DO changes their HTML there's one place to fix.
+- Tests: run the parser against the saved `samples/` and snapshot the output.
+
+### Step 5: Pre-fetch a year (`scripts/prefetch.ts`)
+- `pnpm prefetch 2026` fetches every day of the year into the cache. That's 365 requests at 1 per second, about 6 minutes.
+- Then write `data/mass/2026/MM-DD.json` from the parser.
+- Run it once per year (plus whenever there's a correction). The live site never has to call DO.
+
+### Step 6: Minimal viewer
+- One page: a date picker, with prev/next/today buttons.
+- Shows the title, then each section with Latin and English in two columns (stacked on mobile).
+- Reads the static JSON, so any static host works (GitHub Pages, Netlify, Vercel).
+- Footer: "Texts from Divinum Officium" with a link to the exact source page.
+
+### Done when
+- [ ] Any date in 2026 shows the correct Mass with Latin + English.
+- [ ] Spot-checked against DO for about 10 tricky days: Ash Wednesday, the Holy Week days, Easter, Pentecost, Christmas, All Souls, an Ember Saturday, a Sunday with a commemoration.
+- [ ] A full-year prefetch runs cleanly.
 
 ---
 
-## 4. Milestones
+## 3. Phase 2: Lauds (after Phase 1 works)
 
-### M0: Setup (≈1 day)
-- Repo scaffold (pnpm, TypeScript, Vitest, ESLint/Prettier), DO added as a submodule.
-- Stand up DO via `docker compose` locally. Confirm the URL parameters for date, version and hour (`officium.pl`, `missa.pl`).
-
-### M1: Calendar engine (core)
-- Easter computus. Temporal cycle keys (`Adv1-0`, `Pent03-2`, `Epi4-0` …) to match DO filenames.
-- Load `Kalendaria/1960.txt` by resolving the diff chain (1960 → 1955 → 1954 → … → 1570).
-- 1960 precedence and occurrence rules, transfers, vigils, Ember days, *Sundays after Epiphany resumed after Pentecost*.
-- Output a `LiturgicalDay` for any date.
-- **Test:** compare against DO output for 2020–2035. Target 100% match on celebration + class + color.
-
-### M2: Mass readings
-- Parser for DO `missa` files: sections, `@` references, macros, 1960 conditionals.
-- For each day, show the Epistle (`[Lectio]`) and Gospel (`[Evangelium]`) with citations, in Latin and English. Optionally the full propers (Introit, Collect, Gradual, Offertory, Secret, Communion, Postcommunion).
-- Handle commemorations (extra collects), Ember Saturday's multiple lessons, and the Holy Week specials.
-
-### M3: Breviary (via DO service)
-- API proxy: `/api/office/:date/:hour` calls DO with version `Rubrics 1960 - 1960`, then extracts the content and sanitizes it.
-- Hours: Matins, Lauds, Prime, Terce, Sext, None, Vespers, Compline. Toggles for Latin / English / both.
-- Cache aggressively, since the output is deterministic per date+hour+language.
-
-### M4: UI (Ordo look & feel)
-- **Month view:** one row per day with date, celebration, class, a color swatch, commemorations and notes (like the FSSPX Ordo).
-- **Day view:** a header (feast, class, color, season), then a **Mass** tab (readings / full propers) and an **Office** tab (Hour selector).
-- "Today" button, prev/next day, mobile-first, print-friendly.
-
-### M5: Deploy
-- Web app on Vercel/Netlify (or fully static). The DO container on a small VM or Fly.io/Render, behind the cache.
-
-### Later phases
-- Port the Office assembly to TypeScript hour by hour (start with Compline and the Little Hours, which are the simplest), checked against DO's output.
-- Other options the FSSPX Ordo offers: local calendars and propers (by country or congregation), the FSSPX-specific Ordo notes, fasting days.
-- iCal feed and offline PWA.
+Same pipeline, reused:
+1. Confirm `officium.pl?date1=…&version=Rubrics%201960%20-%201960&lang2=English&command=prayLaudes`.
+2. `fetchOffice(date, 'Laudes')` uses the same throttle and cache (`cache/office/laudes/…`).
+3. `parseOffice.ts`: DO's Office pages use the same two-column table layout, so much of the Mass parser should carry over.
+4. Add a **Mass | Lauds** tab on the day page.
+5. Then the other Hours are mostly one more `command` value each (`prayVesperae`, `prayCompletorium`, …).
 
 ---
 
-## 5. Risks and open questions
-- **The ordo.fsspx.org layout couldn't be fetched from this environment** (its host is blocked). UI details in M4 are based on the general shape of an Ordo and should be checked against the live site.
-- **The DO Perl engine** is the right short-term dependency but adds a runtime service to host. The alternative is precomputing all Office HTML for a range of years at build time (DO's own `warm-ordo-cache.sh` does something similar), which avoids a live Perl server.
-- **Data corrections:** DO's data is maintained and changes. Pin a commit and update deliberately.
-- **Translations:** check the source and copyright status of each English text DO ships before redistributing it publicly (the code is MIT, but some translations come from published editions).
+## 4. Later: the Ordo calendar view
+Once Mass data exists for a whole year, the **month view** comes almost for free:
+the title, rank and colour of each day are already in `data/mass/YYYY/*.json`.
+Show one row per day, like ordo.fsspx.org, linking to the day page.
 
-## 6. Decisions needed
-1. **Stack:** TypeScript/Next.js (assumed above), or something else (Python/Django, SvelteKit…)?
-2. **Breviary approach:** host DO as a live service, or precompute at build time?
-3. **Languages:** Latin + English for Phase 1?
-4. **Mass content:** readings only (Epistle + Gospel), or the full propers?
+---
+
+## 5. Tech choices
+- **TypeScript + Node** for the fetch, parse and prefetch scripts. `cheerio` for HTML, `vitest` for tests.
+- **Front end:** a plain static site to begin with (Vite + a little TS or React). Move to Next.js later only if it's needed.
+- **Repo layout:**
+  ```
+  src/        fetch.ts, cache.ts, parseMass.ts, parseOffice.ts
+  scripts/    prefetch.ts
+  samples/    saved DO pages used as test fixtures
+  cache/      raw HTML (git-ignored)
+  data/       parsed JSON (committed or built in CI)
+  web/        the viewer
+  ```
+
+## 6. Being a good guest
+- Throttle requests, cache everything, and prefetch rather than calling DO live for every visitor.
+- Credit DO on every page and link to the source.
+- Consider contacting the DO maintainers (via their GitHub) to tell them about the project. They may also have suggestions or a preferred way to pull data.
+
+## 7. Risks
+| Risk | Mitigation |
+|---|---|
+| DO changes its HTML | All parsing in one module, plus snapshot tests on saved samples |
+| DO is down or slow | Everything prefetched and cached; the live site never depends on DO |
+| URL parameters differ from what the source suggests | Step 1 verifies them before any code is written |
+| Copyright of the English translations | Check DO's sources page before publishing publicly |
