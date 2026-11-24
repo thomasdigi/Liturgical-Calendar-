@@ -46,3 +46,29 @@ describe('fasting and abstinence (1917 Code)', () => {
   });
   it('a holy day of obligation on a Friday lifts abstinence (Christmas 2026)', () => expect(f('2026-12-25')).toBe('--'));
 });
+
+describe('mandatory or suggested (current law)', () => {
+  const req = (date: string, ember = false) => fasting(date, ember).required;
+  it('Ash Wednesday and Good Friday: fast and abstinence are both mandatory', () => {
+    expect(req('2027-02-10')).toEqual({ fast: true, abstinence: true });
+    expect(req('2027-03-26')).toEqual({ fast: true, abstinence: true });
+  });
+  it('other weekdays of Lent: the fast is only suggested', () => {
+    expect(fasting('2027-02-11', false).fast).toBe(true);
+    expect(req('2027-02-11').fast).toBe(false);
+  });
+  it('Fridays: abstinence is mandatory; Saturdays of Lent only suggested', () => {
+    expect(req('2026-12-04').abstinence).toBe(true);
+    expect(req('2027-02-12')).toEqual({ fast: false, abstinence: true });
+    expect(req('2027-02-13')).toEqual({ fast: false, abstinence: false });
+  });
+  it('Ember days and vigils: suggested (except abstinence on an Ember Friday)', () => {
+    expect(req('2026-12-16', true)).toEqual({ fast: false, abstinence: false });
+    expect(req('2026-12-18', true)).toEqual({ fast: false, abstinence: true });
+    expect(req('2026-12-24')).toEqual({ fast: false, abstinence: false });
+  });
+  it('a solemnity on a Friday in Lent lifts the obligation (St Joseph 2027), though tradition keeps the fast', () => {
+    expect(fasting('2027-03-19', false)).toMatchObject({ fast: true, abstinence: true });
+    expect(req('2027-03-19')).toEqual({ fast: false, abstinence: false });
+  });
+});

@@ -1,8 +1,9 @@
 # Builds the texts with Divinum Officium's engine and publishes the site to GitHub Pages.
 #
 # One-time setup: repository Settings → Pages → Build and deployment → Source: "GitHub Actions".
-# Then run it from the Actions tab ("Build and publish site" → Run workflow). It also runs on the
-# 1st of each month to roll the dates forward.
+# It runs by itself whenever changes are merged into main, and on the 1st of each month to roll
+# the dates forward. To choose different months, calendars or languages, run it from the Actions
+# tab ("Build and publish site" → Run workflow).
 #
 # Size, per calendar/version per day: about 0.7 MB of shared Latin plus about 0.65 MB per
 # language (each about 0.45 MB without the votive offices), search index included.
@@ -31,6 +32,9 @@ on:
         default: dead,parvum,sabbato
   schedule:
     - cron: '17 4 1 * *'
+  # Rebuild and republish whenever changes are merged into main (with the default settings above).
+  push:
+    branches: [main]
 
 permissions:
   contents: read

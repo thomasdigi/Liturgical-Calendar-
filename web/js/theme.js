@@ -1,26 +1,26 @@
-// Light and dark mode.
-import { $, store } from './util.js';
+// Light and dark: Light, Dark, or Automatic (follow the device). Saved per browser.
+import { store } from './util.js';
 
-export const darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
-
-export function isDark() {
+const choice = () => {
   const t = document.documentElement.dataset.theme;
-  return t ? t === 'dark' : !!darkQuery?.matches;
-}
+  return t === 'light' || t === 'dark' ? t : 'auto';
+};
 
-export function syncTheme() {
-  const dark = isDark();
-  $('theme').setAttribute('aria-pressed', String(dark));
-  $('theme').querySelector('.theme-label').textContent = dark ? 'Dark mode: on' : 'Dark mode: off';
+function syncTheme() {
+  document.querySelectorAll('#theme button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.theme === choice())));
 }
 
 export function initTheme() {
-  $('theme').onclick = () => {
-    const next = isDark() ? 'light' : 'dark';
-    document.documentElement.dataset.theme = next;
-    store.set('theme', next);
+  document.querySelectorAll('#theme button').forEach((b) => (b.onclick = () => {
+    const t = b.dataset.theme;
+    if (t === 'auto') {
+      delete document.documentElement.dataset.theme;
+      store.set('theme', 'auto');
+    } else {
+      document.documentElement.dataset.theme = t;
+      store.set('theme', t);
+    }
     syncTheme();
-  };
-  darkQuery?.addEventListener?.('change', syncTheme);
+  }));
   syncTheme();
 }

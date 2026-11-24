@@ -9,10 +9,39 @@ export function fastText(f) {
   return `${what}${f.note ? ` ${f.note}` : ''}${f.reasons.length ? ` · ${f.reasons.join(', ')}` : ''}`;
 }
 
+/**
+ * The F and A marks. Tapping one opens a small pop-up (see fastTipHtml): fasting or
+ * abstinence, and whether current Church law requires it or it's only suggested.
+ * Summaries built before `required` existed show the marks without that detail.
+ */
 export function fastMarks(f) {
   if (!f) return '';
-  return (f.fast ? '<span class="fastmark fast" title="Fast">F</span>' : '') +
-    (f.abstinence ? '<span class="fastmark abst" title="Abstinence">A</span>' : '');
+  const mark = (kind, letter, label) => {
+    const req = f.required?.[kind === 'fast' ? 'fast' : 'abstinence'];
+    const status = req === undefined ? '' : req ? ', mandatory' : ', suggested';
+    return `<span class="fastmark ${kind}${req === false ? ' suggested' : ''}" role="button" tabindex="0"
+      data-kind="${kind}" data-req="${req === undefined ? '' : req ? '1' : '0'}"
+      data-reasons="${esc(f.reasons.join(', '))}" data-note="${esc(f.note ?? '')}"
+      aria-label="${label}${status}. Tap for details">${letter}</span>`;
+  };
+  return (f.fast ? mark('fast', 'F', 'Day of fasting') : '') + (f.abstinence ? mark('abst', 'A', 'Day of abstinence') : '');
+}
+
+/** The pop-up for a tapped mark. */
+export function fastTipHtml(el) {
+  const fast = el.dataset.kind === 'fast';
+  const req = el.dataset.req;
+  const reasons = el.dataset.reasons;
+  let status = '';
+  if (req === '1') {
+    status = `<p class="tip-status mandatory">Mandatory</p><p>Required by current Church law.</p>` +
+      (!fast && !/Lent|Ash Wednesday/.test(reasons)
+        ? '<p class="tip-small">Outside Lent, bishops may allow another penance instead of abstinence (as in the USA).</p>' : '');
+  } else if (req === '0') {
+    status = `<p class="tip-status suggested">Suggested</p><p>Kept by the traditional discipline of this calendar (1917 Code); no longer required.</p>`;
+  }
+  return `<p class="tip-title">${fast ? 'Day of fasting' : 'Day of abstinence'}${el.dataset.note && fast ? ` (${esc(el.dataset.note)})` : ''}</p>` +
+    status + (reasons ? `<p class="tip-small">${esc(reasons)}</p>` : '');
 }
 
 export let weekSeq = 0;
