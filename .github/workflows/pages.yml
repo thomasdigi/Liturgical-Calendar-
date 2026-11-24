@@ -1,0 +1,91 @@
+# Builds the texts with Divinum Officium's engine and publishes the site to GitHub Pages.
+#
+# One-time setup: repository Settings → Pages → Build and deployment → Source: "GitHub Actions".
+# Then run it from the Actions tab ("Build and publish site" → Run workflow). It also runs on the
+# 1st of each month to roll the dates forward.
+#
+# Size: each day is roughly 150 KB of shared Latin per calendar/version, plus ~180 KB per
+# language. GitHub Pages sites should stay under 1 GB, so choose the range and languages to fit
+# (the defaults are about 0.4 GB for three months).
+name: Build and publish site
+
+on:
+  workflow_dispatch:
+    inputs:
+      months:
+        description: Months to build, starting with the current one
+        default: '3'
+      calendars:
+        description: Calendars (general, usa, brazil, rome)
+        default: general,usa
+      versions:
+        description: Versions (1962, 1954, 1906)
+        default: '1962'
+      languages:
+        description: Languages (en, la-bea, cs, da, de, es, fr, it, hu, hu-kaldi, nl, pl, pl-newer, pt, vi, uk, he)
+        default: en,la-bea,es,fr,de,it,pt,pl
+  schedule:
+    - cron: '17 4 1 * *'
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      MONTHS: ${{ inputs.months || '3' }}
+      CALENDARS: ${{ inputs.calendars || 'general,usa' }}
+      VERSIONS: ${{ inputs.versions || '1962' }}
+      LANGUAGES: ${{ inputs.languages || 'en,la-bea,es,fr,de,it,pt,pl' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install Perl libraries for Divinum Officium
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libcgi-pm-perl libdate-calc-perl libtimedate-perl liburi-perl \
+            liburl-encode-perl libalgorithm-diff-perl libcgi-session-perl
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Build texts
+        run: |
+          FROM=$(date -u +%Y-%m-01)
+          TO=$(date -u -d "$FROM +${MONTHS} month -1 day" +%Y-%m-%d)
+          echo "Building $FROM to $TO: calendars=$CALENDARS versions=$VERSIONS languages=$LANGUAGES"
+          npm run build -- "$FROM" "$TO" --calendar "$CALENDARS" --version "$VERSIONS" --lang "$LANGUAGES"
+
+      - name: Assemble site
+        run: npm run site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

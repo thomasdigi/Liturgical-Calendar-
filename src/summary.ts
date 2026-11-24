@@ -7,7 +7,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { doSettings, getCalendar, getVersion, type CalendarId, type VersionId } from './config.ts';
-import { DATA_DIR, dayPath } from './day.ts';
+import { DATA_DIR, indexPath } from './day.ts';
 import { fasting, type Fasting } from './fasting.ts';
 import { parsePage, type DayHeader } from './parse.ts';
 import { renderPart } from './render.ts';
@@ -31,7 +31,7 @@ export function summaryPath(calendar: CalendarId, version: VersionId, month: str
 /** The day's header: from an already-built day file if there is one, else from DO's Lauds. */
 async function headerFor(date: string, calendar: CalendarId, version: VersionId): Promise<DayHeader> {
   try {
-    const day = JSON.parse(await readFile(dayPath(date, calendar, version, 'en'), 'utf8'));
+    const day = JSON.parse(await readFile(indexPath(date, calendar, version, 'en'), 'utf8'));
     return day.header;
   } catch {
     return parsePage(await renderPart(date, 'lauds', version, 'en', calendar)).header;

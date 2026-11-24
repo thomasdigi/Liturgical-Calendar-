@@ -45,10 +45,13 @@ npm test                      # runs DO's engine on known days
 ```
 
 Month summaries are `data/<calendar>/<version>/summary/YYYY-MM.json` (built alongside
-the days). Day files are `data/<calendar>/<version>/<lang>/YYYY/MM-DD.json` (one day: the Mass plus all 8 Hours,
-about 400 KB) and `data/config.json`. For static hosting, build the dates you want and
-serve `web/` with `data/` next to it. A full year in every version and language is
-about 19,000 files and 7 GB, so build only what you need (or let `npm start` build on demand).
+the days). Each day is a folder, `data/<calendar>/<version>/<lang>/YYYY/MM-DD/`, holding
+`index.json` (header, list of parts, and the Masses on days with several) and one file per
+part (`mass`, `massFull`, each Hour, and `mass-2`, `massFull-3`, … for the other Masses of
+Christmas, All Souls, Holy Thursday and the long/short forms). The Latin is the same in
+every language, so it is stored once, in `data/<calendar>/<version>/latin/…`. Opening an
+Hour loads about 30–60 KB. A full year in every calendar, version and language would be
+several GB, so build only what you need (see Publishing) or let `npm start` build on demand.
 
 ## Adding a version, calendar or language
 
@@ -85,6 +88,29 @@ uses the standard Latin wherever it has no text of its own.
 To find untranslated lines, each day in a language is compared line by line with
 DO's English for the same day (`markFallback` in `src/day.ts`).
 
+## Publishing the site
+
+The site is static: the viewer plus pre-built JSON. Any static host works.
+
+**GitHub Pages (automatic):** `.github/workflows/pages.yml` builds the texts with DO's engine
+and publishes them. One-time setup: repository **Settings → Pages → Source: GitHub Actions**.
+Then **Actions → Build and publish site → Run workflow**, choosing how many months, which
+calendars, versions and languages. It also re-runs on the 1st of each month to roll the dates
+forward. Pages sites should stay under 1 GB: roughly 150 KB of shared Latin per
+calendar/version per day, plus about 180 KB per language per day (the defaults, three months
+of General + USA 1962 in 8 languages, come to about 0.4 GB).
+
+**By hand:**
+```bash
+npm run build -- 2026-12-01 2027-02-28 --calendar general --version 1962 --lang en,fr,es
+npm run site          # assembles dist/ (viewer + data + data/available.json)
+```
+then upload `dist/`. `data/available.json` tells the viewer which dates, calendars, versions
+and languages were built; anything else is greyed out as "not on this site".
+
+**Everything, on demand:** run `npm start` on a server with Perl (see Setup). It builds any
+day the first time it's asked for and caches it.
+
 ## How it works
 
 | File | Role |
@@ -94,6 +120,7 @@ DO's English for the same day (`markFallback` in `src/day.ts`).
 | `src/parse.ts` | **All knowledge of DO's HTML.** Turns a page into header + Latin/second-language sections |
 | `src/fasting.ts` | Fasting and abstinence rules (1917 Code) and the date of Easter |
 | `src/summary.ts` | A month at a glance: feast, class, colour, commemorations, fasting |
+| `scripts/site.ts` | Assembles the static site in `dist/` |
 | `src/day.ts` | Builds a whole day (Mass propers, full Mass, 8 Hours) for one version and language, cached in `data/` |
 | `scripts/build.ts` | Builds a date range in parallel |
 | `scripts/serve.ts` | Local server: viewer + on-demand day JSON |

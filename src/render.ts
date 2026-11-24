@@ -26,6 +26,7 @@ export async function renderPart(
   version: VersionId,
   lang: LanguageId,
   calendar: CalendarId = 'general',
+  missanumber = 1, // which Mass, on days with several (Christmas, All Souls, …)
 ): Promise<string> {
   const v = doSettings(calendar, version);
   if (!v) throw new Error(`The ${calendar} calendar has no ${version} version`);
@@ -35,7 +36,7 @@ export async function renderPart(
 
   const [dir, script, params] =
     part === 'mass' || part === 'massFull'
-      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, dioecesis, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '' }]
+      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, dioecesis, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '', missanumber: String(missanumber) }]
       : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, dioecesis, command: getHour(part).command }];
 
   const cwd = resolve(CGI, dir);

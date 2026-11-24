@@ -32,6 +32,8 @@ export interface ParsedPage {
   header: DayHeader;
   title: string; // e.g. "Ad Laudes", "Sancta Missa"
   versionShown: string; // the version DO says it rendered, e.g. "Rubrics 1960 - 1960"
+  /** On days with several Masses, DO's names for them ("Missa prima", "Forma longior", …). */
+  masses: string[];
   sections: Section[];
 }
 
@@ -101,7 +103,12 @@ export function parsePage(html: string): ParsedPage {
     .text()
     .trim();
 
-  return { header, title, versionShown, sections };
+  // DO offers a choice of Mass with radio buttons: name='missanumber' value='2'>Missa secunda
+  const masses = [...html.matchAll(/name='missanumber' value='(\d+)'>([^<]*)/g)]
+    .sort((a, b) => +a[1] - +b[1])
+    .map((m) => m[2].trim());
+
+  return { header, title, versionShown, masses, sections };
 }
 
 /** Convert one DO table cell into our minimal HTML, pulling out its heading. */

@@ -229,3 +229,47 @@ describe('month summary', () => {
     expect(d(25).fasting).toMatchObject({ fast: false, abstinence: false });
   });
 });
+
+describe('days with several Masses', () => {
+  const intro = (d: { parts: { id: string; sections: { heading: { latin: string }; latin: string }[] }[] }, id: string) =>
+    d.parts.find((p) => p.id === id)!.sections.find((s) => s.heading.latin === 'Introitus')!.latin.replace(/<[^>]+>/g, '');
+  it('Christmas has its three Masses, each with its own propers', async () => {
+    const { getDay } = await import('../src/day.ts');
+    const d = await getDay('2026-12-25', 'general', '1962', 'en', { refresh: true });
+    expect(d.masses.map((m) => m.label)).toEqual(['Missa prima', 'Missa secunda', 'Missa tertia']);
+    expect(d.masses[0].title).toMatch(/nocte/);
+    expect(intro(d, 'mass')).toMatch(/Dóminus dixit ad me/);
+    expect(intro(d, 'mass-2')).toMatch(/Lux fulgébit/);
+    expect(intro(d, 'mass-3')).toMatch(/Puer natus est/);
+    expect(d.parts.some((p) => p.id === 'massFull-3')).toBe(true);
+  });
+  it('All Souls has three Masses', async () => {
+    const { buildPart } = await import('../src/day.ts');
+    expect((await buildPart('2026-11-02', 'mass', '1962', 'en')).masses).toHaveLength(3);
+  });
+  it('Holy Thursday offers the Chrism Mass or the Mass of the Lord\'s Supper', async () => {
+    const { buildPart } = await import('../src/day.ts');
+    const names = (await buildPart('2027-03-25', 'mass', '1962', 'en')).masses.join(' | ');
+    expect(names).toMatch(/chrismatis/i);
+    expect(names).toMatch(/coena/i);
+  });
+  it('an ordinary day has no choice', async () => {
+    const { buildPart } = await import('../src/day.ts');
+    expect((await buildPart('2026-12-09', 'mass', '1962', 'en')).masses).toEqual([]);
+  });
+});
+
+describe('storage', () => {
+  it('splits a day into parts with shared Latin, and reads it back unchanged', async () => {
+    const { buildDay, writeDay, readDay } = await import('../src/day.ts');
+    const { existsSync } = await import('node:fs');
+    const { resolve } = await import('node:path');
+    const built = await buildDay('2026-12-08', 'general', '1962', 'fr');
+    await writeDay(built);
+    const read = await readDay('2026-12-08', 'general', '1962', 'fr');
+    expect(read).toEqual(JSON.parse(JSON.stringify(built)));
+    const dir = resolve(import.meta.dirname, '../data/general/1962');
+    expect(existsSync(resolve(dir, 'fr/2026/12-08/lauds.json'))).toBe(true);
+    expect(existsSync(resolve(dir, 'latin/2026/12-08/lauds.json'))).toBe(true);
+  });
+});

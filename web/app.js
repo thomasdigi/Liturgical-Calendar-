@@ -5,8 +5,10 @@ const COLORS = { white: 'var(--c-white)', red: 'var(--c-red)', green: 'var(--c-g
 const COLOR_NAMES = { white: 'White', red: 'Red', green: 'Green', violet: 'Violet', rose: 'Rose', black: 'Black' };
 const INFO_ICON = '<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="4.8" r="1" fill="currentColor"/><rect x="7.25" y="6.8" width="1.5" height="5" rx=".7" fill="currentColor"/></svg>';
 
-// Optional limits, set by a page that bundles only some dates (e.g. a demo).
-const RANGE = window.DATE_RANGE || null;
+// On a static site, data/available.json says which dates and languages were built
+// (see scripts/site.ts). Against the local server it's absent and everything is available.
+let avail = null;
+let RANGE = null;
 
 const store = {
   get(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } },
@@ -14,8 +16,7 @@ const store = {
 };
 
 let config = null;
-let day = null; // data for the language actually shown
-let altDay = null; // data for the alternative language, used where `day` has gaps
+let day = null; // the day's index (header, parts, Masses) in the language actually shown
 const cache = new Map();
 const params = new URLSearchParams(location.search);
 const state = {
@@ -29,6 +30,7 @@ const state = {
   display: store.get('display', 'both'),
   layout: store.get('layout', 'interlinear'), // 'interlinear' | 'side'
   massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
+  massN: Number(params.get('n')) || 1, // which Mass, on days with several
   page: params.get('page') === 'month' ? 'month' : 'day',
   size: Number(store.get('textSize', '0')) || 0, // steps from normal, see SIZES
   reading: store.get('reading', 'off') === 'on',
@@ -66,11 +68,16 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 
 const lang = (id) => config.languages.find((l) => l.id === id) || config.languages[0];
 const viewKey = () => (state.view === 'mass' ? 'mass' : 'office');
-const offers = (id) => lang(id)[viewKey()];
+/** Was this language built for the current calendar/version (static site)? */
+const built = (id, cal = state.calendar, ver = state.version) =>
+  !avail || (avail.combos[`${cal}/${ver}`] ?? []).includes(id);
+const comboBuilt = (cal, ver) => !avail || !!avail.combos[`${cal}/${ver}`];
+const offers = (id) => lang(id)[viewKey()] && built(id);
 /** The alternative language for gaps: the user's choice, if it covers this view. */
 function altLangId() {
   if (state.altLang !== state.lang && offers(state.altLang)) return state.altLang;
-  return config.fallbackLanguage;
+  if (offers(config.fallbackLanguage)) return config.fallbackLanguage;
+  return config.languages.find((l) => offers(l.id))?.id ?? config.fallbackLanguage;
 }
 /** The language whose data is loaded: the chosen one, or the alternative if it isn't offered here. */
 const shownLangId = () => (offers(state.lang) ? state.lang : altLangId());
@@ -108,6 +115,14 @@ async function init() {
     $('title').textContent = 'Could not load settings';
     return;
   }
+  try {
+    const res = await fetch('data/available.json');
+    if (res.ok) {
+      avail = await res.json();
+      RANGE = { first: avail.first, last: avail.last };
+      state.date = clampDate(state.date);
+    }
+  } catch { /* local server: everything available */ }
   const has = (list, id) => list.some((x) => x.id === id);
   if (!has(config.calendars, state.calendar)) state.calendar = config.calendars[0].id;
   if (!has(config.versions, state.version)) state.version = config.versions[0].id;
@@ -115,6 +130,10 @@ async function init() {
   if (!has(config.languages, state.altLang)) state.altLang = config.fallbackLanguage;
   if (!has(config.hours, state.hour)) state.hour = config.hours[0].id;
   if (!calendarHas(state.calendar, state.version)) state.calendar = config.calendars[0].id;
+  if (!comboBuilt(state.calendar, state.version)) {
+    const [c, v] = Object.keys(avail.combos)[0].split('/');
+    state.calendar = c; state.version = v;
+  }
   if (RANGE) Object.assign($('date'), { min: RANGE.first, max: RANGE.last });
 
   $('calendar').onchange = (e) => { state.calendar = e.target.value; store.set('calendar', state.calendar); syncControls(); load(); };
@@ -127,10 +146,15 @@ async function init() {
     if (b.disabled) return;
     state.layout = b.dataset.layout; store.set('layout', state.layout); syncControls();
   }));
-  document.querySelectorAll('#massmode button').forEach((b) => (b.onclick = () => {
+  document.querySelectorAll('#massmode button[data-mass]').forEach((b) => (b.onclick = () => {
     if (b.disabled) return;
     state.massMode = b.dataset.mass; store.set('massMode', state.massMode); syncControls(); render();
   }));
+  $('masschoice').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-n]');
+    if (!b) return;
+    state.massN = Number(b.dataset.n); syncMasses(); updateUrl(); render();
+  });
   document.querySelectorAll('#view button').forEach((b) => (b.onclick = () => {
     state.view = b.dataset.view; store.set('view', state.view); syncControls(); load();
   }));
@@ -179,14 +203,30 @@ const calendarHas = (cal, version) => (config.calendars.find((c) => c.id === cal
 
 // ---------- loading ----------
 
-async function fetchDay(langId) {
-  const key = `${state.calendar}/${state.version}/${langId}/${state.date.slice(0, 4)}/${state.date.slice(5)}`;
-  if (!cache.has(key)) {
-    const res = await fetch(`data/${key}.json`);
-    if (!res.ok) throw new Error(String(res.status));
-    cache.set(key, await res.json());
+async function getJson(path) {
+  if (!cache.has(path)) {
+    const p = fetch(path).then((res) => {
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json();
+    });
+    cache.set(path, p);
+    p.catch(() => cache.delete(path)); // let a failed request be retried later
   }
-  return cache.get(key);
+  return cache.get(path);
+}
+const dayDir = (langId) => `data/${state.calendar}/${state.version}/${langId}/${state.date.slice(0, 4)}/${state.date.slice(5)}`;
+/** The day's index: header, the list of parts, and the Masses if there are several. */
+const fetchDay = (langId) => getJson(`${dayDir(langId)}/index.json`);
+/** One part (an Hour or a Mass), with its Latin from the shared folder merged in. */
+async function fetchPart(langId, id) {
+  const own = await getJson(`${dayDir(langId)}/${id}.json`);
+  const latin = own.latin ?? (await getJson(`${dayDir('latin')}/${id}.json`)).sections;
+  return own.sections.map((s, i) => ({
+    heading: { latin: latin[i]?.heading ?? '', vernacular: s.heading },
+    latin: latin[i]?.latin ?? '',
+    vernacular: s.vernacular,
+    fallback: s.fallback,
+  }));
 }
 
 // ---------- month summaries (month view, week strip, fasting) ----------
@@ -265,7 +305,7 @@ async function renderMonth() {
   try { data = await fetchMonth(month); } catch { data = null; }
   if (seq !== monthSeq) return;
   if (!data) {
-    $('month-list').innerHTML = `<li class="msg">No calendar for this month${RANGE ? ' in this demo' : ' yet'}.</li>`;
+    $('month-list').innerHTML = `<li class="msg">No calendar for this month${RANGE ? ' on this site' : ' yet'}.</li>`;
     return;
   }
   $('month-list').innerHTML = data.days.map((s) => {
@@ -298,23 +338,28 @@ async function load() {
   } catch {
     if (seq !== loadSeq) return;
     day = null;
-    altDay = null;
     $('weekday').textContent = '';
     $('title').textContent = 'Not available';
     $('rank').textContent = ''; $('comm').textContent = ''; $('swatch').style.background = 'transparent';
     $('hours').innerHTML = '';
     $('fallback').hidden = true;
-    $('text').innerHTML = `<p class="msg">No texts for ${state.date} in this calendar, version and language${RANGE ? ' in this demo' : ' yet'}.</p>`;
+    $('text').innerHTML = `<p class="msg">No texts for ${state.date} in this calendar, version and language${RANGE ? ' on this site' : ' yet'}.</p>`;
+    $('masschoice').hidden = true;
     return;
   }
-  // The alternative language is only needed if it differs from the English DO already shows.
-  const alt = altLangId();
-  altDay = null;
-  if (alt !== shown && alt !== config.fallbackLanguage) {
-    try { altDay = await fetchDay(alt); } catch { altDay = null; }
-    if (seq !== loadSeq) return;
-  }
+  if (state.massN > Math.max(1, day.masses?.length ?? 0)) state.massN = 1;
+  syncMasses();
   render();
+}
+
+/** Buttons to choose between a day's Masses (Christmas, All Souls, …). */
+function syncMasses() {
+  const masses = day?.masses ?? [];
+  $('masschoice').hidden = masses.length < 2;
+  $('masschoice').innerHTML = masses.map((m) =>
+    `<button type="button" data-n="${m.n}" aria-pressed="${m.n === state.massN}" title="${esc(m.title)}">
+       <span class="mn">${esc(m.label)}</span><span class="mtitle">${esc(m.title)}</span>
+     </button>`).join('');
 }
 
 function go(date) { state.date = clampDate(date); load(); }
@@ -335,17 +380,21 @@ function syncControls() {
   $('reading').setAttribute('aria-pressed', String(state.reading));
   const viewWord = state.view === 'mass' ? 'Mass' : 'Office';
   $('calendar').innerHTML = config.calendars.map((c) => {
-    const ok = c.versions.includes(state.version);
-    const note = ok ? '' : ` (${c.versions.map((v) => config.versions.find((x) => x.id === v)?.label.split(' ')[0]).join(', ')} only)`;
+    const exists = c.versions.includes(state.version);
+    const ok = exists && comboBuilt(c.id, state.version);
+    const note = !exists ? ` (${c.versions.map((v) => config.versions.find((x) => x.id === v)?.label.split(' ')[0]).join(', ')} only)`
+      : ok ? '' : ' (not on this site)';
     return `<option value="${c.id}"${ok ? '' : ' disabled'}>${esc(c.label + note)}</option>`;
   }).join('');
   $('version').innerHTML = config.versions.map((v) => {
-    const ok = calendarHas(state.calendar, v.id);
-    return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(v.label + (ok ? '' : ' (not in this calendar)'))}</option>`;
+    const exists = calendarHas(state.calendar, v.id);
+    const ok = exists && comboBuilt(state.calendar, v.id);
+    return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(v.label + (!exists ? ' (not in this calendar)' : ok ? '' : ' (not on this site)'))}</option>`;
   }).join('');
   $('lang').innerHTML = config.languages.map((l) => {
-    const ok = l[viewKey()];
-    return `<option value="${l.id}"${ok ? '' : ' disabled'}>${esc(l.label + (ok ? '' : ` (no ${viewWord})`))}</option>`;
+    const ok = offers(l.id);
+    const why = !l[viewKey()] ? ` (no ${viewWord})` : ' (not on this site)';
+    return `<option value="${l.id}"${ok ? '' : ' disabled'}>${esc(l.label + (ok ? '' : why))}</option>`;
   }).join('');
   // A disabled option can still be the saved choice: keep it selected so the notice explains it.
   $('lang').querySelector(`option[value="${state.lang}"]`)?.removeAttribute('disabled');
@@ -366,24 +415,27 @@ function syncControls() {
   document.querySelectorAll('#view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
   $('hours').hidden = state.view !== 'office';
   $('massmode').hidden = state.view !== 'mass';
+  if (RANGE) Object.assign($('date'), { min: RANGE.first, max: RANGE.last });
 
   const full = fullAvailable();
   $('full-btn').disabled = !full;
   $('full-btn').title = full ? 'Show the Ordinary of the Mass as well' : `The Ordinary of the Mass is not translated into ${shownLabel} in Divinum Officium`;
   $('full-hint').hidden = full;
   $('full-hint').textContent = full ? '' : `Full Mass is not available in ${shownLabel}.`;
-  document.querySelectorAll('#massmode button').forEach((b) =>
+  document.querySelectorAll('#massmode button[data-mass]').forEach((b) =>
     b.setAttribute('aria-pressed', String(b.dataset.mass === (showFull() ? 'full' : 'propers'))));
 
   // Whole view not offered in the chosen language: say so, with the ⓘ to pick the alternative.
-  const offered = offers(state.lang);
-  $('fallback').hidden = offered;
+  const offered = lang(state.lang)[viewKey()];
+  const shownIsChosen = shownLangId() === state.lang;
+  $('fallback').hidden = shownIsChosen;
   const t = i18n(state.lang);
   const local = t === window.I18N.en ? '' :
     `<span class="local" lang="${lang(state.lang).htmlLang}"${lang(state.lang).rtl ? ' dir="rtl"' : ''}>${esc(state.view === 'mass' ? t.viewMass : t.viewOffice)}</span>`;
-  $('fallback').innerHTML = offered ? '' :
-    `<button type="button" class="info" aria-label="About this translation">${INFO_ICON}</button>
-     <span><span>Divinum Officium has no ${esc(lang(state.lang).label)} translation of ${viewName()}. Showing ${esc(lang(shownLangId()).label)} instead.</span>${local}</span>`;
+  $('fallback').innerHTML = shownIsChosen ? '' : !offered
+    ? `<button type="button" class="info" aria-label="About this translation">${INFO_ICON}</button>
+       <span><span>Divinum Officium has no ${esc(lang(state.lang).label)} translation of ${viewName()}. Showing ${esc(lang(shownLangId()).label)} instead.</span>${local}</span>`
+    : `<span>${esc(lang(state.lang).label)} isn't on this site for this calendar and version. Showing ${esc(lang(shownLangId()).label)} instead.</span>`;
   updateUrl();
 }
 
@@ -408,7 +460,7 @@ function openInfo(kind) {
   dlg.querySelector('.info-note').textContent = t.note;
   $('info-close').textContent = t.done;
   $('alt-lang').innerHTML = config.languages
-    .filter((l) => l.id !== state.lang && l[viewKey()])
+    .filter((l) => l.id !== state.lang && offers(l.id))
     .map((l) => `<option value="${l.id}">${esc(l.label)}</option>`).join('');
   $('alt-lang').value = altLangId();
   if ($('info').showModal) $('info').showModal(); else $('info').setAttribute('open', '');
@@ -416,10 +468,11 @@ function openInfo(kind) {
 
 // ---------- rendering ----------
 
-function currentPart(d) {
-  if (!d) return null;
-  const id = state.view === 'mass' ? (showFull() ? 'massFull' : 'mass') : state.hour;
-  return d.parts.find((p) => p.id === id) || d.parts.find((p) => p.id !== 'mass' && p.id !== 'massFull');
+/** The id of the part to show: an Hour, or the Mass (propers or full; 2nd/3rd Mass as 'mass-2' …). */
+function currentPartId() {
+  if (state.view !== 'mass') return state.hour;
+  const base = showFull() ? 'massFull' : 'mass';
+  return state.massN > 1 ? `${base}-${state.massN}` : base;
 }
 
 /**
@@ -441,10 +494,28 @@ function vernacularOf(s, i, altPart) {
   return s.fallback.length >= long ? a.vernacular : s.vernacular;
 }
 
-function render() {
+let renderSeq = 0;
+async function render() {
   if (!day) return;
-  const part = currentPart(day);
-  const altPart = currentPart(altDay);
+  const seq = ++renderSeq;
+  const id = currentPartId();
+  const meta = day.parts.find((p) => p.id === id) || day.parts.find((p) => p.id === state.hour) || day.parts[0];
+  const shown = shownLangId();
+  let part;
+  try {
+    part = { ...meta, sections: await fetchPart(shown, meta.id) };
+  } catch {
+    if (seq !== renderSeq) return;
+    $('text').innerHTML = '<p class="msg">This part could not be loaded.</p>';
+    return;
+  }
+  // The alternative language is only needed where it differs from the English DO already shows.
+  let altPart = null;
+  const alt = altLangId();
+  if (alt !== shown && alt !== config.fallbackLanguage && part.sections.some((s) => s.fallback)) {
+    try { altPart = { sections: await fetchPart(alt, meta.id) }; } catch { altPart = null; }
+  }
+  if (seq !== renderSeq) return;
   const h = state.view === 'mass' ? part.header : day.header;
   const d = new Date(`${day.date}T12:00:00Z`);
   $('weekday').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
@@ -504,7 +575,10 @@ function updateUrl() {
   const p = new URLSearchParams({ date: state.date, view: state.view, calendar: state.calendar, version: state.version, lang: state.lang });
   if (state.page === 'month') p.set('page', 'month');
   if (state.view === 'office') p.set('hour', state.hour);
-  else p.set('mass', showFull() ? 'full' : 'propers');
+  else {
+    p.set('mass', showFull() ? 'full' : 'propers');
+    if (state.massN > 1) p.set('n', String(state.massN));
+  }
   try { history.replaceState(null, '', `?${p}`); } catch { /* sandboxed */ }
 }
 

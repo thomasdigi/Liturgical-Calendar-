@@ -1,12 +1,14 @@
 /**
  * Local server: serves the viewer and builds any day on demand.
  *   npm start   →  http://localhost:3000
+ * It answers the same paths as the static site (see scripts/site.ts), building
+ * what's missing first, so the viewer works the same against either.
  */
-import { createServer } from 'node:http';
+import { createServer, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import { getCalendar, getLanguage, getVersion, publicConfig, type CalendarId, type LanguageId, type VersionId } from '../src/config.ts';
-import { getDay } from '../src/day.ts';
+import { DATA_DIR, getDay } from '../src/day.ts';
 import { getMonth } from '../src/summary.ts';
 
 const WEB = resolve(import.meta.dirname, '../web');
@@ -18,37 +20,49 @@ const TYPES: Record<string, string> = {
   '.json': 'application/json; charset=utf-8',
 };
 
-const json = (res: import('node:http').ServerResponse, body: unknown) => {
+const sendJson = (res: ServerResponse, body: unknown) => {
   res.writeHead(200, { 'content-type': TYPES['.json'] });
-  res.end(JSON.stringify(body));
+  res.end(typeof body === 'string' ? body : JSON.stringify(body));
 };
+const notFound = () => Object.assign(new Error('not found'), { code: 'ENOENT' });
 
 createServer(async (req, res) => {
   const url = new URL(req.url ?? '/', 'http://localhost');
+  const path = url.pathname;
   try {
-    // Same paths as the static build.
-    if (url.pathname === '/data/config.json') return json(res, publicConfig());
-    const sm = /^\/data\/([\w-]+)\/([\w-]+)\/summary\/(\d{4}-\d{2})\.json$/.exec(url.pathname);
-    if (sm) {
-      return json(res, await getMonth(getCalendar(sm[1]).id as CalendarId, getVersion(sm[2]).id as VersionId, sm[3]));
+    if (path === '/data/config.json') return sendJson(res, publicConfig());
+    // No data/available.json here: the server can build anything.
+    if (path === '/data/available.json') throw notFound();
+
+    // data/<cal>/<ver>/summary/YYYY-MM.json
+    const sm = /^\/data\/([\w-]+)\/([\w-]+)\/summary\/(\d{4}-\d{2})\.json$/.exec(path);
+    if (sm) return sendJson(res, await getMonth(getCalendar(sm[1]).id as CalendarId, getVersion(sm[2]).id as VersionId, sm[3]));
+
+    // data/<cal>/<ver>/<lang|latin>/YYYY/MM-DD/<file>.json
+    const dm = /^\/data\/([\w-]+)\/([\w-]+)\/([\w-]+)\/(\d{4})\/(\d{2}-\d{2})\/([\w-]+)\.json$/.exec(path);
+    if (dm) {
+      const [, cal, ver, lang, year, md, file] = dm;
+      const calendar = getCalendar(cal).id as CalendarId;
+      const version = getVersion(ver).id as VersionId;
+      // The shared Latin is written with the English, so build that if needed.
+      const builtLang = (lang === 'latin' ? 'en' : getLanguage(lang).id) as LanguageId;
+      await getDay(`${year}-${md}`, calendar, version, builtLang);
+      const body = await readFile(resolve(DATA_DIR, calendar, version, lang, year, md, `${file}.json`), 'utf8').catch(() => {
+        throw notFound();
+      });
+      return sendJson(res, body);
     }
-    const m = /^\/data\/([\w-]+)\/([\w-]+)\/([\w-]+)\/(\d{4})\/(\d{2}-\d{2})\.json$/.exec(url.pathname);
-    if (m) {
-      const calendar = getCalendar(m[1]).id as CalendarId;
-      const version = getVersion(m[2]).id as VersionId;
-      const lang = getLanguage(m[3]).id as LanguageId;
-      return json(res, await getDay(`${m[4]}-${m[5]}`, calendar, version, lang));
-    }
-    const file = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
-    const path = resolve(WEB, file);
-    if (!path.startsWith(WEB + '/') && path !== WEB) throw Object.assign(new Error('forbidden'), { code: 'ENOENT' });
-    const body = await readFile(path);
-    res.writeHead(200, { 'content-type': TYPES[extname(path)] ?? 'application/octet-stream' });
+
+    const file = path === '/' ? 'index.html' : path.slice(1);
+    const abs = resolve(WEB, file);
+    if (!abs.startsWith(WEB + '/') && abs !== WEB) throw notFound();
+    const body = await readFile(abs);
+    res.writeHead(200, { 'content-type': TYPES[extname(abs)] ?? 'application/octet-stream' });
     res.end(body);
   } catch (e) {
     const err = e as NodeJS.ErrnoException;
-    const notFound = err.code === 'ENOENT' || /^Unknown |calendar has no/.test(err.message);
-    res.writeHead(notFound ? 404 : 500, { 'content-type': 'text/plain' });
-    res.end(notFound ? 'Not found' : `Error: ${err.message}`);
+    const missing = err.code === 'ENOENT' || /^Unknown |calendar has no/.test(err.message);
+    res.writeHead(missing ? 404 : 500, { 'content-type': 'text/plain' });
+    res.end(missing ? 'Not found' : `Error: ${err.message}`);
   }
 }).listen(PORT, () => console.log(`Liturgical calendar on http://localhost:${PORT}`));

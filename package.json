@@ -6,7 +6,8 @@
     "start": "tsx scripts/serve.ts",
     "build": "tsx scripts/build.ts",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "site": "tsx scripts/site.ts"
   },
   "repository": {
     "type": "git",
