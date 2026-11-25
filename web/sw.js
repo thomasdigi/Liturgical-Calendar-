@@ -5,7 +5,7 @@
 //  - Texts (data/…): saved as they're read, and by "Save for offline" (web/js/offline.js),
 //    in the DATA cache. Served from there at once, refreshed in the background when online.
 //  - Site settings (data/config.json, data/available.json): network first.
-const SHELL = 'shell-v8';
+const SHELL = 'shell-v9';
 const DATA = 'data-v1'; // keep in step with web/js/offline.js
 
 const SHELL_FILES = [
@@ -44,6 +44,7 @@ const SHELL_FILES = [
   'js/ui/fr.js',
   'js/ui/es.js',
   'js/ui/la.js',
+  'js/ui/pt.js',
   'fonts/fonts.css', // the font files themselves are saved when first used
   'vendor/exsurge.js', // chant notation (copied in by scripts/site.ts)
 ];

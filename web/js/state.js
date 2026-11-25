@@ -21,7 +21,7 @@ export const state = {
   lang: params.get('lang') || store.get('lang', 'en'), // English unless the reader chose another (see DEFAULT_LANGUAGE)
   altLang: store.get('altLang', 'en'), // shown where the chosen language has no translation
   display: store.get('display', 'both'),
-  layout: store.get('layout', 'interlinear'), // 'interlinear' | 'side'
+  layout: store.get('layout', 'side'), // 'side' (the default) | 'interlinear'
   massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
   massN: Number(params.get('n')) || 1, // which Mass, on days with several
   page: ['month', 'search', 'sacristan', 'devotion'].includes(params.get('page')) ? params.get('page') : params.get('page') === 'clergy' ? 'sacristan' : 'day',
@@ -88,6 +88,10 @@ export const shownLangId = () => (offers(state.lang) ? state.lang : altLangId())
 
 /** Chant notation can be shown: the Office of the day, with the chant edition on this site. */
 export const chantAvailable = () => state.view === 'office' && state.office === 'day' && !!config.chant && built(config.chant);
+
+/** Chant shown now: chosen, available, and not comparing. Chanting shows the Latin only. */
+export const chanting = () => state.chant && chantAvailable() && !state.compare;
+export const shownDisplay = () => (chanting() ? 'latin' : state.display);
 
 export const fullAvailable = () => lang(shownLangId()).fullMass;
 

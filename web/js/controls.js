@@ -1,5 +1,5 @@
 // Keeping the controls in step with the state; the translation pop-up; the page address.
-import { RANGE, SIZES, altLangId, maxSizeIndex, built, calendarHas, chantAvailable, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey } from './state.js';
+import { RANGE, SIZES, altLangId, maxSizeIndex, built, calendarHas, chantAvailable, chanting, shownDisplay, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey } from './state.js';
 import { $, INFO_ICON, esc } from './util.js';
 import { t } from './ui.js';
 
@@ -58,24 +58,31 @@ export function syncControls() {
 
   const shownLabel = lang(shownLangId()).label;
   $('vernacular-btn').textContent = shownLabel;
-  document.body.dataset.display = state.display;
+  // While chanting, the Latin only: the translation buttons are greyed out (the choice is kept for later).
+  const display = shownDisplay();
+  document.body.dataset.display = display;
   document.body.dataset.layout = state.layout;
-  document.querySelectorAll('#display button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.display === state.display)));
+  document.querySelectorAll('#display button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.display === display));
+    b.disabled = chanting() && b.dataset.display !== 'latin';
+    b.title = b.disabled ? t('Chant is shown with the Latin only') : '';
+  });
   document.querySelectorAll('#layout button').forEach((b) => {
-    b.disabled = state.display !== 'both';
+    b.disabled = display !== 'both';
     b.setAttribute('aria-pressed', String(b.dataset.layout === state.layout));
   });
-  $('layout').title = state.display === 'both' ? '' : t('Layout applies when both languages are shown');
+  $('layout').title = display === 'both' ? '' : t('Layout applies when both languages are shown');
+  // Compare is for the Office only.
+  $('compare').hidden = state.view === 'mass';
   document.querySelectorAll('#view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
   $('hours').hidden = state.view !== 'office';
   $('massmode').hidden = state.view !== 'mass';
   $('officebar').hidden = state.view !== 'office';
-  $('martyrology').hidden = state.office !== 'day';
   const chantOk = chantAvailable();
   $('chant').disabled = !chantOk;
   $('chant').setAttribute('aria-pressed', String(state.chant && chantOk));
   $('chant').title = t(chantOk ? 'Show the Gregorian chant notation in place of the Latin'
-    : state.office !== 'day' ? 'Chant is available for the Office of the day only' : 'Chant is not on this site for this calendar and version');
+    : state.office !== 'day' ? 'Chant is available for the Office of the Day only' : 'Chant is not on this site for this calendar and version');
   syncOffice();
   // Compare: another calendar/version beside this one
   $('compare').setAttribute('aria-pressed', String(state.compare));
@@ -121,7 +128,7 @@ export function syncOffice() {
   const sat = new Date(`${state.date}T12:00:00Z`).getUTCDay() === 6;
   // Only drop an unavailable choice once the day has loaded (a link may name one).
   if (day && state.office !== 'day' && !built.some((v) => v.id === state.office)) state.office = 'day';
-  $('office').innerHTML = `<option value="day">${t('Office of the day')}</option>` + (config.votives ?? []).map((v) => {
+  $('office').innerHTML = `<option value="day">${t('Office of the Day')}</option>` + (config.votives ?? []).map((v) => {
     const ok = built.some((b) => b.id === v.id);
     const why = ` (${t(v.saturdaysOnly && !sat ? 'Saturdays only' : 'not on this site')})`;
     return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(t(v.label) + (ok ? '' : why))}</option>`;

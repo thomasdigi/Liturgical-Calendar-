@@ -1,5 +1,6 @@
 // Typography (Settings → Typography): the typeface, and two ways to simplify the Latin
-// (no accents: "Dóminus" → "Dominus"; no ligatures: "æternum" → "aeternum").
+// (no accents: "Dóminus" → "Dominus"; no ligatures: "æternum" → "aeternum"; u as v: "Dominus" →
+// "Dominvs"; j as i: "Jesus" → "Iesus").
 // The Latin changes apply to Latin text only (the Latin column, headings and feast titles),
 // never to the other languages, and not to chant notation.
 import { store } from './util.js';
@@ -12,6 +13,8 @@ const opts = {
   initials: store.get('initials', 'normal'), // drop caps: off, as now, or medieval
   accents: store.get('latinAccents', 'on') === 'on',
   ligatures: store.get('latinLigatures', 'on') === 'on',
+  uAsV: store.get('latinUV', 'off') === 'on', // every u written v (U → V)
+  jAsI: store.get('latinJI', 'off') === 'on', // every j written i (J → I)
 };
 
 /** Where Latin appears: the Latin column and Latin headings, and the feast titles from DO. */
@@ -29,10 +32,12 @@ export function latinText(s) {
   let t = s;
   if (!opts.accents) t = noAccents(t);
   if (!opts.ligatures) t = noLigatures(t);
+  if (opts.uAsV) t = t.normalize('NFD').replace(/u/g, 'v').replace(/U/g, 'V').normalize('NFC'); // ú → v́
+  if (opts.jAsI) t = t.replace(/j/g, 'i').replace(/J/g, 'I');
   return t;
 }
 
-const active = () => !opts.accents || !opts.ligatures;
+const active = () => !opts.accents || !opts.ligatures || opts.uAsV || opts.jAsI;
 
 /** Apply the Latin options to the text nodes under `root`. */
 export function simplifyLatin(root) {
@@ -68,6 +73,8 @@ function sync() {
   document.querySelectorAll('#initials button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.initials === opts.initials)));
   document.getElementById('latin-accents').checked = !opts.accents;
   document.getElementById('latin-ligatures').checked = !opts.ligatures;
+  document.getElementById('latin-uv').checked = opts.uAsV;
+  document.getElementById('latin-ji').checked = opts.jAsI;
 }
 
 /** `rerender` redraws the page from the original texts (needed to turn an option back off). */
@@ -96,6 +103,16 @@ export function initTypography(rerender) {
   document.getElementById('latin-accents').onchange = (e) => {
     opts.accents = !e.target.checked;
     store.set('latinAccents', opts.accents ? 'on' : 'off');
+    rerender();
+  };
+  document.getElementById('latin-uv').onchange = (e) => {
+    opts.uAsV = e.target.checked;
+    store.set('latinUV', opts.uAsV ? 'on' : 'off');
+    rerender();
+  };
+  document.getElementById('latin-ji').onchange = (e) => {
+    opts.jAsI = e.target.checked;
+    store.set('latinJI', opts.jAsI ? 'on' : 'off');
     rerender();
   };
   document.getElementById('latin-ligatures').onchange = (e) => {

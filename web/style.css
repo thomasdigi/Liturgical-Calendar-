@@ -178,7 +178,7 @@ body:not([data-display="both"]) .text .col.vn { padding-top: 0; border-top: 0; }
 .outline[hidden] { display: none; }
 .ogroup { display: inline-flex; align-items: center; gap: 3px; }
 .outline button { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 7px; cursor: pointer; font: inherit; min-height: 30px; }
-.outline .ohead { padding: 4px 9px; font-weight: 600; }
+.outline .ohead { padding: 6px 12px; min-height: 36px; border-radius: 9px; font: 15px var(--sans); color: var(--muted); }
 span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .outline .olesson { min-width: 30px; padding: 4px 6px; font-variant-numeric: tabular-nums; }
 .outline button:hover { border-color: var(--accent-ink); }
@@ -302,6 +302,9 @@ body.is-offline .top .offline-btn { border-color: var(--rubric); color: var(--ru
 
 @media (max-width: 720px) {
   .outline { top: var(--appbar, 0px); margin: 0 -16px 10px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
+  /* Centred when it fits; when it doesn't, it scrolls from the start (auto margins, not centring). */
+  .outline > :first-child { margin-left: auto; }
+  .outline > :last-child { margin-right: auto; }
   .ogroup { flex: none; }
   .text .struct { scroll-margin-top: 56px; }
   .text section, .text .commem { scroll-margin-top: 60px; }
@@ -354,7 +357,7 @@ body[data-reading="on"] .text .instr { display: none; }
 }
 .fastmark.fast { background: var(--rubric); color: var(--paper); }
 .fastmark.abst { border: 1.5px solid var(--rubric); color: var(--rubric); }
-.fastmark.partial { border: 1.5px dashed var(--rubric); color: var(--rubric); }
+.fastmark.partial { border: 1.5px solid var(--rubric); border-radius: 50%; color: var(--rubric); }
 .fastline { margin: 8px 0 0; display: flex; justify-content: center; gap: 6px; align-items: center; color: var(--rubric); font: 14px var(--sans); }
 .fastline[hidden] { display: none; }
 
@@ -608,16 +611,17 @@ body.comparing #layout { display: none; }
 .w-dot { fill: var(--paper); stroke: var(--accent-ink); stroke-width: 3; }
 .wheel-center {
   position: absolute; inset: 22%; border-radius: 50%; border: 0; background: none; color: var(--ink);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; cursor: pointer; padding: 0 4%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; text-align: center; cursor: pointer; padding: 0 6%;
   container-type: inline-size;
 }
-.wheel-weekday { font: 600 clamp(10px, 6cqi, 14px) var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
-.wheel-day { font: 600 clamp(36px, 30cqi, 76px)/1 var(--serif); }
-.wheel-month { font: italic clamp(13px, 8cqi, 20px) var(--serif); color: var(--muted); }
+.wheel-weekday { font: 600 clamp(8px, 5.4cqi, 14px) var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.wheel-day { font: 600 clamp(22px, 24cqi, 66px)/1 var(--serif); }
+.wheel-month { font: italic clamp(10px, 7.4cqi, 20px) var(--serif); color: var(--muted); }
 .wheel-rule { width: 22%; border-top: 1px solid var(--rule); margin: 4px 0; }
-.wheel-feast { font: 600 clamp(12px, 7.5cqi, 18px)/1.2 var(--serif); color: var(--accent-ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.wheel-season { font: 600 clamp(9px, 5.2cqi, 12px) var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+.wheel-feast { font: 600 clamp(9px, 6.4cqi, 17px)/1.2 var(--serif); color: var(--accent-ink); max-width: 80%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance; }
+.wheel-season { font: 600 clamp(7px, 4.4cqi, 11px)/1.3 var(--sans); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-top: 2px; max-width: 66%; text-wrap: balance; }
 @media (max-width: 480px) { .wheel-step { width: 32px; height: 32px; } }
+@media (max-width: 360px) { .wheel-wrap { gap: 2px; } .wheel-step { width: 26px; height: 26px; font-size: 16px; } }
 @media print { .wheel-wrap { display: none; } }
 
 /* Search: feasts and saints */
@@ -665,3 +669,14 @@ body.comparing #layout { display: none; }
 .devotion { max-width: 720px; margin: 0 auto; text-align: center; padding: 40px 0; }
 .devotion[hidden] { display: none; }
 .devotion h1 { margin: 0 0 16px; font-size: clamp(24px, 4vw, 34px); }
+
+.toolbar [hidden] { display: none !important; }
+
+/* Hold a button for a second: a small note about it */
+.tip.tip-small-note { max-width: 220px; font-size: 13px; padding: 6px 10px; }
+.appbar button, .top button, .view button, .massmode button, .officebar button, .hours button, .toolbar button, .outline button,
+.wheel-wrap button, .month-head button, .month-today button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+
+/* EB Garamond turns u into a v-shaped letter in text marked as Latin (its "Latin" letterforms).
+   Keep the ordinary u; the "u → v" setting (Typography) does that on purpose when wanted. */
+[lang="la"] { font-feature-settings: "locl" 0; }

@@ -54,7 +54,7 @@ export function pageStrings(): string[] {
       if (n.type !== 'tag') return;
       const e = $(n);
       if (e.is(SKIP)) return;
-      for (const a of ['aria-label', 'title', 'placeholder']) { const v = e.attr(a); if (v && /\p{L}/u.test(v)) out.add(squash(v)); }
+      for (const a of ['aria-label', 'title', 'placeholder', 'data-tip']) { const v = e.attr(a); if (v && /\p{L}/u.test(v)) out.add(squash(v)); }
       walk(e);
     });
   };
@@ -94,7 +94,7 @@ export const allStrings = () => [...new Set([...pageStrings(), ...scriptStrings(
 if (process.argv[1]?.endsWith('ui-strings.ts')) {
   const all = allStrings();
   console.log(`${all.length} texts.`);
-  for (const lang of ['de', 'fr', 'es', 'la']) {
+  for (const lang of ['de', 'fr', 'es', 'la', 'pt']) {
     const dict = (await import(resolve(WEB, 'js/ui', `${lang}.js`))).default as Record<string, string>;
     const missing = all.filter((s) => !(s in dict));
     const extra = Object.keys(dict).filter((k) => !all.includes(k));

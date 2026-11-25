@@ -3,7 +3,7 @@
 import { syncOfflinePanel } from './offline.js';
 import { comboBuilt, comboLabel, state } from './state.js';
 import { $ } from './util.js';
-import { t } from './ui.js';
+import { fmtNum, t } from './ui.js';
 
 /** The address of a calendar file for the calendar and version on screen. */
 const feedUrl = (kind) => new URL(`data/${state.calendar}/${state.version}/${kind}.ics`, location.href).href;
@@ -22,6 +22,12 @@ function syncCalendarExport() {
     for (const el of [$(sub), $(dl)]) el.classList.toggle('disabled', !ok);
   }
   $('ical-status').textContent = '';
+}
+
+/** Re-write the panel's own changing text (after a change of the app's language). */
+export function syncSettingsText() {
+  syncOfflinePanel();
+  syncCalendarExport();
 }
 
 export function initSettings() {
@@ -71,7 +77,7 @@ export function initSettings() {
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      $('epub-status').textContent = t(book.days === 1 ? 'Done: {file} (1 day, {mb} MB).' : 'Done: {file} ({days} days, {mb} MB).', { file: book.filename, days: book.days, mb: (book.blob.size / 1e6).toFixed(1) }) +
+      $('epub-status').textContent = t(book.days === 1 ? 'Done: {file} (1 day, {mb} MB).' : 'Done: {file} ({days} days, {mb} MB).', { file: book.filename, days: book.days, mb: fmtNum(book.blob.size / 1e6) }) +
         (book.missing ? ` ${t(book.missing === 1 ? '1 day was not available and was left out.' : '{n} days were not available and were left out.', { n: book.missing })}` : '');
     } catch (e) {
       $('epub-status').textContent = t("Couldn't make the e-book: {error}", { error: t(e.message) });

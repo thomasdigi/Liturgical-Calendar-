@@ -12,8 +12,9 @@ import DE from './ui/de.js';
 import FR from './ui/fr.js';
 import ES from './ui/es.js';
 import LA from './ui/la.js';
+import PT from './ui/pt.js';
 
-const DICTS = { de: DE, fr: FR, es: ES, la: LA };
+const DICTS = { de: DE, fr: FR, es: ES, la: LA, pt: PT };
 
 /** Small flags (SVG), drawn simply so they stay clear at icon size. */
 const FLAGS = {
@@ -59,11 +60,15 @@ const FLAGS = {
   })(),
 };
 
+// Brazil: a simple placeholder until the image is supplied.
+FLAGS.br = '<svg viewBox="0 0 20 14" aria-hidden="true"><rect width="20" height="14" fill="#009c3b"/><path d="M10 1.7 18.3 7 10 12.3 1.7 7Z" fill="#ffdf00"/><circle cx="10" cy="7" r="3.5" fill="#002776"/></svg>';
+
 export const UI_LANGS = [
   { id: 'en', label: 'English', flag: 'us', locale: 'en-US', flagName: 'United States' },
   { id: 'de', label: 'Deutsch', flag: 'de', locale: 'de-DE', flagName: 'Deutschland' },
   { id: 'fr', label: 'Français', flag: 'qc', locale: 'fr-CA', flagName: 'Québec' },
   { id: 'es', label: 'Español', flag: 'mx', locale: 'es-MX', flagName: 'México' },
+  { id: 'pt', label: 'Português', flag: 'br', locale: 'pt-BR', flagName: 'Brasil' },
   { id: 'la', label: 'Latina', flag: 'va', locale: 'la', flagName: 'Civitas Vaticana' },
 ];
 export const flagSvg = (id) => FLAGS[UI_LANGS.find((l) => l.id === id)?.flag ?? 'us'];
@@ -95,6 +100,10 @@ const STYLES = {
   weekdayShort: { weekday: 'short' },
   monthYear: { month: 'long', year: 'numeric' }, // November 2026
 };
+/** A number in the app's language (1.5 → "1,5" in French). */
+export const fmtNum = (n, digits = 1) =>
+  new Intl.NumberFormat(current === 'la' ? 'en-US' : info().locale, { maximumFractionDigits: digits }).format(n);
+
 /** A date (YYYY-MM-DD) in the app's language. Styles: long, medium, weekday, weekdayShort, monthYear. */
 export function fmtDate(iso, style = 'long') {
   const d = new Date(`${iso.length === 7 ? `${iso}-01` : iso}T12:00:00Z`);
