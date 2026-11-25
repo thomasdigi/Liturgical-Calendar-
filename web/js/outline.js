@@ -2,6 +2,10 @@
 // DO prints these as plain red lines ("Nocturnus II", "Lectio 4", "Te Deum") or, for the
 // Martyrology, as a section of its own; we find them in the drawn text and link to them.
 import { $, esc } from './util.js';
+import { t } from './ui.js';
+
+/** An outline label in the app's language ("Nocturn II" → "Nokturn II"). */
+const shown = (label) => label.replace(/^Nocturn\b/, t('Nocturn')).replace(/^(Te Deum|Martyrology|Lessons)$/, (m) => t(m));
 
 const NOCTURN = /^Nocturnus\s+([IV]+)$/;
 const LESSON = /^Lectio\s+(\d+)$/;
@@ -63,10 +67,10 @@ export function renderOutline(items) {
   }
   nav.innerHTML = groups.map((g) => {
     const head = g.head.id
-      ? `<button type="button" class="ohead" data-target="${g.head.id}">${esc(g.head.label)}</button>`
-      : `<span class="ohead">${esc(g.head.label)}</span>`;
+      ? `<button type="button" class="ohead" data-target="${g.head.id}">${esc(shown(g.head.label))}</button>`
+      : `<span class="ohead">${esc(shown(g.head.label))}</span>`;
     const lessons = g.lessons.map((l) =>
-      `<button type="button" class="olesson" data-target="${l.id}" aria-label="Lesson ${esc(l.label)}">${esc(l.label)}</button>`).join('');
+      `<button type="button" class="olesson" data-target="${l.id}" aria-label="${esc(t('Lesson {n}', { n: l.label }))}">${esc(l.label)}</button>`).join('');
     return `<span class="ogroup">${head}${lessons}</span>`;
   }).join('');
 }

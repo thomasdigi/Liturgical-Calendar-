@@ -1,21 +1,25 @@
 // Search across the texts.
 import { getJson } from './data.js';
+import { findFeasts } from './feasts.js';
 import { avail, built, config, lang, state } from './state.js';
-import { $, addMonths, esc, monthLabel, monthOf } from './util.js';
+import { $, addMonths, esc, monthOf } from './util.js';
+import { fmtDate, t } from './ui.js';
+
+const monthLabel = (m) => fmtDate(m, 'monthYear');
 
 /** The search language: the chosen one if it was built, else English. */
 export const searchLangId = () => (built(state.lang) ? state.lang : config.fallbackLanguage);
 
 export function syncSearchOptions() {
   const m = monthOf(state.date);
-  const opts = [['1', monthLabel(m)], ['3', `${monthLabel(m)} and the next two months`]];
-  if (avail) opts.push(['all', `All dates on this site (${avail.first} to ${avail.last})`]);
+  const opts = [['1', monthLabel(m)], ['3', t('{month} and the next two months', { month: monthLabel(m) })]];
+  if (avail) opts.push(['all', t('All dates on this site ({first} to {last})', { first: avail.first, last: avail.last })]);
   const scope = $('scope').value || '1';
   $('scope').innerHTML = opts.map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
   $('scope').value = opts.some(([v]) => v === scope) ? scope : '1';
   const L = lang(searchLangId());
   const within = $('searchin').value || 'both';
-  $('searchin').innerHTML = [['both', `Latin and ${L.label}`], ['latin', 'Latin only'], ['vernacular', `${L.label} only`]]
+  $('searchin').innerHTML = [['both', t('Latin and {lang}', { lang: L.label })], ['latin', t('Latin only')], ['vernacular', t('{lang} only', { lang: L.label })]]
     .map(([v, l]) => `<option value="${v}">${esc(l)}</option>`).join('');
   $('searchin').value = within;
   setTimeout(() => $('q').focus(), 0);
@@ -74,10 +78,10 @@ export function snippet(text, terms) {
 }
 
 export const partLabel = (id) => {
-  if (id === 'mass') return 'Mass';
+  if (id === 'mass') return t('Mass');
   const m = /^mass-(\d+)$/.exec(id);
-  if (m) return `Mass ${m[1]}`;
-  return config.hours.find((h) => h.id === id)?.label ?? id;
+  if (m) return t('Mass {n}', { n: m[1] });
+  return t(config.hours.find((h) => h.id === id)?.label ?? id);
 };
 
 export let searchSeq = 0;
@@ -87,14 +91,14 @@ export const MAX_HITS = 300;
 export async function runSearch() {
   const seq = ++searchSeq;
   const terms = parseQuery($('q').value);
-  if (!terms.length) { $('searchstatus').textContent = 'Type a word or phrase to find.'; return; }
+  if (!terms.length) { $('searchstatus').textContent = t('Type a word or phrase to find.'); return; }
   const within = $('searchin').value;
   const langId = searchLangId();
   const hits = [];
   $('results').innerHTML = '';
   const months = scopeMonths();
   for (const month of months) {
-    $('searchstatus').textContent = `Searching ${monthLabel(month)}…${avail ? '' : ' (the first search of a month builds its index, which can take a minute)'}`;
+    $('searchstatus').textContent = t('Searching {month}…', { month: monthLabel(month) }) + (avail ? '' : ` ${t('(the first search of a month builds its index, which can take a minute)')}`);
     const base = `data/${state.calendar}/${state.version}`;
     const [la, vn] = await Promise.all([
       within === 'vernacular' ? null : getJson(`${base}/latin/search/${month}.json`).catch(() => null),
@@ -131,16 +135,35 @@ export async function runSearch() {
   }
   if (seq !== searchSeq) return;
   $('searchstatus').textContent = hits.length
-    ? `${hits.length >= MAX_HITS ? `First ${MAX_HITS}` : hits.length} result${hits.length === 1 ? '' : 's'} in ${months.length === 1 ? monthLabel(months[0]) : `${monthLabel(months[0])} to ${monthLabel(months.at(-1))}`}.`
-    : 'Nothing found. Try fewer words, or a longer period.';
+    ? t(hits.length >= MAX_HITS ? 'First {n} results in {when}.' : hits.length === 1 ? '1 result in {when}.' : '{n} results in {when}.', {
+      n: hits.length >= MAX_HITS ? MAX_HITS : hits.length,
+      when: months.length === 1 ? monthLabel(months[0]) : t('{from} to {to}', { from: monthLabel(months[0]), to: monthLabel(months.at(-1)) }),
+    })
+    : t('Nothing found. Try fewer words, or a longer period.');
+}
+
+/** Feasts and saints matching what's typed: shown as you type, above the text results. */
+let feastSeq = 0;
+export async function runFeastSearch() {
+  const mine = ++feastSeq;
+  const q = $('q').value.trim();
+  const found = q.length >= 3 ? await findFeasts(q) : [];
+  if (mine !== feastSeq) return;
+  $('feasthits').hidden = !found.length;
+  $('feastlist').innerHTML = found.map((f) => {
+    return `<li><button type="button" data-date="${f.date}">
+      <span class="fdate">${esc(fmtDate(f.date, 'medium'))}</span>
+      <span class="ftitle rlatin">${esc(f.title)}</span>
+      ${f.also ? `<span class="falso rlatin">${t('Com.')} ${esc(f.also)}</span>` : ''}
+      <span class="frank">${esc(f.rank)}</span></button></li>`;
+  }).join('');
 }
 
 export function renderHits(hits) {
   let lastDate = '';
   $('results').innerHTML = hits.map((h) => {
-    const dt = new Date(`${h.date}T12:00:00Z`);
     const dateHead = h.date !== lastDate
-      ? `<li class="rdate">${esc(dt.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }))}</li>` : '';
+      ? `<li class="rdate">${esc(fmtDate(h.date, 'long'))}</li>` : '';
     lastDate = h.date;
     return `${dateHead}<li><button type="button" data-hit='${esc(JSON.stringify({ date: h.date, part: h.part, section: h.section }))}'>
       <span class="rwhere">${esc(partLabel(h.part))}${h.heading ? ` · ${esc(h.heading)}` : ''}</span>

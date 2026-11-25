@@ -8,25 +8,28 @@
 # Size, per calendar/version per day: about 0.7 MB of shared Latin plus about 0.65 MB per
 # language (each about 0.45 MB without the votive offices), search index included.
 # GitHub Pages sites should stay under 1 GB, so choose the range and languages to fit:
-# the defaults (three months, General 1962, eight languages, all votive offices) are about 0.55 GB.
+# the defaults (three months, General 1962, eight languages plus the chant, all votive offices) are about 0.6 GB.
 # Adding the USA calendar doubles that; use fewer languages or months, or --votive none.
 name: Build and publish site
 
 on:
   workflow_dispatch:
     inputs:
+      start:
+        description: First month to build (YYYY-MM); leave empty for the current month
+        default: ''
       months:
-        description: Months to build, starting with the current one
+        description: Number of months to build
         default: '3'
       calendars:
-        description: Calendars (general, usa, brazil, rome)
+        description: Calendars (general, usa, brazil)
         default: general
       versions:
         description: Versions (1962, 1954, 1906)
         default: '1962'
       languages:
-        description: Languages (en, la-bea, cs, da, de, es, fr, it, hu, hu-kaldi, nl, pl, pl-newer, pt, vi, uk, he)
-        default: en,la-bea,es,fr,de,it,pt,pl
+        description: Languages (en, la-bea, cs, da, de, es, fr, it, hu, hu-kaldi, nl, pl, pl-newer, pt, vi, uk, he; la-gabc is the chant notation)
+        default: en,la-bea,es,fr,de,it,pt,pl,la-gabc
       votives:
         description: Votive offices (dead, parvum, sabbato, or none)
         default: dead,parvum,sabbato
@@ -50,13 +53,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      START: ${{ inputs.start || '' }}
       MONTHS: ${{ inputs.months || '3' }}
       CALENDARS: ${{ inputs.calendars || 'general' }}
       VERSIONS: ${{ inputs.versions || '1962' }}
-      LANGUAGES: ${{ inputs.languages || 'en,la-bea,es,fr,de,it,pt,pl' }}
+      LANGUAGES: ${{ inputs.languages || 'en,la-bea,es,fr,de,it,pt,pl,la-gabc' }}
       VOTIVE_OFFICES: ${{ inputs.votives || 'dead,parvum,sabbato' }}
+      # The site's address, so calendar events can link back to their day.
+      SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: true
 
@@ -66,7 +72,7 @@ jobs:
           sudo apt-get install -y -qq libcgi-pm-perl libdate-calc-perl libtimedate-perl liburi-perl \
             liburl-encode-perl libalgorithm-diff-perl libcgi-session-perl
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -78,7 +84,7 @@ jobs:
 
       - name: Build texts
         run: |
-          FROM=$(date -u +%Y-%m-01)
+          if [ -n "$START" ]; then FROM="$START-01"; else FROM=$(date -u +%Y-%m-01); fi
           TO=$(date -u -d "$FROM +${MONTHS} month -1 day" +%Y-%m-%d)
           echo "Building $FROM to $TO: calendars=$CALENDARS versions=$VERSIONS languages=$LANGUAGES"
           npm run build -- "$FROM" "$TO" --calendar "$CALENDARS" --version "$VERSIONS" --lang "$LANGUAGES" --votive "$VOTIVE_OFFICES"
@@ -86,7 +92,7 @@ jobs:
       - name: Assemble site
         run: npm run site
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
@@ -98,4 +104,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

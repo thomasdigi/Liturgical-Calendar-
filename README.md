@@ -7,8 +7,7 @@ For any date:
 
 Versions: **1962 (Rubrics 1960)**, **Divino Afflatu 1954** and **Tridentine 1906**.
 Calendars: **General Roman**, **USA** (DO's "Rubrics 1960 - 2020 USA"; 1962 only) and
-**Brazil**. (The **Diocese of Rome** is set aside but kept working: in `src/config.ts`,
-delete its `hidden: true` to bring it back.)
+**Brazil**.
 Texts are in Latin beside the Bea psalter or any of DO's translations, interlinear or
 side by side, or one language alone. Light and dark modes.
 
@@ -27,6 +26,61 @@ it needs https (GitHub Pages is) or localhost.
 (just the day's heading and the text, always in light colours). Tap a fasting mark (**F**, **A**)
 to see whether current Church law (1983 Code) still requires it or it's only suggested by the
 traditional discipline.
+
+On a phone, **swipe** left or right to change day (or month). Each day **reopens where you
+left off** (the Mass or Hour, and how far down). The month view has a **Today** button and
+circles today. **Add to your calendar** (Settings): subscribe to, or download, an iCalendar
+feed of every day's feast or of fast days only (`data/<calendar>/<version>/calendar.ics`,
+`fasting.ics`, built for the same dates as the site; `src/ical.ts`).
+
+**Chant** (Office): the Gregorian notation of the hymns, antiphons and psalm tones, from DO's
+chant edition (`la-gabc`, built like a language), drawn by exsurge (MIT License, shipped with
+DO) in place of the Latin; the translation stays beside it. The Mass has no chant edition in DO.
+
+**Sacristan** (menu): a page with the whole day on one screen. Mass: rank,
+colour, Gloria, Credo, Preface, what follows the Epistle, commemorations, whether votive Masses
+are allowed. Office: rank, psalms, Matins (nocturns, lessons, Te Deum), Lauds scheme, First or
+Second Vespers. Read from DO's own texts for the day at build time (`src/ordo.ts`). The votive
+Mass line gives the general rule for the day's class.
+
+**Language of the app** (Settings, with flags): English (US flag), Deutsch, Français (Quebec), Español (Mexico) or Latina (Vatican) for the
+buttons, menus, notes and dates (`web/js/ui.js`). The texts of the Mass and Office keep their own
+language. The translations are one table, `translations/app.tsv` (a column per language; any
+spreadsheet opens it): edit it, then `npm run translations`. `npx tsx scripts/ui-strings.ts --list`
+shows any text without a translation (and `test/ui.test.ts` fails). The feast search understands
+names in the app's language (and English when it's in Latin), and Latin always. The translations
+were written for this app and would benefit from review by native speakers.
+
+**Top bar**: ☰ opens the menu (left panel), 🔍 the search, ⚙ the Settings (right panel). The menu
+has the **Sacristan** page and **Devotions** (Rosary, Divine Mercy, Stations of the Cross, Via Petri,
+Angelus; each page is still under construction).
+**Search** finds feasts and saints as you type (English or Latin names: "St. Lucy", "Christmas";
+`web/js/feasts.js`) and, with the Search button, words in the texts.
+
+**Month page**: a wheel of the liturgical year (`web/js/wheel.js`): the seasons around a circle,
+an arrow at the day, and the day, its feast and its season in the middle. Tap the ring to go to
+that time of year, the middle to open the day.
+
+**E-book** (Settings): an EPUB of a day, 7 days or a month (Mass, Office or both), made in the
+browser from the site's texts (`web/js/epub.js`), in the languages, calendar and version chosen.
+
+**Typography** (Settings): four typefaces (Classic, EB Garamond, Source Sans 3, Grenze Gotisch; the
+fonts are in `web/fonts`, SIL Open Font License), drop caps off, plain or medieval (a red UnifrakturMaguntia
+capital, three lines tall), and for the Latin only: no accents (*Dóminus* → *Dominus*)
+and no ligatures (*æ, œ* → *ae, oe*) (`web/js/typography.js`).
+
+**Report a mistake** (Settings, and at the foot of each page): an email or a GitHub issue,
+filled in with the day, calendar, version, language and part on screen (`web/js/report.js`).
+
+Fasting marks: **F** fast, **A** abstinence, **P** partial abstinence (a fast day without full
+abstinence: meat at the principal meal only). Tap a mark to open its note; tap again to close.
+
+DO's three crosses (✠ sign of the cross, ✙ small cross on the lips, + at the Gospel) are all
+shown as ✠.
+
+Holy Week's special services (Palm Sunday, the Triduum, the Easter Vigil) keep their headings.
+In the USA texts, where the book prints "N." for the saint's name, the name is added in
+brackets (*[Padre Pio]*), but not where "N." stands for the Pope or the bishop.
 
 Also: **search** across the texts (Mass propers and the Hours, accent-insensitive, phrases in
 quotes), **compare** mode (the same Mass or Hour in another calendar or version, side by

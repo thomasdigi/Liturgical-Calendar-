@@ -123,7 +123,9 @@ function cleanCell($: cheerio.CheerioAPI, td: cheerio.Cheerio<AnyNode>): { headi
   let heading = '';
   // Only counts as a heading if it opens the cell and isn't glued to following text
   // (DO also uses SIZE=+1 for some initials, "P|er Dominum", and for "N." placeholders).
-  const first = cell.contents().filter((_, n) => !(n.type === 'text' && !$(n).text().trim())).first();
+  // (DO's special services, e.g. Holy Week, put line breaks before the heading: skip those.)
+  const first = cell.contents().filter((_, n) => !(n.type === 'text' && !$(n).text().trim()) && !(n.type === 'tag' && n.name === 'br')).first();
+  if (first.length) first.prevAll('br').remove();
   const after = first.length ? first[0].next : null;
   const glued = after?.type === 'text' && /^\S/.test($(after).text());
   const h = first.is('font[size="+1"]') && !glued ? first : cell.find('nothing');
@@ -149,7 +151,10 @@ function cleanCell($: cheerio.CheerioAPI, td: cheerio.Cheerio<AnyNode>): { headi
     $(el).replaceWith(`<span class="${cls}">${escapeHtml(t)}</span>`);
   });
   cell.find('font[color="red"], font[color="RED"], span[style*="color:red"]').each((_, el) => {
-    $(el).replaceWith(`<span class="rubric">${escapeHtml($(el).text())}</span>`);
+    // DO's crosses: ✠ (sign of the cross), ✙ (small cross on the lips), "+" (the three
+    // crosses at the Gospel). All are shown as ✠, so they look alike in every language.
+    const t = $(el).text().replace(/^\s*(?:✙\uFE0E?|\+)\s*$/, '✠');
+    $(el).replaceWith(`<span class="rubric${t.trim() === '✠' ? ' cross' : ''}">${escapeHtml(t)}</span>`);
   });
   cell.find('font[size="-1"]').each((_, el) => {
     $(el).replaceWith(`<span class="small">${escapeHtml($(el).text())}</span>`);

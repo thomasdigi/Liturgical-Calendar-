@@ -3,6 +3,7 @@
 // "Save for offline" fills that cache ahead of time for the days the reader picks.
 import { altLangId, avail, comboLabel, lang, shownLangId, state } from './state.js';
 import { $, monthOf, shift } from './util.js';
+import { t } from './ui.js';
 
 const DATA = 'data-v1'; // keep in step with web/sw.js
 const canSave = () => 'caches' in window && window.isSecureContext;
@@ -22,7 +23,7 @@ export function initOffline() {
   const sync = () => {
     document.body.classList.toggle('is-offline', !navigator.onLine);
     $('offline-badge').hidden = navigator.onLine;
-    $('net-state').textContent = navigator.onLine ? 'Connected.' : 'No connection: showing what is saved on this device.';
+    $('net-state').textContent = t(navigator.onLine ? 'Connected.' : 'No connection: showing what is saved on this device.');
   };
   window.addEventListener('online', sync);
   window.addEventListener('offline', sync);
@@ -48,17 +49,17 @@ const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) ||
 function syncInstall() {
   const how = $('install-how');
   $('install-app').hidden = !installPrompt;
-  if (standalone()) how.textContent = 'Installed: the app opens from your home screen.';
-  else if (installPrompt) how.textContent = 'Add the app to your home screen or apps.';
-  else if (isIOS()) how.textContent = 'In Safari, tap Share, then “Add to Home Screen”.';
-  else how.textContent = 'In your browser’s menu, choose “Install app” or “Add to Home Screen”.';
+  if (standalone()) how.textContent = t('Installed: the app opens from your home screen.');
+  else if (installPrompt) how.textContent = t('Add the app to your home screen or apps.');
+  else if (isIOS()) how.textContent = t('In Safari, tap Share, then “Add to Home Screen”.');
+  else how.textContent = t('In your browser’s menu, choose “Install app” or “Add to Home Screen”.');
 }
 
 async function syncStorage() {
   const out = $('saved-size');
   if (!navigator.storage?.estimate) { out.textContent = ''; return; }
   const { usage } = await navigator.storage.estimate();
-  out.textContent = `Saved on this device: about ${(usage / 1e6).toFixed(usage > 1e7 ? 0 : 1)} MB.`;
+  out.textContent = t('Saved on this device: about {mb} MB.', { mb: (usage / 1e6).toFixed(usage > 1e7 ? 0 : 1) });
 }
 
 /** Fill in the Offline section of the Settings panel (called when the panel opens). */
@@ -68,8 +69,8 @@ export function syncOfflinePanel() {
   $('save-days').disabled = !ok || !!saving;
   $('clear-saved').disabled = !ok;
   $('save-what').textContent = ok
-    ? `${comboLabel(state.calendar, state.version)}, Latin and ${lang(shownLangId()).label}: the Mass, every Hour, the week and month view, and search.`
-    : 'Saving needs a secure (https) connection.';
+    ? t('{combo}, Latin and {lang}: the Mass, every Hour, the week and month view, and search.', { combo: comboLabel(state.calendar, state.version), lang: lang(shownLangId()).label })
+    : t('Saving needs a secure (https) connection.');
   $('save-progress').hidden = !saving;
   syncStorage();
 }
@@ -116,7 +117,7 @@ async function saveDays() {
     }
     // First list every file (reading each day's index), then fetch what isn't saved yet.
     for (let i = 0; i < dates.length && !saving.cancelled; i++) {
-      status.textContent = `Finding what to save: day ${i + 1} of ${dates.length}…`;
+      status.textContent = t('Finding what to save: day {n} of {total}…', { n: i + 1, total: dates.length });
       for (const l of langs) for (const f of await dayFiles(cache, l, dates[i])) files.add(f);
     }
     const list = [...files];
@@ -134,16 +135,16 @@ async function saveDays() {
         } catch { failed++; }
         done++;
         bar.value = done / list.length;
-        status.textContent = `Saving: ${done} of ${list.length} files…`;
+        status.textContent = t('Saving: {done} of {total} files…', { done, total: list.length });
       }
     }));
     status.textContent = saving.cancelled
-      ? 'Stopped. What was saved so far stays saved.'
+      ? t('Stopped. What was saved so far stays saved.')
       : failed
-        ? `Saved, except ${failed} file${failed === 1 ? '' : 's'} that couldn't be fetched. Try again to finish.`
-        : `Saved ${dates.length} day${dates.length === 1 ? '' : 's'} from ${dates[0] ?? state.date}. They open without a connection.`;
+        ? t(failed === 1 ? "Saved, except 1 file that couldn't be fetched. Try again to finish." : "Saved, except {n} files that couldn't be fetched. Try again to finish.", { n: failed })
+        : t(dates.length === 1 ? 'Saved 1 day from {from}. It opens without a connection.' : 'Saved {n} days from {from}. They open without a connection.', { n: dates.length, from: dates[0] ?? state.date });
   } catch (e) {
-    status.textContent = `Couldn't save: ${e.message}`;
+    status.textContent = t("Couldn't save: {error}", { error: e.message });
   } finally {
     saving = null;
     $('save-days').disabled = !canSave();
@@ -155,7 +156,7 @@ async function saveDays() {
 async function clearSaved() {
   if (!canSave()) return;
   await caches.delete(DATA);
-  $('save-status').textContent = 'Removed the saved texts. Pages you open are saved again as you read.';
+  $('save-status').textContent = t('Removed the saved texts. Pages you open are saved again as you read.');
   $('save-progress').hidden = false;
   $('save-bar').value = 0;
   syncStorage();
@@ -163,4 +164,4 @@ async function clearSaved() {
 
 /** Wording for "this day isn't available" when the reason may be the missing connection. */
 export const offlineHint = () =>
-  navigator.onLine ? '' : ' You are offline, and this day hasn’t been saved on this device. Use “Save for offline” when connected.';
+  navigator.onLine ? '' : ` ${t('You are offline, and this day hasn’t been saved on this device. Use “Save” in Settings when connected.')}`;

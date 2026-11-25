@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Divine Office and Mass</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-64.png" type="image/png">
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <!-- The page has its own light and dark designs: browsers shouldn't repaint it (e.g. Brave's dark mode for sites). -->
   <meta name="color-scheme" content="light dark">
@@ -16,9 +17,28 @@
   <script>
     // Apply a saved light/dark choice before first paint (no saved choice = follow the system).
     try { const t = localStorage.getItem('theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch {}
+    // …and the chosen typeface (Settings → Typography).
+    try {
+      const f = localStorage.getItem('font'); if (['garamond', 'sans', 'gothic'].includes(f)) document.documentElement.dataset.font = f;
+      const i = localStorage.getItem('initials'); if (i === 'off' || i === 'fancy') document.documentElement.dataset.initials = i;
+    } catch {}
   </script>
 </head>
 <body>
+  <!-- Top bar: menu (left panel), the app's name, search and settings (right panel). -->
+  <div class="appbar" id="appbar">
+    <button type="button" id="menu-btn" class="icon-btn" aria-label="Menu" aria-haspopup="dialog" aria-controls="menu-panel">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <span class="appbar-title">Office &amp; Mass</span>
+    <span id="offline-badge" class="offline-badge" hidden>Offline</span>
+    <button type="button" id="search-btn" class="icon-btn" aria-label="Search texts, feasts and saints" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M15.5 15.5 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <button type="button" id="settings-btn" class="icon-btn" aria-label="Settings" aria-haspopup="dialog" aria-controls="settings-panel">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
+    </button>
+  </div>
   <header class="top">
     <nav class="datenav" aria-label="Date">
       <button id="prev" type="button" aria-label="Previous day">‹</button>
@@ -27,16 +47,10 @@
       <button id="today" type="button">Today</button>
     </nav>
     <div class="pagebar">
-      <div class="seg" id="page" role="group" aria-label="Day, month or search">
+      <div class="seg" id="page" role="group" aria-label="Day or month">
         <button type="button" data-page="day" aria-pressed="true">Day</button>
         <button type="button" data-page="month" aria-pressed="false">Month</button>
-        <button type="button" data-page="search" aria-pressed="false">Search</button>
       </div>
-      <button type="button" id="settings-btn" class="settings-btn" aria-haspopup="dialog" aria-controls="settings-panel">
-        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M19.4 13a7.6 7.6 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.4 7.4 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.4 7.4 0 0 0-1.7 1l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.4 7.4 0 0 0 1.7 1l.4 2.5h4l.4-2.5a7.4 7.4 0 0 0 1.7-1l2.4 1 2-3.4zM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" transform="translate(-1 0)"/></svg>
-        <span>Settings</span>
-      </button>
-      <span id="offline-badge" class="offline-badge" hidden>Offline</span>
     </div>
     <div class="settings">
       <label class="select"><span>Calendar</span><select id="calendar"></select></label>
@@ -46,34 +60,70 @@
   </header>
 
   <main>
+    <!-- Sacristan mode: the day's Mass and Office facts on one page -->
+    <section class="sacristan" id="sacristan" hidden aria-labelledby="sacristan-title">
+      <p class="weekday" id="sacristan-date"></p>
+      <h1 class="title" id="sacristan-title"></h1>
+      <p class="sacristan-combo" id="sacristan-combo"></p>
+      <div id="sacristan-body"></div>
+    </section>
+
+    <!-- Devotions (from the menu): each its own page; for now, under construction -->
+    <section class="devotion" id="devotion" hidden aria-labelledby="devotion-title">
+      <h1 id="devotion-title"></h1>
+      <p class="msg">Under Construction</p>
+    </section>
+
     <!-- Month view -->
     <section class="month" id="month" hidden aria-labelledby="month-title">
+      <!-- The liturgical year: the seasons around a circle, and the day shown (web/js/wheel.js) -->
+      <div class="wheel-wrap">
+        <button type="button" class="wheel-step" id="wheel-prev" aria-label="Previous day">‹</button>
+        <div class="wheel" id="wheel" role="group" aria-label="The liturgical year. Tap the ring to go to that time of year.">
+          <svg id="wheel-svg" viewBox="0 0 400 400" aria-hidden="true"></svg>
+          <button type="button" class="wheel-center" title="Open this day">
+            <span class="wheel-weekday" id="wheel-weekday"></span>
+            <span class="wheel-day" id="wheel-day"></span>
+            <span class="wheel-month" id="wheel-month"></span>
+            <span class="wheel-rule"></span>
+            <span class="wheel-feast" id="wheel-feast"></span>
+            <span class="wheel-season" id="wheel-season"></span>
+          </button>
+        </div>
+        <button type="button" class="wheel-step" id="wheel-next" aria-label="Next day">›</button>
+      </div>
       <div class="month-head">
         <button type="button" id="month-prev" aria-label="Previous month">‹</button>
         <h1 id="month-title">Month</h1>
         <button type="button" id="month-next" aria-label="Next month">›</button>
       </div>
+      <p class="month-today"><button type="button" id="month-today">Today</button></p>
       <p class="legend">
         <span class="fastmark fast">F</span> fast
         <span class="fastmark abst">A</span> abstinence
-        <span class="legend-note">Traditional discipline (1917 Code). Tap F or A to see whether current Church law still requires it.</span>
+        <span class="fastmark partial">P</span> partial abstinence
+        <span class="legend-note">Traditional discipline (1917 Code). Tap F, A or P to see whether current Church law still requires it.</span>
       </p>
       <ol class="month-list" id="month-list"></ol>
     </section>
 
     <!-- Search -->
     <section class="searchpage" id="searchpage" hidden aria-labelledby="search-title">
-      <h1 id="search-title">Search the texts</h1>
+      <h1 id="search-title">Search</h1>
       <form id="searchform" class="searchform" role="search">
         <label class="sr" for="q">Words to find</label>
-        <input id="q" type="search" placeholder="e.g. Rorate caeli, or &quot;Lumen ad revelationem&quot;" autocomplete="off">
+        <input id="q" type="search" placeholder="A feast or saint (St. Lucy, Christmas), or words in the texts" autocomplete="off">
         <button type="submit">Search</button>
         <div class="searchopts">
           <label>When <select id="scope"></select></label>
           <label>In <select id="searchin"></select></label>
         </div>
       </form>
-      <p class="searchhelp">Finds sections containing all the words, in any order; put a phrase in quotes. Accents and æ/ae, j/i are ignored. Searches the Mass propers and the Hours of the day in the current calendar and version.</p>
+      <section class="feasthits" id="feasthits" hidden aria-labelledby="feasthits-title">
+        <h2 id="feasthits-title">Feasts and saints</h2>
+        <ol class="feastlist" id="feastlist"></ol>
+      </section>
+      <p class="searchhelp">Type a feast or saint to jump to its day (English or Latin names). Press Search to look through the texts too: it finds sections containing all the words, in any order; put a phrase in quotes. Accents and æ/ae, j/i are ignored. Searches the Mass propers and the Hours of the day in the current calendar and version.</p>
       <p class="searchstatus" id="searchstatus" aria-live="polite"></p>
       <ol class="results" id="results"></ol>
     </section>
@@ -107,6 +157,7 @@
     <div class="officebar" id="officebar">
       <label class="select"><span>Office</span><select id="office"></select></label>
       <button type="button" id="martyrology" class="pill" title="Open the Martyrology, read at Prime">Martyrology</button>
+      <button type="button" id="chant" class="pill" aria-pressed="false" title="Show the Gregorian chant notation in place of the Latin">Chant</button>
     </div>
     <nav class="hours" id="hours" role="tablist" aria-label="Hours"></nav>
 
@@ -149,6 +200,7 @@
   <footer>
     Texts generated by <a href="https://www.divinumofficium.com/">Divinum Officium</a> (MIT License).
     <span id="source-version"></span>
+    <span class="report-line">Found a mistake? <a data-report="mail" href="mailto:thomasdigi2@gmail.com">Report it</a>.</span>
   </footer>
 
   <dialog id="info" class="info-dialog" aria-labelledby="info-title">
@@ -164,12 +216,42 @@
     </form>
   </dialog>
 
+  <!-- The menu (left panel): empty for now; more to come. -->
+  <dialog id="menu-panel" class="drawer drawer-left" aria-labelledby="menu-title">
+    <div class="drawer-head">
+      <h2 id="menu-title">Menu</h2>
+      <button type="button" class="drawer-close" id="menu-close" aria-label="Close menu">×</button>
+    </div>
+    <div class="drawer-body">
+      <nav class="menu-list" aria-label="Menu">
+        <button type="button" class="menu-item" data-menu-page="sacristan">Sacristan</button>
+        <details class="menu-group" id="devotions">
+          <summary>Devotions</summary>
+          <button type="button" class="menu-item" data-devotion="rosary">Rosary</button>
+          <button type="button" class="menu-item" data-devotion="mercy">Divine Mercy</button>
+          <button type="button" class="menu-item" data-devotion="stations">Stations of the Cross</button>
+          <button type="button" class="menu-item" data-devotion="via-petri" lang="la">Via Petri</button>
+          <button type="button" class="menu-item" data-devotion="angelus" lang="la">Angelus</button>
+        </details>
+      </nav>
+    </div>
+  </dialog>
+
   <dialog id="settings-panel" class="drawer" aria-labelledby="settings-title">
     <div class="drawer-head">
       <h2 id="settings-title">Settings</h2>
       <button type="button" class="drawer-close" id="settings-close" aria-label="Close settings">×</button>
     </div>
     <div class="drawer-body">
+      <section aria-labelledby="set-uilang">
+        <h3 id="set-uilang">Language of the app</h3>
+        <details class="flagmenu" id="flagmenu">
+          <summary aria-haspopup="menu"><span id="flagmenu-current"></span><span class="flagmenu-arrow" aria-hidden="true">▾</span></summary>
+          <ul class="flagmenu-list" id="flagmenu-list" role="menu" aria-label="Language of the app"></ul>
+        </details>
+        <p class="hint">Buttons, menus, notes and dates. The texts of the Mass and Office keep the language chosen in the “Language” menu, and Latin stays Latin.</p>
+      </section>
+
       <section aria-labelledby="set-appearance">
         <h3 id="set-appearance">Appearance</h3>
         <div class="seg theme-seg" id="theme" role="group" aria-label="Light or dark">
@@ -180,6 +262,31 @@
         <p class="hint">Automatic follows your phone or computer.</p>
       </section>
 
+      <section aria-labelledby="set-typography">
+        <h3 id="set-typography">Typography</h3>
+        <details class="submenu" id="typography">
+          <summary>Typeface, accents and ligatures</summary>
+          <p class="sublabel">Typeface</p>
+          <div class="fontpick" id="font" role="group" aria-label="Typeface">
+            <button type="button" data-font="classic" aria-pressed="true"><span class="fp-sample fp-classic">Dóminus vobíscum</span><span class="fp-name">Classic (Palatino)</span></button>
+            <button type="button" data-font="garamond" aria-pressed="false"><span class="fp-sample fp-garamond">Dóminus vobíscum</span><span class="fp-name">Garamond: like an old missal</span></button>
+            <button type="button" data-font="sans" aria-pressed="false"><span class="fp-sample fp-sans">Dóminus vobíscum</span><span class="fp-name">Sans-serif: plain and modern</span></button>
+            <button type="button" data-font="gothic" aria-pressed="false"><span class="fp-sample fp-gothic">Dóminus vobíscum</span><span class="fp-name">Gothic: blackletter, made for reading</span></button>
+          </div>
+          <p class="sublabel">Drop caps (the large first letters)</p>
+          <div class="seg initials-seg" id="initials" role="group" aria-label="Drop caps">
+            <button type="button" data-initials="off" aria-pressed="false">Off</button>
+            <button type="button" data-initials="normal" aria-pressed="true">Plain</button>
+            <button type="button" data-initials="fancy" aria-pressed="false">Medieval</button>
+          </div>
+          <p class="initials-demo" aria-hidden="true"><span class="initial">G</span>lória Patri, et Fílio, et Spirítui Sancto. Sicut erat in princípio, et nunc, et semper, et in sǽcula sæculórum. Amen.</p>
+          <p class="sublabel">Latin text</p>
+          <label class="check"><input type="checkbox" id="latin-accents"> No accents (Dóminus → Dominus)</label>
+          <label class="check"><input type="checkbox" id="latin-ligatures"> No ligatures (æ, œ → ae, oe)</label>
+          <p class="hint">These change only the Latin, never the other languages.</p>
+        </details>
+      </section>
+
       <section aria-labelledby="set-offline">
         <h3 id="set-offline">Offline and install</h3>
         <p><span class="offline-dot" aria-hidden="true"></span> <span id="net-state">Connected.</span></p>
@@ -188,7 +295,7 @@
         <p id="save-what"></p>
         <div class="save-row">
           <label class="sr" for="save-range">How many days</label>
-          <select id="save-range">
+          <select id="save-range" data-t>
             <option value="7">The next 7 days (about 10 MB)</option>
             <option value="30">The next 30 days (about 45 MB)</option>
           </select>
@@ -203,10 +310,60 @@
         <p><button type="button" id="clear-saved" class="quiet">Remove saved texts</button></p>
       </section>
 
+      <section aria-labelledby="set-ical">
+        <h3 id="set-ical">Add to your calendar</h3>
+        <p id="ical-what"></p>
+        <div class="ical-feed">
+          <p class="ical-name">Every day: feast, class, colour, fasting</p>
+          <p class="ical-buttons">
+            <a id="ical-sub-all" class="btn primary">Subscribe</a>
+            <a id="ical-dl-all" class="btn" download>Download</a>
+            <button type="button" class="copy-link" data-feed="calendar">Copy link</button>
+          </p>
+        </div>
+        <div class="ical-feed">
+          <p class="ical-name">Fast days only</p>
+          <p class="ical-buttons">
+            <a id="ical-sub-fast" class="btn primary">Subscribe</a>
+            <a id="ical-dl-fast" class="btn" download>Download</a>
+            <button type="button" class="copy-link" data-feed="fasting">Copy link</button>
+          </p>
+        </div>
+        <p class="hint" id="ical-status" aria-live="polite"></p>
+        <p class="hint"><b>iPhone:</b> tap Subscribe, then confirm in the Calendar app.
+          <b>Android (Google Calendar):</b> tap Copy link; then, on a computer, open calendar.google.com → Other calendars + → From URL, and paste it.
+          A subscribed calendar updates itself as new months are added; a downloaded one doesn't.</p>
+      </section>
+
       <section aria-labelledby="set-print">
         <h3 id="set-print">Print</h3>
         <p class="hint">Prints the Mass or Hour on screen, with the day's heading, in the languages and layout you've chosen, without the buttons.</p>
         <p><button type="button" id="print-btn" class="primary">Print this page</button></p>
+      </section>
+
+      <section aria-labelledby="set-epub">
+        <h3 id="set-epub">E-book (EPUB)</h3>
+        <p class="hint">Makes a book for an e-reader (Kindle, Kobo, Apple Books, Google Play Books…) in the languages, calendar and version you've chosen. Each day is a chapter.</p>
+        <div class="epub-opts">
+          <label class="select"><span>Days</span><select id="epub-range" data-t>
+            <option value="day">This day</option><option value="week" selected>7 days from this day</option><option value="month">This month</option>
+          </select></label>
+          <label class="select"><span>Texts</span><select id="epub-contents" data-t>
+            <option value="both">Mass and Office</option><option value="mass">Mass only</option><option value="office">Office only</option>
+          </select></label>
+        </div>
+        <p><button type="button" id="epub-btn" class="primary">Make the e-book</button></p>
+        <p class="hint" id="epub-status" aria-live="polite"></p>
+      </section>
+
+      <section aria-labelledby="set-report">
+        <h3 id="set-report">Report a mistake</h3>
+        <p class="hint">A wrong text, a missing feast, something that doesn't work? The report is filled in with the day and settings on screen; just add what's wrong.</p>
+        <p class="report-btns">
+          <a class="btn" data-report="mail" href="mailto:thomasdigi2@gmail.com">Email a report</a>
+          <a class="btn btn-quiet" data-report="issue" href="https://github.com/thomasdigi/Liturgical-Calendar-/issues" target="_blank" rel="noopener">Report on GitHub</a>
+        </p>
+        <p class="hint">GitHub needs a free account; its list of reports is public, so you can follow when a mistake is fixed.</p>
       </section>
 
       <section aria-labelledby="set-about">

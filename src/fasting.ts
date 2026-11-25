@@ -6,7 +6,8 @@
  *  - Abstinence: every Friday.
  *  - Fast and abstinence: Ash Wednesday, the Fridays and Saturdays of Lent, the Ember days,
  *    and the vigils of Pentecost, the Assumption, All Saints and Christmas.
- *  - Fast only: the other weekdays of Lent.
+ *  - Fast only: the other weekdays of Lent. On these, meat is allowed at the principal meal
+ *    only: partial abstinence.
  *  - Neither on Sundays or holy days of obligation, except in Lent; a vigil that falls
  *    on a Sunday is not moved earlier. On Holy Saturday both end at noon.
  */
@@ -14,6 +15,8 @@
 export interface Fasting {
   fast: boolean;
   abstinence: boolean;
+  /** Fast without full abstinence: meat at the principal meal only. */
+  partial: boolean;
   /** Why, in short English phrases, e.g. ["Lent"], ["Ember day"], ["Vigil of Christmas"]. */
   reasons: string[];
   /** e.g. "until noon" on Holy Saturday. */
@@ -121,11 +124,12 @@ export function fasting(date: string, isEmberDay: boolean): Fasting {
   // Sundays and holy days of obligation lift both, except in Lent.
   const now = currentLaw(date);
   if (!lent && (weekday === 0 || holyDay)) {
-    return { fast: false, abstinence: false, reasons: [], required: { fast: false, abstinence: false } };
+    return { fast: false, abstinence: false, partial: false, reasons: [], required: { fast: false, abstinence: false } };
   }
   return {
     fast,
     abstinence,
+    partial: fast && !abstinence,
     reasons,
     note: holySaturday ? 'until noon' : undefined,
     required: { fast: fast && now.fast, abstinence: abstinence && now.abstinence },

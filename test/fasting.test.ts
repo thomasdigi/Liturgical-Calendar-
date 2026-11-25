@@ -72,3 +72,12 @@ describe('mandatory or suggested (current law)', () => {
     expect(req('2027-03-19')).toEqual({ fast: false, abstinence: false });
   });
 });
+
+describe('partial abstinence', () => {
+  it('on Lenten fast days without abstinence (meat at the principal meal only)', () => {
+    expect(fasting('2027-02-15', false).partial).toBe(true); // Monday of the 1st week of Lent
+    expect(fasting('2027-02-19', false).partial).toBe(false); // Friday: full abstinence
+    expect(fasting('2027-02-10', false).partial).toBe(false); // Ash Wednesday
+    expect(fasting('2026-11-20', false).partial).toBe(false); // an ordinary Friday
+  });
+});

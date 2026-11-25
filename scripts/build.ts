@@ -10,12 +10,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { availableParallelism } from 'node:os';
 import { resolve } from 'node:path';
 import {
-  ACTIVE_CALENDARS,
+  CALENDARS,
   doSettings,
   FALLBACK_LANGUAGE,
   getCalendar,
   getLanguage,
   getVersion,
+  isChant,
   LANGUAGES,
   publicConfig,
   VERSIONS,
@@ -26,6 +27,7 @@ import {
 import { DATA_DIR, getDay } from '../src/day.ts';
 import { getMonth } from '../src/summary.ts';
 import { buildSearchMonth } from '../src/search.ts';
+import { buildIcs } from '../src/ical.ts';
 
 const args = process.argv.slice(2);
 const FLAGS = ['--calendar', '--version', '--lang', '--votive'];
@@ -41,7 +43,7 @@ const pos = args.filter((a, i) => !a.startsWith('--') && !FLAGS.includes(args[i 
 let [from, to] = pos;
 if (!from) {
   console.error(
-    'Usage: npm run build -- <year> | <from YYYY-MM-DD> <to YYYY-MM-DD> [--calendar general,usa,brazil,rome] [--version 1962,1954,1906] [--lang en,fr,...] [--votive dead,parvum,sabbato|none] [--refresh]',
+    'Usage: npm run build -- <year> | <from YYYY-MM-DD> <to YYYY-MM-DD> [--calendar general,usa,brazil] [--version 1962,1954,1906] [--lang en,fr,...] [--votive dead,parvum,sabbato|none] [--refresh]',
   );
   process.exit(1);
 }
@@ -50,7 +52,7 @@ to ??= from;
 
 const list = <T extends { id: string }>(name: string, all: readonly T[], get: (id: string) => T) =>
   (flag(name)?.split(',') ?? all.map((x) => x.id)).map((id) => get(id).id);
-const calendars = list('calendar', ACTIVE_CALENDARS, getCalendar) as CalendarId[]; // hidden ones only on request
+const calendars = list('calendar', CALENDARS, getCalendar) as CalendarId[];
 const versions = list('version', VERSIONS, getVersion) as VersionId[];
 const langs = list('lang', LANGUAGES, getLanguage) as LanguageId[];
 
@@ -127,7 +129,8 @@ const rangeMonths = new Set<string>();
 for (let d = new Date(`${from}T12:00:00Z`); d <= new Date(`${to}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
   rangeMonths.add(d.toISOString().slice(0, 7));
 }
-const searchLangs = [...new Set([FALLBACK_LANGUAGE as LanguageId, ...langs])];
+// (Not the chant edition: its text is musical notation.)
+const searchLangs = [...new Set([FALLBACK_LANGUAGE as LanguageId, ...langs])].filter((l) => !isChant(l));
 for (const calendar of calendars)
   for (const version of versions) {
     if (!doSettings(calendar, version)) continue;
@@ -142,6 +145,26 @@ for (const calendar of calendars)
       }
   }
 console.log(`Search index: ${rangeMonths.size} month(s) × ${searchLangs.length} language(s) per calendar/version.`);
+
+// Calendar files for phone/computer calendars (all days, and fast days only), for the built months.
+// SITE_URL (set by the publishing workflow) lets each event link back to its day.
+for (const calendar of calendars)
+  for (const version of versions) {
+    if (!doSettings(calendar, version)) continue;
+    const days = [];
+    for (const month of [...rangeMonths].sort()) {
+      try {
+        days.push(...(await getMonth(calendar, version, month)).days);
+      } catch (e) {
+        failed++;
+        console.error(`FAILED calendar file ${calendar} ${version} ${month}: ${(e as Error).message}`);
+      }
+    }
+    for (const kind of ['calendar', 'fasting'] as const) {
+      await writeFile(resolve(DATA_DIR, calendar, version, `${kind}.ics`), buildIcs(days, { calendar, version, kind, siteUrl: process.env.SITE_URL }));
+    }
+  }
+console.log('Calendar files: calendar.ics and fasting.ics per calendar/version.');
 const secs = Math.round((Date.now() - started) / 1000);
 console.log(`Built ${done}/${total} day files in ${secs}s${failed ? `, ${failed} failed` : ''}.`);
 process.exit(failed ? 1 : 0);

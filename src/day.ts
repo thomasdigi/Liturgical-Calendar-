@@ -21,6 +21,7 @@ import {
   VOTIVES,
   getVotive,
   votiveHours,
+  isChant,
   type HourId,
   type VotiveId,
   type CalendarId,
@@ -30,6 +31,7 @@ import {
 } from './config.ts';
 import { parsePage, splitLines, type DayHeader, type Section } from './parse.ts';
 import { renderPart } from './render.ts';
+import { computeOrdo, type Ordo } from './ordo.ts';
 
 /** A part of the day: 'mass', 'massFull', an Hour, or another Mass of the day: 'mass-2', 'massFull-3'. */
 export type PartKey = PartId | `mass-${number}` | `massFull-${number}` | `${VotiveId}-${HourId}`;
@@ -68,6 +70,7 @@ export interface DayData {
   header: DayHeader; // the day's office (from Lauds)
   masses: MassChoice[]; // empty on ordinary days
   votives: { id: VotiveId; hours: HourId[] }[]; // votive offices built for this day
+  ordo?: Ordo; // the Sacristan summary (not for the chant edition)
   parts: PartData[];
   source: string;
 }
@@ -97,7 +100,43 @@ export async function buildPart(
       ? { latin: page.title || getHour(part).latin, label: `${getVotive(votive).label} · ${getHour(part).label}` }
       : { latin: page.title || getHour(part).latin, label: getHour(part).label };
   const id: PartKey = isMass ? partKey(part, missanumber) : votive ? `${votive}-${part as HourId}` : part;
+  if (!isChant(lang)) for (const sec of page.sections) supplyNames(sec, page.header.title);
   return { id, title, header: page.header, sections: page.sections, masses: page.masses };
+}
+
+/**
+ * Where a prayer from the Common says "N." for the saint's name (the priest inserts it),
+ * add the name in brackets after it: "beáti N. [Martin de Porres] Confessóris". The name is
+ * the commemorated saint's when the prayer follows a commemoration label, else the day's.
+ * "N." for the Pope, the bishop and the like, and the rubrics about the letter N, are left.
+ */
+// "Papa nostro N.", "our Pope N.", "fámulo tuo N.", "ad litteram N.", "D.N." … (the last two words before it)
+const NOT_A_SAINT = /\b(nostr\w*|our|famul\w*|servant|Pope|Bishop|Ordinary|King|Rege|litteram|letter)\b|(^|\s)D\.\s*$/i;
+const saintName = (title: string) => {
+  // Labels read "Commemoratio S. …", "Commemoration St. …", "Kommemoration Hl. …" and so on.
+  const m = /^(?:S\.|Ss\.|SS\.|St\.|Sts\.|Hl\.|Sancti|Sanctæ|Sanctorum)\s+(.+?)(?:,|$)/.exec(title.replace(/^\S*mm?emora\w*\s+/i, '').trim());
+  return m ? m[1].trim() : '';
+};
+export function supplyNames(sec: Section, dayTitle: string): void {
+  for (const col of ['latin', 'vernacular'] as const) {
+    let name = saintName(dayTitle);
+    const lines = splitLines(sec[col]).map((line) => {
+      // A commemoration label (tagged by the parser, or just a line reading "Commemoration S. …").
+      const label = /data-kind="commemoration">([^<]*)</.exec(line)?.[1] ??
+        /^\s*(\S*mm?emora\w*\s+\S.*)$/i.exec(line.replace(/<[^>]+>/g, ''))?.[1];
+      if (label) name = saintName(label) || name;
+      if (!name) return line;
+      // "N." may be wrapped in a red rubric tag; "N. et N." gets one name after the pair.
+      const N = '(?:<span class="rubric">)?N\\.(?:</span>)?';
+      const re = new RegExp(`(^|[\\s(>])(${N})((?:\\s+(?:et|and|und|y|e)\\s+${N})?)(?![\\w.])`, 'g');
+      return line.replace(re, (all, pre, n, pair, offset) => {
+        const before = line.slice(0, offset).replace(/<[^>]+>/g, '') + pre.replace(/<[^>]*$/, '');
+        if (NOT_A_SAINT.test(before.trimEnd().split(/\s+/).slice(-2).join(' '))) return all;
+        return `${pre}${n}${pair} <span class="supplied" title="Name added: the book has N. here for the saint's name">[${name}]</span>`;
+      });
+    });
+    sec[col] = lines.join('<br>');
+  }
 }
 
 /** Plain text of one line, for comparing languages. Short lines ("Amen.") are ignored. */
@@ -128,15 +167,18 @@ export async function buildDay(date: string, calendar: CalendarId, version: Vers
   const v = doSettings(calendar, version);
   if (!v) throw Object.assign(new Error(`The ${calendar} calendar has no ${version} version`), { code: 'ENOENT' });
 
-  const first = await Promise.all(PARTS.map((p) => buildPart(date, p, version, lang, calendar)));
+  // The chant edition has the Hours of the day only (no Mass, no votive offices).
+  const chant = isChant(lang);
+  const partIds = chant ? PARTS.filter((p) => p !== 'mass' && p !== 'massFull') : PARTS;
+  const first = await Promise.all(partIds.map((p) => buildPart(date, p, version, lang, calendar)));
   // Several Masses today? DO lists them on the Mass page; build the 2nd, 3rd, … too.
-  const names = first.find((p) => p.id === 'mass')!.masses;
+  const names = first.find((p) => p.id === 'mass')?.masses ?? [];
   const more = await Promise.all(
     names.slice(1).flatMap((_, i) =>
       (['mass', 'massFull'] as const).map((p) => buildPart(date, p, version, lang, calendar, i + 2)),
     ),
   );
-  const votives = votivesToBuild()
+  const votives = (chant ? [] : votivesToBuild())
     .map((id) => ({ id, hours: votiveHours(id, date) }))
     .filter((v) => v.hours.length);
   const votiveParts = await Promise.all(
@@ -159,10 +201,11 @@ export async function buildDay(date: string, calendar: CalendarId, version: Vers
     header: lauds.header,
     masses,
     votives,
+    ...(chant ? {} : { ordo: computeOrdo(parts, version, masses) }),
     parts,
     source: 'Divinum Officium (divinumofficium.com), MIT License',
   };
-  if (lang !== FALLBACK_LANGUAGE) markFallback(day, await getDay(date, calendar, version, FALLBACK_LANGUAGE as LanguageId));
+  if (lang !== FALLBACK_LANGUAGE && !chant) markFallback(day, await getDay(date, calendar, version, FALLBACK_LANGUAGE as LanguageId));
   return day;
 }
 

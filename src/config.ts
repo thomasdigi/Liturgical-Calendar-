@@ -33,9 +33,6 @@ export const VERSIONS = [
  * Calendars (which local feasts are kept). `dioecesis` is DO's calendar setting.
  * A calendar may replace DO's version names for some versions, and if it lists
  * `versions`, it exists only for those.
- * `hidden: true` keeps a calendar working and tested but leaves it out of the menus and
- * default builds; delete that line to bring it back. (It can still be built on purpose
- * with --calendar.)
  */
 export const CALENDARS = [
   { id: 'general', label: 'General Roman', dioecesis: 'Generale' },
@@ -48,12 +45,7 @@ export const CALENDARS = [
     versions: { '1962': { office: 'Rubrics 1960 - 2020 USA', mass: 'Rubrics 1960 Newcalendar' } },
   },
   { id: 'brazil', label: 'Brazil', dioecesis: 'Brasilia' },
-  // Set aside for now: in 1962 it differs from the General calendar on only three days.
-  { id: 'rome', label: 'Diocese of Rome', dioecesis: 'Urbis', hidden: true },
 ] as const;
-
-/** The calendars offered to readers (not hidden). */
-export const ACTIVE_CALENDARS = CALENDARS.filter((c) => !('hidden' in c && c.hidden));
 
 /**
  * Second languages shown beside the Latin: every translation DO offers for the Office
@@ -79,7 +71,14 @@ export const LANGUAGES = [
   { id: 'vi', label: 'Tiếng Việt', do: 'Vietnamice' },
   { id: 'uk', label: 'Українська', do: 'Ukrainian' },
   { id: 'he', label: 'עברית', do: 'Hebrew', rtl: true },
+  // Not a language: DO's chant edition of the Office (Gregorian notation, GABC). Shown with the
+  // Chant button, never in the language menu. Office only; DO has no chant for the Mass.
+  { id: 'la-gabc', label: 'Chant', do: 'Latin-gabc', chant: true },
 ] as const;
+
+/** The chant edition, stored like a language. */
+export const CHANT_LANGUAGE = 'la-gabc';
+export const isChant = (id: string) => id === CHANT_LANGUAGE;
 
 /** The language DO fills gaps with; untranslated lines are compared against it. */
 export const FALLBACK_LANGUAGE = 'en';
@@ -174,12 +173,13 @@ export function languageOffers(id: string) {
 export function publicConfig() {
   return {
     versions: VERSIONS.map(({ id, label }) => ({ id, label })),
-    calendars: ACTIVE_CALENDARS.map((c) => ({
+    calendars: CALENDARS.map((c) => ({
       id: c.id,
       label: c.label,
       versions: VERSIONS.filter((v) => doSettings(c.id, v.id)).map((v) => v.id),
     })),
-    languages: LANGUAGES.map((l) => ({
+    chant: CHANT_LANGUAGE,
+    languages: LANGUAGES.filter((l) => !isChant(l.id)).map((l) => ({
       id: l.id,
       label: l.label,
       htmlLang: l.id.split('-')[0],

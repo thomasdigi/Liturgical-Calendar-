@@ -21,7 +21,7 @@
     color-scheme: dark;
     --bg: #15130f; --paper: #1d1a15; --ink: #ece6da; --muted: #a49a8b;
     --rule: #3a342b; --rubric: #e2786b; --accent: #8e241c; --accent-ink: #e8897d; --on-accent: #ffffff;
-    --c-black: #000; --tab-bg: #26221c;
+    --c-black: #000; --tab-bg: #26221c; --chant-filter: invert(.92) hue-rotate(180deg);
   }
 }
 /* Chosen light mode: ask browsers not to repaint the page dark (Chrome/Brave "dark mode for sites"). */
@@ -30,17 +30,31 @@
   color-scheme: dark;
   --bg: #15130f; --paper: #1d1a15; --ink: #ece6da; --muted: #a49a8b;
   --rule: #3a342b; --rubric: #e2786b; --accent: #8e241c; --accent-ink: #e8897d; --on-accent: #ffffff;
-  --c-black: #000; --tab-bg: #26221c;
+  --c-black: #000; --tab-bg: #26221c; --chant-filter: invert(.92) hue-rotate(180deg);
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+/* Never scroll sideways: wide things (the week strip, the Hour tabs, chant) scroll inside their own box. */
+html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+main, .month, .month-list, .mrow, .searchpage, .sacristan, #dayview { min-width: 0; max-width: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.55 var(--serif); }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
 
+/* ---------- top bar: menu · name · search · settings ---------- */
+.appbar {
+  position: sticky; top: 0; z-index: 6; display: flex; align-items: center; gap: 4px;
+  padding: calc(6px + env(safe-area-inset-top, 0px)) 8px 6px; background: var(--accent); color: var(--on-accent);
+  font-family: var(--sans);
+}
+.appbar-title { flex: 1; font: 600 18px var(--serif); letter-spacing: .02em; padding-left: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.icon-btn { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; color: inherit; cursor: pointer; }
+.icon-btn:hover, .icon-btn[aria-pressed="true"] { background: rgb(255 255 255 / .16); }
+.appbar .offline-badge { background: var(--on-accent); color: var(--accent); }
+
 /* ---------- control bar ---------- */
 .top {
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: var(--appbar, 56px); z-index: 5;
   display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: space-between; align-items: center;
   padding: 10px 16px; background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(6px); border-bottom: 1px solid var(--rule);
@@ -171,6 +185,8 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .officebar { gap: 8px; align-items: center; flex-wrap: wrap; }
 .officebar .pill { border: 1px solid var(--rule); background: var(--paper); border-radius: 9px; padding: 6px 12px; min-height: 36px; cursor: pointer; color: var(--ink); font: inherit; }
 .officebar .pill[hidden] { display: none; }
+.officebar .pill[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.officebar .pill:disabled { opacity: .45; cursor: not-allowed; }
 .struct.nocturn { display: block; margin: 6px 0 2px; font: 600 15px var(--sans); font-style: normal; text-transform: uppercase; letter-spacing: .06em; }
 .struct.lesson { display: inline-block; margin-top: 10px; font-weight: 600; font-style: normal; }
 .struct.tedeum { display: block; margin-top: 10px; font-weight: 600; font-style: normal; }
@@ -188,6 +204,7 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
   background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px;
   box-shadow: 0 8px 26px rgb(0 0 0 / .22); font: 14px/1.45 var(--sans);
 }
+.tip { cursor: pointer; }
 .tip p { margin: 0 0 4px; }
 .tip p:last-child { margin-bottom: 0; }
 .tip-title { font-weight: 600; }
@@ -195,6 +212,17 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .tip-status.mandatory { background: var(--accent); color: var(--on-accent); }
 .tip-status.suggested { border: 1px solid var(--muted); color: var(--muted); }
 .tip-small { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- today, and swiping between days ---------- */
+.wday.today .wd::after { content: " · Today"; color: var(--accent-ink); font-weight: 600; }
+.mrow.today .md b { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--accent); color: var(--on-accent); }
+.month-today { text-align: center; margin: 0 0 10px; }
+.month-today button { border: 1px solid var(--rule); background: var(--paper); color: var(--ink); border-radius: 8px; padding: 6px 16px; min-height: 36px; cursor: pointer; font: 15px var(--sans); }
+.swipe-next { animation: swipe-next .22s ease-out; }
+.swipe-prev { animation: swipe-prev .22s ease-out; }
+@keyframes swipe-next { from { transform: translateX(28px); opacity: .5; } to { transform: none; opacity: 1; } }
+@keyframes swipe-prev { from { transform: translateX(-28px); opacity: .5; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .swipe-next, .swipe-prev { animation: none; } }
 
 /* ---------- Settings panel (slides in from the right) ---------- */
 .drawer {
@@ -204,6 +232,10 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
   box-shadow: -10px 0 40px rgb(0 0 0 / .2);
 }
 .drawer[open] { display: flex; flex-direction: column; animation: drawer-in .2s ease-out; }
+/* The menu panel slides in from the left. */
+.drawer-left { margin: 0 auto 0 0; border-left: 0; border-right: 1px solid var(--rule); box-shadow: 10px 0 40px rgb(0 0 0 / .2); }
+.drawer-left[open] { animation-name: drawer-in-left; }
+@keyframes drawer-in-left { from { transform: translateX(-30px); opacity: .4; } to { transform: none; opacity: 1; } }
 @keyframes drawer-in { from { transform: translateX(30px); opacity: .4; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .drawer[open] { animation: none; } }
 .drawer::backdrop { background: rgb(0 0 0 / .35); }
@@ -217,6 +249,12 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .drawer-body { overflow-y: auto; padding: 4px 20px calc(24px + env(safe-area-inset-bottom, 0px)); }
 .drawer section { padding: 14px 0; border-bottom: 1px solid var(--rule); }
 .drawer section:last-child { border-bottom: 0; }
+:root[data-font="garamond"] { --serif: "EB Garamond", Garamond, "Iowan Old Style", Georgia, serif; }
+:root[data-font="gothic"] { --serif: "Grenze Gotisch", "Iowan Old Style", Georgia, serif; }
+:root[data-font="sans"] { --serif: "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+/* Garamond's letters are small for their size: a little larger to read the same. */
+:root[data-font="garamond"] body { font-size: 20px; }
+@media (max-width: 720px) { :root[data-font="garamond"] body { font-size: 19px; } }
 .drawer h3 { margin: 0 0 8px; font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .drawer p { margin: 0 0 10px; }
 .drawer .hint { color: var(--muted); font-size: 13px; }
@@ -230,6 +268,17 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .drawer .theme-seg button { flex: 1; border: 0; border-radius: 0; background: none; }
 .drawer .theme-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .drawer .offline-dot { display: inline-block; vertical-align: 1px; }
+
+.drawer .btn {
+  display: inline-flex; align-items: center; justify-content: center; text-decoration: none; color: var(--ink);
+  border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 7px 14px; min-height: 40px;
+}
+.drawer .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.drawer .btn.disabled { opacity: .45; pointer-events: none; }
+.ical-feed { margin-bottom: 10px; }
+.ical-name { margin-bottom: 4px !important; font-weight: 600; }
+.ical-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.drawer #ical-status { word-break: break-all; }
 
 /* ---------- offline ---------- */
 .top .offline-btn { display: inline-flex; align-items: center; gap: 6px; }
@@ -252,7 +301,7 @@ body.is-offline .top .offline-btn { border-color: var(--rubric); color: var(--ru
 .info-actions .quiet { background: none; color: var(--muted); margin-right: auto; }
 
 @media (max-width: 720px) {
-  .outline { top: 0; margin: 0 -16px 10px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
+  .outline { top: var(--appbar, 0px); margin: 0 -16px 10px; flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scrollbar-width: none; }
   .ogroup { flex: none; }
   .text .struct { scroll-margin-top: 56px; }
   .text section, .text .commem { scroll-margin-top: 60px; }
@@ -263,6 +312,7 @@ body[data-display="latin"] .text .col.vn,
 body[data-display="vernacular"] .text .col.la { display: none; }
 
 .rubric { color: var(--rubric); font-style: italic; }
+.rubric.cross { font-style: normal; }
 .verse { color: var(--rubric); font-size: .7em; vertical-align: .15em; margin-right: 2px; font-family: var(--sans); }
 .initial { color: var(--rubric); font-size: 1.6em; line-height: 1; font-weight: 600; }
 .small { color: var(--muted); font-size: .8em; }
@@ -304,6 +354,7 @@ body[data-reading="on"] .text .instr { display: none; }
 }
 .fastmark.fast { background: var(--rubric); color: var(--paper); }
 .fastmark.abst { border: 1.5px solid var(--rubric); color: var(--rubric); }
+.fastmark.partial { border: 1.5px dashed var(--rubric); color: var(--rubric); }
 .fastline { margin: 8px 0 0; display: flex; justify-content: center; gap: 6px; align-items: center; color: var(--rubric); font: 14px var(--sans); }
 .fastline[hidden] { display: none; }
 
@@ -324,8 +375,9 @@ body[data-reading="on"] .text .instr { display: none; }
 /* ---------- month ---------- */
 .month { max-width: 900px; margin: 0 auto; }
 .month[hidden], #dayview[hidden] { display: none; }
-.month-head { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 6px; }
-.month-head h1 { margin: 0; font-size: clamp(24px, 4vw, 32px); min-width: 9em; text-align: center; }
+.month-head { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; }
+.month-head h1 { margin: 0; font-size: clamp(22px, 4vw, 32px); min-width: 0; flex: 0 1 9em; text-align: center; }
+.month-head button { flex: none; }
 .month-head button { border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; width: 40px; height: 40px; cursor: pointer; font-size: 20px; }
 .legend { text-align: center; color: var(--muted); font: 13px var(--sans); margin: 0 0 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; align-items: center; }
 .legend-note { flex-basis: 100%; }
@@ -342,6 +394,7 @@ body[data-reading="on"] .text .instr { display: none; }
 .mrow .md { font: 14px var(--sans); color: var(--muted); }
 .mrow .md b { color: var(--ink); font-size: 16px; margin-right: 2px; font-variant-numeric: tabular-nums; }
 .mrow .mc .swatch { vertical-align: -1px; }
+.mrow .mt { min-width: 0; overflow-wrap: anywhere; }
 .mrow .mt small { display: block; color: var(--muted); font-style: italic; font-size: .85em; }
 .mrow .mr { color: var(--muted); font: 13px var(--sans); white-space: nowrap; }
 .mrow .mf { display: flex; gap: 3px; justify-content: flex-end; }
@@ -417,7 +470,7 @@ body.comparing #layout { display: none; }
 @media (prefers-reduced-motion: reduce) { .flash { animation: none; outline: 2px solid var(--rubric); } }
 
 @media (max-width: 720px) {
-  .compare { --cmp-gap: 20px; font-size: 14px; }
+  .compare { --cmp-gap: 20px; font-size: .82em; }
   .week { grid-template-columns: repeat(7, minmax(4.6em, 1fr)); overflow-x: auto; padding-bottom: 4px; }
   .mrow button { grid-template-columns: 3.4em 1.2em minmax(0, 1fr) 2.8em; }
   .mrow .mr { grid-column: 3; grid-row: 2; white-space: normal; }
@@ -428,7 +481,7 @@ body.comparing #layout { display: none; }
   /* Each row of controls is centred on its own line. */
   .datenav, .pagebar, .settings { width: 100%; justify-content: center; }
   .select span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  body[data-layout="side"][data-display="both"] .text section { gap: 8px 14px; font-size: 15px; }
+  body[data-layout="side"][data-display="both"] .text section { gap: 8px 14px; font-size: .88em; }
   .hours { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scrollbar-width: thin; }
   .hours button { flex: none; padding: 8px 10px; }
 }
@@ -460,3 +513,155 @@ body.comparing #layout { display: none; }
      commemoration label is never left alone at the bottom of a page. */
   .commem, .struct { break-after: avoid; }
 }
+
+/* ---------- chant notation (Office, "Chant" button) ---------- */
+.GCHANT { width: 100%; overflow-x: auto; margin: 4px 0 8px; }
+.GCHANT svg { max-width: 100%; height: auto; filter: var(--chant-filter, none); }
+.GABC { white-space: pre-wrap; font-family: var(--sans); font-size: 12px; color: var(--muted); }
+
+/* A saint's name added where the book has "N." (USA calendar texts) */
+.supplied { font-style: italic; color: var(--muted); }
+
+/* ---------- Sacristan mode: the day's facts on one page ---------- */
+.sacristan { max-width: 720px; margin: 0 auto; text-align: left; }
+.sacristan[hidden] { display: none; }
+.sacristan > .weekday, .sacristan > .title, .sacristan-combo { text-align: center; }
+.sacristan > .title { margin: 6px 0; font-size: clamp(22px, 4vw, 30px); line-height: 1.2; font-weight: 600; text-wrap: balance; }
+.sacristan-combo { margin: 0 0 14px; color: var(--muted); font-family: var(--sans); font-size: 13px; }
+.sacristan .ccom, .sacristan .cfast { text-align: center; color: var(--muted); font-style: italic; margin: 0 0 10px; }
+.ccard { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 18px; margin: 14px 0; }
+.ccard h2 { margin: 0 0 8px; font-size: 20px; color: var(--accent-ink); }
+.ccard dl { margin: 0; }
+.crow { display: grid; grid-template-columns: minmax(120px, 38%) 1fr; gap: 12px; padding: 7px 0; border-top: 1px solid var(--rule); }
+.crow:first-child { border-top: 0; }
+.crow dt { color: var(--muted); font-family: var(--sans); font-size: 14px; }
+.crow dd { margin: 0; }
+.crow .swatch { vertical-align: -2px; }
+.cnote { display: block; color: var(--muted); font-size: 13px; font-style: italic; }
+.cnote.rank { font-style: normal; }
+/* Ranks ("III. classis") are always upright. */
+#rank, .mrow .mr, .wday .wr, .cmp-meta, .cnote.rank { font-style: normal; }
+.clinks { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
+.clinks button { font-family: var(--sans); font-size: 14px; border: 1px solid var(--rule); background: var(--tab-bg); color: var(--ink); border-radius: 9px; padding: 6px 14px; min-height: 36px; cursor: pointer; }
+.clinks button:hover { border-color: var(--accent-ink); }
+.cnote-foot { color: var(--muted); font-size: 13px; text-align: center; margin-top: 18px; }
+@media (max-width: 480px) {
+  .crow { grid-template-columns: 1fr; gap: 2px; }
+}
+@media print {
+  .clinks, .cnote-foot { display: none; }
+  .ccard { border-color: #999; break-inside: avoid; }
+}
+.drawer label.check { display: flex; align-items: center; gap: 10px; font-family: var(--sans); font-size: 15px; margin: 4px 0 8px; cursor: pointer; }
+.drawer label.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* Settings → Typography */
+.submenu > summary { cursor: pointer; font: 15px var(--sans); padding: 8px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--tab-bg); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.submenu > summary::-webkit-details-marker { display: none; }
+.submenu > summary::after { content: '›'; font-size: 20px; line-height: 1; transition: transform .15s; }
+.submenu[open] > summary::after { transform: rotate(90deg); }
+.submenu[open] > summary { margin-bottom: 8px; }
+.sublabel { margin: 10px 0 6px; font: 600 13px var(--sans); color: var(--muted); }
+.fontpick { display: grid; gap: 6px; }
+.fontpick button { display: grid; gap: 2px; text-align: left; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.fontpick button[aria-pressed="true"] { border-color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent-ink); }
+.fp-sample { font-size: 20px; line-height: 1.25; }
+.fp-classic { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.fp-garamond { font-family: "EB Garamond", Garamond, serif; font-size: 22px; }
+.fp-sans { font-family: "Source Sans 3", system-ui, sans-serif; }
+.fp-name { font: 12.5px var(--sans); color: var(--muted); }
+
+/* Report a mistake */
+.report-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.report-btns .btn { display: inline-block; padding: 8px 14px; border-radius: 9px; font: 15px var(--sans); text-decoration: none; background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); }
+.report-btns .btn-quiet { background: var(--paper); color: var(--accent-ink); border-color: var(--rule); }
+.report-line { display: block; margin-top: 6px; }
+@media print { .report-line { display: none; } }
+
+.fp-gothic { font-family: "Grenze Gotisch", serif; font-size: 22px; }
+.initials-seg { display: flex; width: 100%; }
+.initials-seg button { flex: 1; padding: 8px 6px; border: 0; background: var(--paper); color: var(--ink); font: 14px var(--sans); cursor: pointer; }
+.initials-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.initials-demo { margin: 10px 0 4px; font: 16px/1.5 var(--serif); display: flow-root; }
+
+/* Drop caps: off, simple (the default), or medieval (a red blackletter capital, three lines tall). */
+:root[data-initials="off"] .initial { color: inherit; font-size: 1em; font-weight: inherit; }
+:root[data-initials="fancy"] .text .col, :root[data-initials="fancy"] .initials-demo { display: flow-root; }
+:root[data-initials="fancy"] .text .initial, :root[data-initials="fancy"] .initials-demo .initial {
+  float: left; font-family: "UnifrakturMaguntia", "Grenze Gotisch", serif; font-weight: 400;
+  font-size: 3.4em; line-height: .82; padding: .06em .08em 0 0; margin: .04em .06em 0 0;
+  color: var(--rubric);
+}
+
+/* ---------- the liturgical year wheel (month page) ---------- */
+.wheel-wrap { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 0 auto 10px; max-width: 520px; }
+.wheel { position: relative; flex: 0 1 420px; aspect-ratio: 1; min-width: 0; cursor: pointer; }
+.wheel svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.wheel-step { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); font-size: 20px; cursor: pointer; }
+.w-track { fill: none; stroke: var(--rule); }
+.w-seg { stroke-linecap: butt; }
+.w-white { stroke: var(--c-white); }
+.w-inner { fill: none; stroke: var(--rule); stroke-width: 1; }
+.w-label { font: 600 9.5px var(--sans); letter-spacing: .14em; fill: var(--muted); }
+.w-arrow { stroke: var(--accent-ink); stroke-width: 2.5; }
+.w-arrowhead { fill: var(--accent-ink); }
+.w-dot { fill: var(--paper); stroke: var(--accent-ink); stroke-width: 3; }
+.wheel-center {
+  position: absolute; inset: 22%; border-radius: 50%; border: 0; background: none; color: var(--ink);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-align: center; cursor: pointer; padding: 0 4%;
+  container-type: inline-size;
+}
+.wheel-weekday { font: 600 clamp(10px, 6cqi, 14px) var(--sans); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); }
+.wheel-day { font: 600 clamp(36px, 30cqi, 76px)/1 var(--serif); }
+.wheel-month { font: italic clamp(13px, 8cqi, 20px) var(--serif); color: var(--muted); }
+.wheel-rule { width: 22%; border-top: 1px solid var(--rule); margin: 4px 0; }
+.wheel-feast { font: 600 clamp(12px, 7.5cqi, 18px)/1.2 var(--serif); color: var(--accent-ink); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.wheel-season { font: 600 clamp(9px, 5.2cqi, 12px) var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-top: 2px; }
+@media (max-width: 480px) { .wheel-step { width: 32px; height: 32px; } }
+@media print { .wheel-wrap { display: none; } }
+
+/* Search: feasts and saints */
+.feasthits h2 { font: 600 13px var(--sans); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 14px 0 6px; }
+.feastlist { list-style: none; margin: 0 0 16px; padding: 0; border-top: 1px solid var(--rule); }
+.feastlist button { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 2px 12px; width: 100%; text-align: left; padding: 10px 6px; background: none; border: 0; border-bottom: 1px solid var(--rule); color: var(--ink); cursor: pointer; font: inherit; }
+.feastlist button:hover { background: var(--tab-bg); }
+.feastlist .fdate { font: 13px var(--sans); color: var(--muted); grid-row: span 3; padding-top: 3px; }
+.feastlist .ftitle { font-weight: 600; overflow-wrap: anywhere; }
+.feastlist .falso { font-size: .9em; color: var(--muted); }
+.feastlist .frank { font: 12.5px var(--sans); color: var(--muted); }
+@media (max-width: 480px) { .feastlist button { grid-template-columns: 1fr; } .feastlist .fdate { grid-row: auto; } }
+
+.epub-opts { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 6px 0 10px; }
+.epub-opts .select span { color: var(--muted); font-size: 13px; }
+.epub-opts select { font: inherit; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
+
+/* Settings → Language of the app (flags) */
+.flag { display: inline-flex; justify-content: center; align-items: center; width: 40px; height: 22px; flex: none; }
+/* Each flag keeps its own shape (the Vatican's is square, Mexico's 7:4). */
+.flag svg { height: 22px; width: auto; display: block; border-radius: 2px; box-shadow: 0 0 0 1px var(--rule); }
+.flagmenu { position: relative; }
+.flagmenu > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--tab-bg); font: 15px var(--sans); }
+.flagmenu > summary::-webkit-details-marker { display: none; }
+#flagmenu-current { display: inline-flex; align-items: center; gap: 10px; }
+.flagmenu-arrow { color: var(--muted); }
+.flagmenu-list { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
+.drawer .flagmenu-list button { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; border-radius: 7px; padding: 8px 10px; text-align: left; }
+.drawer .flagmenu-list button:hover { background: var(--tab-bg); }
+.drawer .flagmenu-list button[aria-checked="true"] { background: var(--tab-bg); font-weight: 600; }
+.drawer .flagmenu-list button[aria-checked="true"]::after { content: '✓'; margin-left: auto; color: var(--accent-ink); }
+
+/* The menu (left panel) */
+.menu-list { display: grid; gap: 4px; padding-top: 12px; }
+.drawer .menu-item { display: block; width: 100%; text-align: left; border: 0; border-radius: 8px; background: none; padding: 10px 12px; font: 16px var(--sans); }
+.drawer .menu-item:hover { background: var(--tab-bg); }
+.menu-group > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; font: 16px var(--sans); }
+.menu-group > summary::-webkit-details-marker { display: none; }
+.menu-group > summary::after { content: '›'; font-size: 20px; line-height: 1; color: var(--muted); transition: transform .15s; }
+.menu-group[open] > summary::after { transform: rotate(90deg); }
+.menu-group > summary:hover { background: var(--tab-bg); }
+.menu-group .menu-item { padding-left: 28px; }
+
+/* A devotion's page */
+.devotion { max-width: 720px; margin: 0 auto; text-align: center; padding: 40px 0; }
+.devotion[hidden] { display: none; }
+.devotion h1 { margin: 0 0 16px; font-size: clamp(24px, 4vw, 34px); }

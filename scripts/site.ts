@@ -18,6 +18,9 @@ const ls = async (p: string) => (existsSync(p) ? (await readdir(p, { withFileTyp
 await rm(DIST, { recursive: true, force: true });
 await mkdir(resolve(DIST, 'data'), { recursive: true });
 await cp(resolve(ROOT, 'web'), DIST, { recursive: true });
+// Chant notation (exsurge, MIT License), from Divinum Officium's copy.
+await mkdir(resolve(DIST, 'vendor'), { recursive: true });
+await cp(resolve(ROOT, 'vendor/divinum-officium/web/www/js/exsurge.js'), resolve(DIST, 'vendor/exsurge.js'));
 
 // What was built: per calendar/version, the languages and dates that have a day index.
 const combos: Record<string, string[]> = {};

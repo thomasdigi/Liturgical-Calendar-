@@ -176,10 +176,6 @@ describe('calendars', () => {
     expect((await page('2026-10-12', 'lauds', v, 'en', 'brazil')).header.title).toMatch(/Apparecida/);
     expect((await page('2026-10-12', 'mass', v, 'en', 'brazil')).header.title).toMatch(/Apparecida/);
   });
-  it('Diocese of Rome adds its own saints (1954)', async () => {
-    expect((await page('2026-01-03', 'lauds', '1954', 'en', 'rome')).header.title).toMatch(/Antherus/);
-    expect((await page('2026-01-03', 'lauds', '1954', 'en', 'general')).header.title).not.toMatch(/Antherus/);
-  });
   it('every calendar/version pair that exists renders', async () => {
     for (const c of CALENDARS) for (const v of VERSIONS) {
       if (!doSettings(c.id, v.id)) continue;

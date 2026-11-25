@@ -1,5 +1,6 @@
 // The viewer's state: settings (from the URL and saved choices) and what has been loaded.
 import { $, isoToday, store } from './util.js';
+import { t } from './ui.js';
 
 export let avail = null;
 
@@ -23,7 +24,9 @@ export const state = {
   layout: store.get('layout', 'interlinear'), // 'interlinear' | 'side'
   massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
   massN: Number(params.get('n')) || 1, // which Mass, on days with several
-  page: ['month', 'search'].includes(params.get('page')) ? params.get('page') : 'day',
+  page: ['month', 'search', 'sacristan', 'devotion'].includes(params.get('page')) ? params.get('page') : params.get('page') === 'clergy' ? 'sacristan' : 'day',
+  devotion: params.get('d') || 'rosary', // which devotion page (from the menu)
+  chant: store.get('chant', 'off') === 'on', // Gregorian notation in place of the Latin (Office)
   office: params.get('office') || 'day', // 'day' or a votive office id (dead, parvum, sabbato)
   compare: !!params.get('cmp'), // show another calendar/version beside this one
   cmpCalendar: (params.get('cmp') || '').split('/')[0] || null,
@@ -34,7 +37,15 @@ export const state = {
 
 export const SIZES = [0.85, 0.92, 1, 1.12, 1.25, 1.4, 1.6]; // text scale; index 2 is normal
 
-export const sizeIndex = () => Math.min(SIZES.length - 1, Math.max(0, 2 + state.size));
+/**
+ * The largest text size that fits. Two columns on a phone (side by side, or compare) can't take
+ * the biggest sizes: the words would no longer fit in each column, so A+ stops earlier there.
+ */
+export function maxSizeIndex() {
+  const twoCols = (state.compare || (state.layout === 'side' && state.display === 'both')) && state.page === 'day';
+  return twoCols && window.innerWidth < 600 ? 4 : SIZES.length - 1;
+}
+export const sizeIndex = () => Math.min(maxSizeIndex(), Math.max(0, 2 + state.size));
 
 export function clampDate(d) {
   if (!RANGE) return d;
@@ -75,6 +86,9 @@ export function altLangId() {
 /** The language whose data is loaded: the chosen one, or the alternative if it isn't offered here. */
 export const shownLangId = () => (offers(state.lang) ? state.lang : altLangId());
 
+/** Chant notation can be shown: the Office of the day, with the chant edition on this site. */
+export const chantAvailable = () => state.view === 'office' && state.office === 'day' && !!config.chant && built(config.chant);
+
 export const fullAvailable = () => lang(shownLangId()).fullMass;
 
 export const showFull = () => state.massMode === 'full' && fullAvailable();
@@ -92,7 +106,7 @@ export function officeHours() {
 }
 
 export const comboLabel = (cal, ver) =>
-  `${config.calendars.find((c) => c.id === cal)?.label} · ${config.versions.find((v) => v.id === ver)?.label}`;
+  `${t(config.calendars.find((c) => c.id === cal)?.label ?? cal)} · ${t(config.versions.find((v) => v.id === ver)?.label ?? ver)}`;
 
 export function currentPartId() {
   if (state.view !== 'mass') return state.office === 'day' ? state.hour : `${state.office}-${state.hour}`;
