@@ -2,14 +2,18 @@
 import { fetchMonth, summariesFor } from './data.js';
 import { RANGE, day, inRange, state } from './state.js';
 import { $, COLORS, COLOR_NAMES, esc, isoToday, monthOf, shift } from './util.js';
+import { fmtDate, t } from './ui.js';
+
+/** The reasons for a fast ("Lent", "Ember day", "Vigil of Christmas"), in the app's language. */
+const reasonsText = (f) => f.reasons.map((r) => t(r)).join(', ');
 
 /** Fast without full abstinence: meat at the principal meal only (older summaries lack the field). */
 export const isPartial = (f) => !!f && (f.partial ?? (f.fast && !f.abstinence));
 
 export function fastText(f) {
   if (!f || (!f.fast && !f.abstinence)) return '';
-  const what = f.fast && f.abstinence ? 'Fast and abstinence' : isPartial(f) ? 'Fast and partial abstinence' : f.fast ? 'Fast' : 'Abstinence';
-  return `${what}${f.note ? ` ${f.note}` : ''}${f.reasons.length ? ` · ${f.reasons.join(', ')}` : ''}`;
+  const what = t(f.fast && f.abstinence ? 'Fast and abstinence' : isPartial(f) ? 'Fast and partial abstinence' : f.fast ? 'Fast' : 'Abstinence');
+  return `${what}${f.note ? ` ${t(f.note)}` : ''}${f.reasons.length ? ` · ${reasonsText(f)}` : ''}`;
 }
 
 /**
@@ -22,11 +26,11 @@ export function fastMarks(f) {
   const mark = (kind, letter, label) => {
     // Partial abstinence is no longer required by current law anywhere.
     const req = kind === 'partial' ? (f.required ? false : undefined) : f.required?.[kind === 'fast' ? 'fast' : 'abstinence'];
-    const status = req === undefined ? '' : req ? ', mandatory' : ', suggested';
+    const status = req === undefined ? '' : `, ${t(req ? 'mandatory' : 'suggested')}`;
     return `<span class="fastmark ${kind}${req === false ? ' suggested' : ''}" role="button" tabindex="0"
       data-kind="${kind}" data-req="${req === undefined ? '' : req ? '1' : '0'}"
-      data-reasons="${esc(f.reasons.join(', '))}" data-note="${esc(f.note ?? '')}"
-      aria-label="${label}${status}. Tap for details">${letter}</span>`;
+      data-reasons="${esc(reasonsText(f))}" data-note="${esc(f.note ? t(f.note) : '')}" data-lent="${f.reasons.some((r) => /Lent|Ash Wednesday/.test(r)) ? '1' : ''}"
+      aria-label="${esc(t(label))}${status}. ${esc(t('Tap for details'))}">${letter}</span>`;
   };
   return (f.fast ? mark('fast', 'F', 'Day of fasting') : '') + (f.abstinence ? mark('abst', 'A', 'Day of abstinence') : '') +
     (isPartial(f) ? mark('partial', 'P', 'Partial abstinence: meat at the principal meal only') : '');
@@ -36,21 +40,22 @@ export function fastMarks(f) {
 export function fastTipHtml(el) {
   const fast = el.dataset.kind === 'fast';
   const req = el.dataset.req;
+  const suggested = `<p class="tip-status suggested">${t('Suggested')}</p><p>${t('Kept by the traditional discipline of this calendar (1917 Code); no longer required.')}</p>`;
   if (el.dataset.kind === 'partial') {
-    return `<p class="tip-title">Partial abstinence</p><p>Meat may be eaten at the principal meal only.</p>` +
-      (req === '0' ? `<p class="tip-status suggested">Suggested</p><p>Kept by the traditional discipline of this calendar (1917 Code); no longer required.</p>` : '') +
+    return `<p class="tip-title">${t('Partial abstinence')}</p><p>${t('Meat may be eaten at the principal meal only.')}</p>` +
+      (req === '0' ? suggested : '') +
       (el.dataset.reasons ? `<p class="tip-small">${esc(el.dataset.reasons)}</p>` : '');
   }
   const reasons = el.dataset.reasons;
   let status = '';
   if (req === '1') {
-    status = `<p class="tip-status mandatory">Mandatory</p><p>Required by current Church law.</p>` +
-      (!fast && !/Lent|Ash Wednesday/.test(reasons)
-        ? '<p class="tip-small">Outside Lent, bishops may allow another penance instead of abstinence (as in the USA).</p>' : '');
+    status = `<p class="tip-status mandatory">${t('Mandatory')}</p><p>${t('Required by current Church law.')}</p>` +
+      (!fast && !el.dataset.lent
+        ? `<p class="tip-small">${t('Outside Lent, bishops may allow another penance instead of abstinence (as in the USA).')}</p>` : '');
   } else if (req === '0') {
-    status = `<p class="tip-status suggested">Suggested</p><p>Kept by the traditional discipline of this calendar (1917 Code); no longer required.</p>`;
+    status = suggested;
   }
-  return `<p class="tip-title">${fast ? 'Day of fasting' : 'Day of abstinence'}${el.dataset.note && fast ? ` (${esc(el.dataset.note)})` : ''}</p>` +
+  return `<p class="tip-title">${t(fast ? 'Day of fasting' : 'Day of abstinence')}${el.dataset.note && fast ? ` (${esc(el.dataset.note)})` : ''}</p>` +
     status + (reasons ? `<p class="tip-small">${esc(reasons)}</p>` : '');
 }
 
@@ -66,7 +71,7 @@ export async function renderWeek() {
   if (seq !== weekSeq) return;
   $('week').innerHTML = dates.map((date, i) => {
     const s = sums[i];
-    const wd = new Date(`${date}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' });
+    const wd = fmtDate(date, 'weekdayShort');
     const usable = s && inRange(date);
     const today = date === isoToday() ? ' today' : '';
     return `<button type="button" class="wday${date === state.date ? ' current' : ''}${today}" data-date="${date}"${usable ? '' : ' disabled'}
@@ -93,14 +98,13 @@ export let monthSeq = 0;
 export async function renderMonth() {
   const seq = ++monthSeq;
   const month = monthOf(state.date);
-  const [y, m] = month.split('-').map(Number);
-  $('month-title').textContent = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  $('month-title').textContent = fmtDate(month, 'monthYear');
   $('month-list').innerHTML = '<li class="msg">Loading…</li>';
   let data;
   try { data = await fetchMonth(month); } catch { data = null; }
   if (seq !== monthSeq) return;
   if (!data) {
-    $('month-list').innerHTML = `<li class="msg">No calendar for this month${RANGE ? ' on this site' : ' yet'}.</li>`;
+    $('month-list').innerHTML = `<li class="msg">${t(RANGE ? 'No calendar for this month on this site.' : 'No calendar for this month yet.')}</li>`;
     return;
   }
   $('month-list').innerHTML = data.days.map((s) => {
@@ -109,9 +113,9 @@ export async function renderMonth() {
     const ok = inRange(s.date);
     return `<li class="mrow${sunday ? ' sunday' : ''}${s.date === state.date ? ' current' : ''}${s.date === isoToday() ? ' today' : ''}">
       <button type="button" data-date="${s.date}"${ok ? '' : ' disabled'}>
-        <span class="md"><b>${dt.getUTCDate()}</b> ${dt.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })}</span>
-        <span class="mc"><span class="swatch" style="background:${COLORS[s.color]}" title="${COLOR_NAMES[s.color]}"></span></span>
-        <span class="mt">${esc(s.title)}${s.commemorations.length ? `<small>Com. ${esc(s.commemorations.join('; '))}</small>` : ''}</span>
+        <span class="md"><b>${dt.getUTCDate()}</b> ${fmtDate(s.date, 'weekdayShort')}</span>
+        <span class="mc"><span class="swatch" style="background:${COLORS[s.color]}" title="${t(COLOR_NAMES[s.color] ?? s.color)}"></span></span>
+        <span class="mt">${esc(s.title)}${s.commemorations.length ? `<small>${t('Com.')} ${esc(s.commemorations.join('; '))}</small>` : ''}</span>
         <span class="mr">${esc(s.rank)}</span>
         <span class="mf">${fastMarks(s.fasting)}</span>
       </button></li>`;

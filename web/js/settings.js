@@ -3,6 +3,7 @@
 import { syncOfflinePanel } from './offline.js';
 import { comboBuilt, comboLabel, state } from './state.js';
 import { $ } from './util.js';
+import { t } from './ui.js';
 
 /** The address of a calendar file for the calendar and version on screen. */
 const feedUrl = (kind) => new URL(`data/${state.calendar}/${state.version}/${kind}.ics`, location.href).href;
@@ -10,8 +11,8 @@ const feedUrl = (kind) => new URL(`data/${state.calendar}/${state.version}/${kin
 function syncCalendarExport() {
   const ok = comboBuilt(state.calendar, state.version);
   $('ical-what').textContent = ok
-    ? `For ${comboLabel(state.calendar, state.version)}, for the dates on this site.`
-    : 'Not available for this calendar and version on this site.';
+    ? t('For {combo}, for the dates on this site.', { combo: comboLabel(state.calendar, state.version) })
+    : t('Not available for this calendar and version on this site.');
   for (const [kind, sub, dl] of [['calendar', 'ical-sub-all', 'ical-dl-all'], ['fasting', 'ical-sub-fast', 'ical-dl-fast']]) {
     const url = feedUrl(kind);
     // webcal:// asks the device's calendar app to subscribe (iPhone, Mac, Outlook).
@@ -44,7 +45,7 @@ export function initSettings() {
     const url = feedUrl(b.dataset.feed);
     try {
       await navigator.clipboard.writeText(url);
-      $('ical-status').textContent = 'Link copied.';
+      $('ical-status').textContent = t('Link copied.');
     } catch {
       $('ical-status').textContent = url; // couldn't copy: show it to copy by hand
     }
@@ -52,21 +53,21 @@ export function initSettings() {
   $('epub-btn').onclick = async () => {
     const btn = $('epub-btn');
     btn.disabled = true;
-    $('epub-status').textContent = 'Gathering the texts…';
+    $('epub-status').textContent = t('Gathering the texts…');
     try {
       const { makeEpub } = await import('./epub.js');
       const book = await makeEpub({ range: $('epub-range').value, contents: $('epub-contents').value },
-        (done, total) => { $('epub-status').textContent = `Gathering the texts: day ${done} of ${total}…`; });
+        (done, total) => { $('epub-status').textContent = t('Gathering the texts: day {done} of {total}…', { done, total }); });
       const url = URL.createObjectURL(book.blob);
       const a = Object.assign(document.createElement('a'), { href: url, download: book.filename });
       document.body.append(a);
       a.click();
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      $('epub-status').textContent = `Done: ${book.filename} (${book.days} day${book.days === 1 ? '' : 's'}, ${(book.blob.size / 1e6).toFixed(1)} MB)` +
-        (book.missing ? `. ${book.missing} day${book.missing === 1 ? ' was' : 's were'} not available and left out.` : '.');
+      $('epub-status').textContent = t(book.days === 1 ? 'Done: {file} (1 day, {mb} MB).' : 'Done: {file} ({days} days, {mb} MB).', { file: book.filename, days: book.days, mb: (book.blob.size / 1e6).toFixed(1) }) +
+        (book.missing ? ` ${t(book.missing === 1 ? '1 day was not available and was left out.' : '{n} days were not available and were left out.', { n: book.missing })}` : '');
     } catch (e) {
-      $('epub-status').textContent = `Couldn't make the e-book: ${e.message}`;
+      $('epub-status').textContent = t("Couldn't make the e-book: {error}", { error: t(e.message) });
     } finally {
       btn.disabled = false;
     }

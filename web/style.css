@@ -585,20 +585,13 @@ body.comparing #layout { display: none; }
 .initials-seg button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
 .initials-demo { margin: 10px 0 4px; font: 16px/1.5 var(--serif); display: flow-root; }
 
-/* Drop caps: off, simple (the default), or medieval (a blackletter capital in a gilded frame). */
-:root { --gold: #b08a2e; --gold-soft: color-mix(in srgb, #d8b25a 16%, transparent); }
+/* Drop caps: off, simple (the default), or medieval (a red blackletter capital, three lines tall). */
 :root[data-initials="off"] .initial { color: inherit; font-size: 1em; font-weight: inherit; }
 :root[data-initials="fancy"] .text .col, :root[data-initials="fancy"] .initials-demo { display: flow-root; }
 :root[data-initials="fancy"] .text .initial, :root[data-initials="fancy"] .initials-demo .initial {
   float: left; font-family: "UnifrakturMaguntia", "Grenze Gotisch", serif; font-weight: 400;
-  font-size: 2.9em; line-height: 1; min-width: 1.15em; text-align: center;
-  padding: .06em .1em .02em; margin: .12em .16em 0 0; color: var(--rubric);
-  border: 3px double var(--gold); border-radius: 3px;
-  background:
-    radial-gradient(circle at 20% 20%, var(--gold-soft) 0 18%, transparent 19%),
-    radial-gradient(circle at 80% 80%, var(--gold-soft) 0 18%, transparent 19%),
-    repeating-linear-gradient(45deg, var(--gold-soft) 0 2px, transparent 2px 7px);
-  text-shadow: 1px 1px 0 color-mix(in srgb, var(--gold) 45%, transparent);
+  font-size: 3.4em; line-height: .82; padding: .06em .08em 0 0; margin: .04em .06em 0 0;
+  color: var(--rubric);
 }
 
 /* ---------- the liturgical year wheel (month page) ---------- */
@@ -642,3 +635,17 @@ body.comparing #layout { display: none; }
 .epub-opts { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 6px 0 10px; }
 .epub-opts .select span { color: var(--muted); font-size: 13px; }
 .epub-opts select { font: inherit; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
+
+/* Settings → Language of the app (flags) */
+.flag { display: inline-block; width: 30px; height: 20px; flex: none; border-radius: 3px; overflow: hidden; box-shadow: 0 0 0 1px var(--rule); }
+.flag svg { width: 100%; height: 100%; display: block; }
+.flagmenu { position: relative; }
+.flagmenu > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--tab-bg); font: 15px var(--sans); }
+.flagmenu > summary::-webkit-details-marker { display: none; }
+#flagmenu-current { display: inline-flex; align-items: center; gap: 10px; }
+.flagmenu-arrow { color: var(--muted); }
+.flagmenu-list { list-style: none; margin: 6px 0 0; padding: 4px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); box-shadow: 0 8px 24px rgb(0 0 0 / .12); }
+.drawer .flagmenu-list button { display: flex; align-items: center; gap: 12px; width: 100%; border: 0; background: none; border-radius: 7px; padding: 8px 10px; text-align: left; }
+.drawer .flagmenu-list button:hover { background: var(--tab-bg); }
+.drawer .flagmenu-list button[aria-checked="true"] { background: var(--tab-bg); font-weight: 600; }
+.drawer .flagmenu-list button[aria-checked="true"]::after { content: '✓'; margin-left: auto; color: var(--accent-ink); }

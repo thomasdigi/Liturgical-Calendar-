@@ -7,6 +7,7 @@ import { rememberPlace } from './lastread.js';
 import { offlineHint } from './offline.js';
 import { markStructure, renderOutline } from './outline.js';
 import { $, COLORS, COLOR_NAMES, INFO_ICON, esc } from './util.js';
+import { fmtDate, t } from './ui.js';
 
 /**
  * The second-language text of a section, with lines DO left in English replaced
@@ -47,7 +48,7 @@ export function sectionsHtml(part, altPart, L, notes, prefix) {
     const hl = s.heading.latin, hv = s.heading.vernacular && s.heading.vernacular !== hl ? s.heading.vernacular : '';
     const sid = `${prefix}${i}`;
     const info = notes && s.fallback
-      ? `<button type="button" class="info" data-kind="section" aria-label="Not fully translated: choose a language for the missing text" title="Not fully translated">${INFO_ICON}</button>`
+      ? `<button type="button" class="info" data-kind="section" aria-label="${esc(t('Not fully translated: choose a language for the missing text'))}" title="${esc(t('Not fully translated'))}">${INFO_ICON}</button>`
       : '';
     const head = hl || hv || info
       ? `<h3><span class="la">${hl}</span>${hv ? `<span class="vn"> · ${hv}</span>` : ''}${info}</h3>`
@@ -69,8 +70,8 @@ export function sectionsHtml(part, altPart, L, notes, prefix) {
 }
 
 export const headerHtml = (h) =>
-  `<p class="cmp-title">${esc(h.title)}</p><p class="cmp-meta"><span class="swatch" style="background:${COLORS[h.color] || 'transparent'}"></span>${esc([h.rank, COLOR_NAMES[h.color]].filter(Boolean).join(' · '))}</p>` +
-  (h.commemorations.length ? `<p class="cmp-comm">Com. ${esc(h.commemorations.join('; '))}</p>` : '');
+  `<p class="cmp-title">${esc(h.title)}</p><p class="cmp-meta"><span class="swatch" style="background:${COLORS[h.color] || 'transparent'}"></span>${esc([h.rank, COLOR_NAMES[h.color] && t(COLOR_NAMES[h.color])].filter(Boolean).join(' · '))}</p>` +
+  (h.commemorations.length ? `<p class="cmp-comm">${t('Com.')} ${esc(h.commemorations.join('; '))}</p>` : '');
 
 export let renderSeq = 0;
 
@@ -87,7 +88,7 @@ export async function render() {
     main = await loadPart(shown, id);
   } catch {
     if (seq !== renderSeq) return;
-    $('text').innerHTML = `<p class="msg">${navigator.onLine ? 'This part could not be loaded.' : offlineHint().trim()}</p>`;
+    $('text').innerHTML = `<p class="msg">${navigator.onLine ? t('This part could not be loaded.') : offlineHint().trim()}</p>`;
     return;
   }
   // Compare: the same part in another calendar/version, in the same language where it's there.
@@ -122,13 +123,12 @@ export async function render() {
 
   const { part, altPart } = main;
   const h = state.view === 'mass' || state.office !== 'day' ? part.header : day.header;
-  const d = new Date(`${day.date}T12:00:00Z`);
-  $('weekday').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  $('weekday').textContent = fmtDate(day.date, 'long');
   $('title').textContent = h.title;
-  $('rank').textContent = [h.rank, COLOR_NAMES[h.color]].filter(Boolean).join(' · ');
+  $('rank').textContent = [h.rank, COLOR_NAMES[h.color] && t(COLOR_NAMES[h.color])].filter(Boolean).join(' · ');
   $('swatch').style.background = COLORS[h.color] || 'transparent';
-  $('comm').textContent = h.commemorations.length ? `Commemoration: ${h.commemorations.join('; ')}` : '';
-  $('source-version').textContent = state.view === 'mass' ? `Missal: ${day.versionName.mass}.` : `Breviary: ${day.versionName.office}.`;
+  $('comm').textContent = h.commemorations.length ? `${t('Commemoration:')} ${h.commemorations.join('; ')}` : '';
+  $('source-version').textContent = state.view === 'mass' ? `${t('Missal:')} ${day.versionName.mass}.` : `${t('Breviary:')} ${day.versionName.office}.`;
 
   // Hour tabs (a votive office may have only some Hours)
   const hours = officeHours();
@@ -137,8 +137,8 @@ export async function render() {
     const b = document.createElement('button');
     b.type = 'button';
     b.setAttribute('role', 'tab');
-    b.textContent = hr.label;
-    b.title = hours.includes(hr.id) ? hr.latin : `Not part of this office`;
+    b.textContent = t(hr.label);
+    b.title = hours.includes(hr.id) ? hr.latin : t('Not part of this office');
     b.disabled = !hours.includes(hr.id);
     b.setAttribute('aria-selected', String(hr.id === state.hour));
     b.onclick = () => { state.hour = hr.id; updateUrl(); render(); };
@@ -148,11 +148,11 @@ export async function render() {
   // Per-section notes only make sense when the chosen language is the one shown.
   const notes = offers(state.lang);
   const L = lang(shown);
-  const title = `<h2 class="part-title"><span class="la">${part.title.latin}</span><span class="vn">${part.title.label}</span></h2>`;
+  const title = `<h2 class="part-title"><span class="la">${part.title.latin}</span><span class="vn">${esc(t(part.title.label))}</span></h2>`;
   if (state.compare) {
     const right = other
       ? `<div class="cmp-head">${headerHtml(other.part.header)}</div>${sectionsHtml(other.part, other.altPart, lang(otherLang), false, 'c')}`
-      : `<p class="msg">Not available for ${esc(comboLabel(state.cmpCalendar, state.cmpVersion))} on this day${RANGE ? ' on this site' : ''}.</p>`;
+      : `<p class="msg">${t(RANGE ? 'Not available for {combo} on this day on this site.' : 'Not available for {combo} on this day.', { combo: esc(comboLabel(state.cmpCalendar, state.cmpVersion)) })}</p>`;
     $('text').innerHTML = `${title}<div class="compare">
       <div class="cmp-col"><p class="cmp-label">${esc(comboLabel(state.calendar, state.version))}</p>
         <div class="cmp-head">${headerHtml(part.header)}</div>${sectionsHtml(part, altPart, L, notes, 's')}</div>
@@ -164,7 +164,7 @@ export async function render() {
   document.body.classList.toggle('comparing', state.compare);
   document.body.classList.toggle('chanting', chanted);
   if (chanted) renderChant($('text')).then((ok) => {
-    if (!ok && seq === renderSeq) $('text').insertAdjacentHTML('afterbegin', '<p class="msg">The chant notation could not be loaded; showing its text.</p>');
+    if (!ok && seq === renderSeq) $('text').insertAdjacentHTML('afterbegin', `<p class="msg">${t('The chant notation could not be loaded; showing its text.')}</p>`);
   });
 
   // Reading mode hides instructions: longer red rubrics ("Secreto", "Deinde, clara voce…"),
@@ -183,16 +183,16 @@ export async function render() {
   mainCol.querySelectorAll('section[data-jump], .col.la .commem, .col.la .struct').forEach((el, n) => {
     if (el.matches('section')) jumps.push([el.id, el.dataset.jump]);
     else if (el.classList.contains('struct')) {
-      const t = el.textContent.trim();
-      jumps.push([el.id, el.classList.contains('lesson') ? `  ↳ Lesson ${t.replace(/^Lectio\s+/, '')}` : t.replace(/^Nocturnus/, 'Nocturn')]);
+      const txt = el.textContent.trim();
+      jumps.push([el.id, el.classList.contains('lesson') ? `  ↳ ${t('Lesson {n}', { n: txt.replace(/^Lectio\s+/, '') })}` : txt.replace(/^Nocturnus/, t('Nocturn'))]);
     } else {
       el.id = el.id || `cm${n}`;
-      const kind = el.dataset.kind === 'suffrage' ? 'Suffrage' : 'Commemoration';
+      const kind = t(el.dataset.kind === 'suffrage' ? 'Suffrage' : 'Commemoration');
       const name = el.textContent.replace(/^Commemoratio\s*/, '').trim();
       jumps.push([el.id, `  ↳ ${kind}: ${name}`]);
     }
   });
-  $('jump').innerHTML = `<option value="">Jump to…</option>` +
+  $('jump').innerHTML = `<option value="">${t('Jump to…')}</option>` +
     jumps.map(([jid, label]) => `<option value="${jid}">${esc(label)}</option>`).join('');
   $('jump').disabled = jumps.length < 2;
 

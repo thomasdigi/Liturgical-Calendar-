@@ -14,6 +14,7 @@ import { initSettings } from './settings.js';
 import { restorePlace, trackReading } from './lastread.js';
 import { initTheme } from './theme.js';
 import { initTypography } from './typography.js';
+import { fmtDate, initUi, t } from './ui.js';
 import { initReport } from './report.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
 
@@ -21,7 +22,7 @@ export async function init() {
   try {
     setConfig(await (await fetch('data/config.json')).json());
   } catch {
-    $('title').textContent = 'Could not load settings';
+    $('title').textContent = t('Could not load settings');
     return;
   }
   try {
@@ -220,12 +221,12 @@ export async function load() {
     if (seq !== loadSeq) return;
     setDay(null);
     $('weekday').textContent = '';
-    $('title').textContent = 'Not available';
+    $('title').textContent = t('Not available');
     $('rank').textContent = ''; $('comm').textContent = ''; $('swatch').style.background = 'transparent';
     $('hours').innerHTML = '';
     $('fallback').hidden = true;
     $('text').innerHTML = navigator.onLine
-      ? `<p class="msg">No texts for ${state.date} in this calendar, version and language${RANGE ? ' on this site' : ' yet'}.</p>`
+      ? `<p class="msg">${t(RANGE ? 'No texts for {date} in this calendar, version and language on this site.' : 'No texts for {date} in this calendar, version and language yet.', { date: fmtDate(state.date, 'long') })}</p>`
       : `<p class="msg">${offlineHint().trim()}</p>`;
     $('masschoice').hidden = true;
     return;
@@ -325,6 +326,8 @@ document.addEventListener('keydown', (e) => {
   }
 }, true);
 
+// The app's own language first: it notes the page's English before anything else changes it.
+initUi(() => { syncControls(); load(); });
 initTheme();
 initTypography(() => { syncControls(); load(); });
 initReport();

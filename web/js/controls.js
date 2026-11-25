@@ -1,6 +1,7 @@
 // Keeping the controls in step with the state; the translation pop-up; the page address.
-import { RANGE, SIZES, altLangId, maxSizeIndex, built, calendarHas, chantAvailable, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey, viewName } from './state.js';
+import { RANGE, SIZES, altLangId, maxSizeIndex, built, calendarHas, chantAvailable, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey } from './state.js';
 import { $, INFO_ICON, esc } from './util.js';
+import { t } from './ui.js';
 
 /** Buttons to choose between a day's Masses (Christmas, All Souls, …). */
 export function syncMasses() {
@@ -22,32 +23,32 @@ export function syncControls() {
   $('sacristan-tab').hidden = !state.sacristan;
   $('sacristan-mode').checked = state.sacristan;
   document.querySelectorAll('#page button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
-  $('prev').setAttribute('aria-label', 'Previous day');
+  $('prev').setAttribute('aria-label', t('Previous day'));
   // Text size and reading mode
   document.body.style.setProperty('--text-scale', String(SIZES[sizeIndex()]));
   document.querySelector('#size [data-size="-1"]').disabled = sizeIndex() === 0;
   const plus = document.querySelector('#size [data-size="1"]');
   plus.disabled = sizeIndex() >= maxSizeIndex();
   plus.title = !plus.disabled ? '' : maxSizeIndex() < SIZES.length - 1
-    ? 'Largest size for two columns on this screen. Choose Interlinear for bigger text.' : 'Largest size';
+    ? t('Largest size for two columns on this screen. Choose Interlinear for bigger text.') : t('Largest size');
   document.body.dataset.reading = state.reading ? 'on' : 'off';
   $('reading').setAttribute('aria-pressed', String(state.reading));
   const viewWord = state.view === 'mass' ? 'Mass' : 'Office';
   $('calendar').innerHTML = config.calendars.map((c) => {
     const exists = c.versions.includes(state.version);
     const ok = exists && comboBuilt(c.id, state.version);
-    const note = !exists ? ` (${c.versions.map((v) => config.versions.find((x) => x.id === v)?.label.split(' ')[0]).join(', ')} only)`
-      : ok ? '' : ' (not on this site)';
-    return `<option value="${c.id}"${ok ? '' : ' disabled'}>${esc(c.label + note)}</option>`;
+    const note = !exists ? ` (${t('{versions} only', { versions: c.versions.map((v) => config.versions.find((x) => x.id === v)?.label.split(' ')[0]).join(', ') })})`
+      : ok ? '' : ` (${t('not on this site')})`;
+    return `<option value="${c.id}"${ok ? '' : ' disabled'}>${esc(t(c.label) + note)}</option>`;
   }).join('');
   $('version').innerHTML = config.versions.map((v) => {
     const exists = calendarHas(state.calendar, v.id);
     const ok = exists && comboBuilt(state.calendar, v.id);
-    return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(v.label + (!exists ? ' (not in this calendar)' : ok ? '' : ' (not on this site)'))}</option>`;
+    return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(t(v.label) + (!exists ? ` (${t('not in this calendar')})` : ok ? '' : ` (${t('not on this site')})`))}</option>`;
   }).join('');
   $('lang').innerHTML = config.languages.map((l) => {
     const ok = offers(l.id);
-    const why = !l[viewKey()] ? ` (no ${viewWord})` : ' (not on this site)';
+    const why = ` (${t(!l[viewKey()] ? (viewWord === 'Mass' ? 'no Mass' : 'no Office') : 'not on this site')})`;
     return `<option value="${l.id}"${ok ? '' : ' disabled'}>${esc(l.label + (ok ? '' : why))}</option>`;
   }).join('');
   // A disabled option can still be the saved choice: keep it selected so the notice explains it.
@@ -65,7 +66,7 @@ export function syncControls() {
     b.disabled = state.display !== 'both';
     b.setAttribute('aria-pressed', String(b.dataset.layout === state.layout));
   });
-  $('layout').title = state.display === 'both' ? '' : 'Layout applies when both languages are shown';
+  $('layout').title = state.display === 'both' ? '' : t('Layout applies when both languages are shown');
   document.querySelectorAll('#view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
   $('hours').hidden = state.view !== 'office';
   $('massmode').hidden = state.view !== 'mass';
@@ -74,18 +75,18 @@ export function syncControls() {
   const chantOk = chantAvailable();
   $('chant').disabled = !chantOk;
   $('chant').setAttribute('aria-pressed', String(state.chant && chantOk));
-  $('chant').title = chantOk ? 'Show the Gregorian chant notation in place of the Latin'
-    : state.office !== 'day' ? 'Chant is available for the Office of the day only' : 'Chant is not on this site for this calendar and version';
+  $('chant').title = t(chantOk ? 'Show the Gregorian chant notation in place of the Latin'
+    : state.office !== 'day' ? 'Chant is available for the Office of the day only' : 'Chant is not on this site for this calendar and version');
   syncOffice();
   // Compare: another calendar/version beside this one
   $('compare').setAttribute('aria-pressed', String(state.compare));
   $('comparebar').hidden = !state.compare;
   if (state.compare) {
     $('cmp-calendar').innerHTML = config.calendars.map((c) =>
-      `<option value="${c.id}"${c.versions.some((v) => comboBuilt(c.id, v)) ? '' : ' disabled'}>${esc(c.label)}</option>`).join('');
+      `<option value="${c.id}"${c.versions.some((v) => comboBuilt(c.id, v)) ? '' : ' disabled'}>${esc(t(c.label))}</option>`).join('');
     $('cmp-version').innerHTML = config.versions.map((v) => {
       const ok = calendarHas(state.cmpCalendar, v.id) && comboBuilt(state.cmpCalendar, v.id);
-      return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(v.label)}</option>`;
+      return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(t(v.label))}</option>`;
     }).join('');
     $('cmp-calendar').value = state.cmpCalendar;
     $('cmp-version').value = state.cmpVersion;
@@ -94,9 +95,9 @@ export function syncControls() {
 
   const full = fullAvailable();
   $('full-btn').disabled = !full;
-  $('full-btn').title = full ? 'Show the Ordinary of the Mass as well' : `The Ordinary of the Mass is not translated into ${shownLabel} in Divinum Officium`;
+  $('full-btn').title = full ? t('Show the Ordinary of the Mass as well') : t('The Ordinary of the Mass is not translated into {lang} in Divinum Officium', { lang: shownLabel });
   $('full-hint').hidden = full;
-  $('full-hint').textContent = full ? '' : `Full Mass is not available in ${shownLabel}.`;
+  $('full-hint').textContent = full ? '' : t('Full Mass is not available in {lang}.', { lang: shownLabel });
   document.querySelectorAll('#massmode button[data-mass]').forEach((b) =>
     b.setAttribute('aria-pressed', String(b.dataset.mass === (showFull() ? 'full' : 'propers'))));
 
@@ -104,13 +105,14 @@ export function syncControls() {
   const offered = lang(state.lang)[viewKey()];
   const shownIsChosen = shownLangId() === state.lang;
   $('fallback').hidden = shownIsChosen;
-  const t = i18n(state.lang);
-  const local = t === window.I18N.en ? '' :
-    `<span class="local" lang="${lang(state.lang).htmlLang}"${lang(state.lang).rtl ? ' dir="rtl"' : ''}>${esc(state.view === 'mass' ? t.viewMass : t.viewOffice)}</span>`;
+  const loc = i18n(state.lang);
+  const local = loc === window.I18N.en ? '' :
+    `<span class="local" lang="${lang(state.lang).htmlLang}"${lang(state.lang).rtl ? ' dir="rtl"' : ''}>${esc(state.view === 'mass' ? loc.viewMass : loc.viewOffice)}</span>`;
+  const names = { lang: esc(lang(state.lang).label), shown: esc(lang(shownLangId()).label) };
   $('fallback').innerHTML = shownIsChosen ? '' : !offered
-    ? `<button type="button" class="info" aria-label="About this translation">${INFO_ICON}</button>
-       <span><span>Divinum Officium has no ${esc(lang(state.lang).label)} translation of ${viewName()}. Showing ${esc(lang(shownLangId()).label)} instead.</span>${local}</span>`
-    : `<span>${esc(lang(state.lang).label)} isn't on this site for this calendar and version. Showing ${esc(lang(shownLangId()).label)} instead.</span>`;
+    ? `<button type="button" class="info" aria-label="${esc(t('About this translation'))}">${INFO_ICON}</button>
+       <span><span>${t(state.view === 'mass' ? 'Divinum Officium has no {lang} translation of the Mass. Showing {shown} instead.' : 'Divinum Officium has no {lang} translation of the Divine Office. Showing {shown} instead.', names)}</span>${local}</span>`
+    : `<span>${t("{lang} isn't on this site for this calendar and version. Showing {shown} instead.", names)}</span>`;
   updateUrl();
 }
 
@@ -120,10 +122,10 @@ export function syncOffice() {
   const sat = new Date(`${state.date}T12:00:00Z`).getUTCDay() === 6;
   // Only drop an unavailable choice once the day has loaded (a link may name one).
   if (day && state.office !== 'day' && !built.some((v) => v.id === state.office)) state.office = 'day';
-  $('office').innerHTML = `<option value="day">Office of the day</option>` + (config.votives ?? []).map((v) => {
+  $('office').innerHTML = `<option value="day">${t('Office of the day')}</option>` + (config.votives ?? []).map((v) => {
     const ok = built.some((b) => b.id === v.id);
-    const why = v.saturdaysOnly && !sat ? ' (Saturdays only)' : ' (not on this site)';
-    return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(v.label + (ok ? '' : why))}</option>`;
+    const why = ` (${t(v.saturdaysOnly && !sat ? 'Saturdays only' : 'not on this site')})`;
+    return `<option value="${v.id}"${ok ? '' : ' disabled'}>${esc(t(v.label) + (ok ? '' : why))}</option>`;
   }).join('');
   $('office').value = state.office;
 }

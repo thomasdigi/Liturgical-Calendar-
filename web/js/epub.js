@@ -7,6 +7,7 @@ import { getJson } from './data.js';
 import { comboLabel, config, inRange, lang, shownLangId, state } from './state.js';
 import { esc, monthOf, shift } from './util.js';
 import { simplifyLatin } from './typography.js';
+import { fmtDate, t, uiLang } from './ui.js';
 
 // ---------- a minimal ZIP writer (stored, no compression: EPUB's "mimetype" must be stored) ----------
 const CRC_TABLE = Array.from({ length: 256 }, (_, n) => {
@@ -83,7 +84,7 @@ export function rangeDates(range, date = state.date) {
   return dates.filter((d) => inRange(d));
 }
 
-const longDate = (d) => new Date(`${d}T12:00:00Z`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+const longDate = (d) => fmtDate(d, 'long');
 const COLOURS = { white: 'White', red: 'Red', green: 'Green', violet: 'Violet', rose: 'Rose', black: 'Black' };
 
 /** HTML (to become XHTML) for one day. */
@@ -96,14 +97,14 @@ async function dayChapter(date, n, { langId, contents, display }) {
   const toc = [];
   let html = `<h1 id="d${n}">${esc(longDate(date))}</h1>
     <p class="feast" lang="la">${esc(index.header.title)}</p>
-    <p class="rank">${esc([index.header.rank, COLOURS[index.header.color]].filter(Boolean).join(' · '))}</p>`;
-  if (index.header.commemorations?.length) html += `<p class="com" lang="la">Com. ${esc(index.header.commemorations.join('; '))}</p>`;
+    <p class="rank">${esc([index.header.rank, COLOURS[index.header.color] && t(COLOURS[index.header.color])].filter(Boolean).join(' · '))}</p>`;
+  if (index.header.commemorations?.length) html += `<p class="com" lang="la">${t('Com.')} ${esc(index.header.commemorations.join('; '))}</p>`;
   for (const p of want) {
     const sections = await loadPart(langId, date, p.id);
     const masses = index.masses ?? [];
     const label = p.id.startsWith('mass')
-      ? (masses.length > 1 ? `Mass: ${masses.find((m) => `mass${m.n > 1 ? `-${m.n}` : ''}` === p.id)?.label ?? ''}` : 'Mass')
-      : config.hours.find((h) => h.id === p.id).label;
+      ? (masses.length > 1 ? `${t('Mass')}: ${masses.find((m) => `mass${m.n > 1 ? `-${m.n}` : ''}` === p.id)?.label ?? ''}` : t('Mass'))
+      : t(config.hours.find((h) => h.id === p.id).label);
     const pid = `d${n}-${p.id}`;
     toc.push([pid, label]);
     html += `<section class="part"><h2 id="${pid}">${esc(label)}</h2>`;
@@ -159,7 +160,7 @@ h3 .vnh { color: #777; }
 /** Make the e-book. `onProgress(done, total)` reports each day. Returns { blob, filename, days }. */
 export async function makeEpub({ range, contents }, onProgress = () => {}) {
   const dates = rangeDates(range);
-  if (!dates.length) throw new Error('No dates on this site for that range.');
+  if (!dates.length) throw new Error(t('No dates on this site for that range.'));
   const langId = shownLangId();
   const L = lang(langId);
   const display = state.display;
@@ -170,22 +171,22 @@ export async function makeEpub({ range, contents }, onProgress = () => {}) {
     } catch { /* a day that isn't on the site (or not saved, offline): left out */ }
     onProgress(i + 1, dates.length);
   }
-  if (!chapters.length) throw new Error('None of these days could be loaded (are you offline?).');
+  if (!chapters.length) throw new Error(t('None of these days could be loaded (are you offline?).'));
 
   const first = dates[0], last = dates.at(-1);
   const span = first === last ? longDate(first)
-    : range === 'month' ? new Date(`${first}T12:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' })
-    : `${first} to ${last}`;
-  const what = contents === 'mass' ? 'The Mass' : contents === 'office' ? 'The Divine Office' : 'The Mass and Divine Office';
+    : range === 'month' ? fmtDate(first, 'monthYear')
+    : t('{from} to {to}', { from: fmtDate(first, 'medium'), to: fmtDate(last, 'medium') });
+  const what = t(contents === 'mass' ? 'The Mass' : contents === 'office' ? 'The Divine Office' : 'The Mass and Divine Office');
   const bookTitle = `${what}: ${span}`;
-  const langs = display === 'latin' ? 'Latin' : display === 'vernacular' ? L.label : `Latin and ${L.label}`;
+  const langs = display === 'latin' ? t('Latin') : display === 'vernacular' ? L.label : t('Latin and {lang}', { lang: L.label });
   const uid = `urn:uuid:${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`}`;
   const modified = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
   const bookLang = display === 'latin' ? 'la' : L.htmlLang;
 
   const titlePage = toXhtml(`<div class="title-page"><h1>${esc(what)}</h1><p>${esc(span)}</p>
     <p>${esc(comboLabel(state.calendar, state.version))}</p><p>${esc(langs)}</p>
-    <p class="rank">Texts from Divinum Officium (MIT License).</p></div>`, bookTitle, bookLang);
+    <p class="rank">${t('Texts from Divinum Officium (MIT License).')}</p></div>`, bookTitle, bookLang);
   const files = [
     { name: 'mimetype', data: 'application/epub+zip' },
     { name: 'META-INF/container.xml', data: `<?xml version="1.0" encoding="UTF-8"?>
@@ -202,9 +203,9 @@ export async function makeEpub({ range, contents }, onProgress = () => {}) {
     <ol>${c.toc.map(([id, label]) => `<li><a href="day${c.n}.xhtml#${id}">${esc(label)}</a></li>`).join('')}</ol></li>`).join('\n');
   files.push({ name: 'OEBPS/nav.xhtml', data: `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>
-<html xmlns="${XHTML}" xmlns:epub="http://www.idpf.org/2007/ops" lang="en" xml:lang="en">
-<head><meta charset="utf-8"/><title>Contents</title><link rel="stylesheet" type="text/css" href="style.css"/></head>
-<body><nav epub:type="toc" id="toc"><h1>Contents</h1><ol>${navList}</ol></nav></body></html>` });
+<html xmlns="${XHTML}" xmlns:epub="http://www.idpf.org/2007/ops" lang="${uiLang()}" xml:lang="${uiLang()}">
+<head><meta charset="utf-8"/><title>${esc(t('Contents'))}</title><link rel="stylesheet" type="text/css" href="style.css"/></head>
+<body><nav epub:type="toc" id="toc"><h1>${esc(t('Contents'))}</h1><ol>${navList}</ol></nav></body></html>` });
   // The older table of contents (EPUB 2 readers).
   let play = 0;
   const ncxPoints = chapters.map((c) => `<navPoint id="np${++play}" playOrder="${play}"><navLabel><text>${esc(longDate(c.date))}: ${esc(c.title)}</text></navLabel><content src="day${c.n}.xhtml#d${c.n}"/>

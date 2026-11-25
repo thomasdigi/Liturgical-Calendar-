@@ -4,6 +4,7 @@
 import { summariesFor } from './data.js';
 import { state } from './state.js';
 import { $, COLORS, esc } from './util.js';
+import { fmtDate, t } from './ui.js';
 
 const DAY = 86_400_000;
 const utc = (iso) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10));
@@ -60,7 +61,7 @@ export function seasonName(date) {
 }
 
 // Geometry (SVG units): the ring, and where things sit around it.
-const C = 200, R = 140, W = 20, LABEL_R = 164, LABEL_STEP = 15;
+const C = 200, R = 140, W = 20, LABEL_R = 166, LABEL_STEP = 15;
 const point = (angle, r) => [C + r * Math.sin(angle), C - r * Math.cos(angle)]; // 0 = top, clockwise
 const f2 = (n) => n.toFixed(2);
 
@@ -74,7 +75,7 @@ function arc(a0, a1, r) {
 function labelArc(mid, r) {
   const span = 1.6; // radians each side: room for the longest label
   const lower = Math.cos(mid) < -0.15;
-  if (lower) r += 9; // text hangs below the line there: keep it clear of the ring
+  if (lower) r += 14; // the letters hang inward from the line there: keep them clear of the ring
   const [x0, y0] = point(mid + (lower ? span : -span), r);
   const [x1, y1] = point(mid + (lower ? -span : span), r);
   return `M${f2(x0)} ${f2(y0)} A${r} ${r} 0 0 ${lower ? 0 : 1} ${f2(x1)} ${f2(y1)}`;
@@ -98,12 +99,12 @@ export async function renderWheel(onPick) {
     const a0 = angleOf(se.from), a1 = angleOf(se.to, true);
     const mid = (a0 + a1) / 2;
     let r = LABEL_R;
-    const half = (rr) => (se.label.length * 8.6 + 6) / 2 / rr; // half the label's width, as an angle
+    const half = (rr) => (t(se.label).length * 8.6 + 6) / 2 / rr; // half the label's width, as an angle
     while (placed.some(([pr, f, t]) => pr === r && mid - half(r) < t && mid + half(r) > f)) r += LABEL_STEP;
     placed.push([r, mid - half(r), mid + half(r)]);
     return `<path d="${arc(a0, a1, R)}" stroke="${COLORS[se.color]}" class="w-seg w-${se.color}"/>
       <path id="wl${i}" d="${labelArc(mid, r)}" fill="none" stroke="none"/>
-      <text class="w-label"><textPath href="#wl${i}" startOffset="50%" text-anchor="middle">${esc(se.label.toUpperCase())}</textPath></text>`;
+      <text class="w-label"><textPath href="#wl${i}" startOffset="50%" text-anchor="middle">${esc(t(se.label).toUpperCase())}</textPath></text>`;
   }).join('');
   // The day: a marker on the ring and an arrow from outside pointing at it.
   const a = angleOf(date) + Math.PI / total; // middle of the day
@@ -119,11 +120,10 @@ export async function renderWheel(onPick) {
     <line x1="${f2(ax0)}" y1="${f2(ay0)}" x2="${f2(ax1)}" y2="${f2(ay1)}" class="w-arrow" marker-end="url(#w-arrowhead)"/>
     <circle cx="${f2(mx)}" cy="${f2(my)}" r="7" class="w-dot"/>`;
 
-  const d = new Date(`${date}T12:00:00Z`);
-  $('wheel-weekday').textContent = d.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
-  $('wheel-day').textContent = String(d.getUTCDate());
-  $('wheel-month').textContent = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
-  $('wheel-season').textContent = seasonName(date);
+  $('wheel-weekday').textContent = fmtDate(date, 'weekday');
+  $('wheel-day').textContent = String(+date.slice(8));
+  $('wheel-month').textContent = fmtDate(date, 'monthYear');
+  $('wheel-season').textContent = t(seasonName(date));
   $('wheel-feast').textContent = '';
   $('wheel').onclick = (e) => {
     if (e.target.closest('.wheel-center')) return onPick(date, true);

@@ -44,6 +44,14 @@ are allowed. Office: rank, psalms, Matins (nocturns, lessons, Te Deum), Lauds sc
 Second Vespers. Read from DO's own texts for the day at build time (`src/ordo.ts`). The votive
 Mass line gives the general rule for the day's class.
 
+**Language of the app** (Settings, with flags): English, Deutsch, Français, Español or Latina for the
+buttons, menus, notes and dates (`web/js/ui.js`). The texts of the Mass and Office keep their own
+language. The translations are one table, `translations/app.tsv` (a column per language; any
+spreadsheet opens it): edit it, then `npm run translations`. `npx tsx scripts/ui-strings.ts --list`
+shows any text without a translation (and `test/ui.test.ts` fails). The feast search understands
+names in the app's language (and English when it's in Latin), and Latin always. The translations
+were written for this app and would benefit from review by native speakers.
+
 **Top bar**: ☰ opens the menu (left panel, still empty), 🔍 the search, ⚙ the Settings (right panel).
 **Search** finds feasts and saints as you type (English or Latin names: "St. Lucy", "Christmas";
 `web/js/feasts.js`) and, with the Search button, words in the texts.
@@ -56,8 +64,8 @@ that time of year, the middle to open the day.
 browser from the site's texts (`web/js/epub.js`), in the languages, calendar and version chosen.
 
 **Typography** (Settings): four typefaces (Classic, EB Garamond, Source Sans 3, Grenze Gotisch; the
-fonts are in `web/fonts`, SIL Open Font License), drop caps off, simple or medieval (UnifrakturMaguntia
-in a gilded frame), and for the Latin only: no accents (*Dóminus* → *Dominus*)
+fonts are in `web/fonts`, SIL Open Font License), drop caps off, plain or medieval (a red UnifrakturMaguntia
+capital, three lines tall), and for the Latin only: no accents (*Dóminus* → *Dominus*)
 and no ligatures (*æ, œ* → *ae, oe*) (`web/js/typography.js`).
 
 **Report a mistake** (Settings, and at the foot of each page): an email or a GitHub issue,

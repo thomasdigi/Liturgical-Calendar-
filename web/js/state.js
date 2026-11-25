@@ -1,5 +1,6 @@
 // The viewer's state: settings (from the URL and saved choices) and what has been loaded.
 import { $, isoToday, store } from './util.js';
+import { t } from './ui.js';
 
 export let avail = null;
 
@@ -105,7 +106,7 @@ export function officeHours() {
 }
 
 export const comboLabel = (cal, ver) =>
-  `${config.calendars.find((c) => c.id === cal)?.label} · ${config.versions.find((v) => v.id === ver)?.label}`;
+  `${t(config.calendars.find((c) => c.id === cal)?.label ?? cal)} · ${t(config.versions.find((v) => v.id === ver)?.label ?? ver)}`;
 
 export function currentPartId() {
   if (state.view !== 'mass') return state.office === 'day' ? state.hour : `${state.office}-${state.hour}`;

@@ -228,6 +228,15 @@
       <button type="button" class="drawer-close" id="settings-close" aria-label="Close settings">×</button>
     </div>
     <div class="drawer-body">
+      <section aria-labelledby="set-uilang">
+        <h3 id="set-uilang">Language of the app</h3>
+        <details class="flagmenu" id="flagmenu">
+          <summary aria-haspopup="menu"><span id="flagmenu-current"></span><span class="flagmenu-arrow" aria-hidden="true">▾</span></summary>
+          <ul class="flagmenu-list" id="flagmenu-list" role="menu" aria-label="Language of the app"></ul>
+        </details>
+        <p class="hint">Buttons, menus, notes and dates. The texts of the Mass and Office keep the language chosen in the “Language” menu, and Latin stays Latin.</p>
+      </section>
+
       <section aria-labelledby="set-appearance">
         <h3 id="set-appearance">Appearance</h3>
         <div class="seg theme-seg" id="theme" role="group" aria-label="Light or dark">
@@ -252,7 +261,7 @@
           <p class="sublabel">Drop caps (the large first letters)</p>
           <div class="seg initials-seg" id="initials" role="group" aria-label="Drop caps">
             <button type="button" data-initials="off" aria-pressed="false">Off</button>
-            <button type="button" data-initials="normal" aria-pressed="true">Simple</button>
+            <button type="button" data-initials="normal" aria-pressed="true">Plain</button>
             <button type="button" data-initials="fancy" aria-pressed="false">Medieval</button>
           </div>
           <p class="initials-demo" aria-hidden="true"><span class="initial">G</span>lória Patri, et Fílio, et Spirítui Sancto. Sicut erat in princípio, et nunc, et semper, et in sǽcula sæculórum. Amen.</p>
@@ -277,7 +286,7 @@
         <p id="save-what"></p>
         <div class="save-row">
           <label class="sr" for="save-range">How many days</label>
-          <select id="save-range">
+          <select id="save-range" data-t>
             <option value="7">The next 7 days (about 10 MB)</option>
             <option value="30">The next 30 days (about 45 MB)</option>
           </select>
@@ -327,10 +336,10 @@
         <h3 id="set-epub">E-book (EPUB)</h3>
         <p class="hint">Makes a book for an e-reader (Kindle, Kobo, Apple Books, Google Play Books…) in the languages, calendar and version you've chosen. Each day is a chapter.</p>
         <div class="epub-opts">
-          <label class="select"><span>Days</span><select id="epub-range">
+          <label class="select"><span>Days</span><select id="epub-range" data-t>
             <option value="day">This day</option><option value="week" selected>7 days from this day</option><option value="month">This month</option>
           </select></label>
-          <label class="select"><span>Texts</span><select id="epub-contents">
+          <label class="select"><span>Texts</span><select id="epub-contents" data-t>
             <option value="both">Mass and Office</option><option value="mass">Mass only</option><option value="office">Office only</option>
           </select></label>
         </div>
