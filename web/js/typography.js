@@ -4,10 +4,12 @@
 // never to the other languages, and not to chant notation.
 import { store } from './util.js';
 
-export const FONTS = ['classic', 'garamond', 'sans'];
+export const FONTS = ['classic', 'garamond', 'sans', 'gothic'];
+export const INITIALS = ['off', 'normal', 'fancy'];
 
 const opts = {
   font: store.get('font', 'classic'),
+  initials: store.get('initials', 'normal'), // drop caps: off, as now, or medieval
   accents: store.get('latinAccents', 'on') === 'on',
   ligatures: store.get('latinLigatures', 'on') === 'on',
 };
@@ -54,12 +56,16 @@ export function simplifyLatin(root) {
 }
 
 function applyFont() {
-  if (opts.font === 'classic') delete document.documentElement.dataset.font;
-  else document.documentElement.dataset.font = opts.font;
+  const root = document.documentElement.dataset;
+  if (opts.font === 'classic') delete root.font;
+  else root.font = opts.font;
+  if (opts.initials === 'normal') delete root.initials;
+  else root.initials = opts.initials;
 }
 
 function sync() {
   document.querySelectorAll('#font button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.font === opts.font)));
+  document.querySelectorAll('#initials button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.initials === opts.initials)));
   document.getElementById('latin-accents').checked = !opts.accents;
   document.getElementById('latin-ligatures').checked = !opts.ligatures;
 }
@@ -78,6 +84,12 @@ export function initTypography(rerender) {
   document.querySelectorAll('#font button').forEach((b) => (b.onclick = () => {
     opts.font = b.dataset.font;
     store.set('font', opts.font);
+    applyFont();
+    sync();
+  }));
+  document.querySelectorAll('#initials button').forEach((b) => (b.onclick = () => {
+    opts.initials = b.dataset.initials;
+    store.set('initials', opts.initials);
     applyFont();
     sync();
   }));

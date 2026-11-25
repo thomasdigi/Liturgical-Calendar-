@@ -3,10 +3,11 @@ import { fastTipHtml, renderMonth, renderWeek } from './calendar.js';
 import { hideTip, initTips, toggleTip } from './tip.js';
 import { defaultComparison, fixComparison, openInfo, syncControls, syncMasses, syncOffice, updateUrl } from './controls.js';
 import { fetchDay } from './data.js';
-import { runSearch, syncSearchOptions } from './search.js';
+import { runFeastSearch, runSearch, syncSearchOptions } from './search.js';
 import { RANGE, avail, calendarHas, clampDate, comboBuilt, config, day, maxSizeIndex, params, setAvail, setConfig, setDay, setRANGE, shownLangId, sizeIndex, state } from './state.js';
 import { render, setPendingScroll } from './text.js';
 import { renderSacristan } from './sacristan.js';
+import { renderWheel } from './wheel.js';
 import { initOffline, offlineHint } from './offline.js';
 import { scrollToTarget } from './outline.js';
 import { initSettings } from './settings.js';
@@ -102,10 +103,35 @@ export async function init() {
   };
   // The outline bar sticks below the top bar, whose height depends on the screen.
   if (window.ResizeObserver) {
-    new ResizeObserver(() => document.documentElement.style.setProperty('--topbar', `${document.querySelector('.top').offsetHeight}px`))
-      .observe(document.querySelector('.top'));
+    // The top bar always stays; the controls below it stay too on wide screens (scroll away on phones).
+    const bars = () => {
+      const app = $('appbar').offsetHeight;
+      const top = document.querySelector('.top');
+      const sticky = getComputedStyle(top).position === 'sticky';
+      document.documentElement.style.setProperty('--appbar', `${app}px`);
+      document.documentElement.style.setProperty('--topbar', `${app + (sticky ? top.offsetHeight : 0)}px`);
+    };
+    const ro = new ResizeObserver(bars);
+    ro.observe(document.querySelector('.top'));
+    ro.observe($('appbar'));
   }
-  $('searchform').onsubmit = (e) => { e.preventDefault(); runSearch(); };
+  $('searchform').onsubmit = (e) => { e.preventDefault(); runFeastSearch(); runSearch(); };
+  // Feasts and saints appear as you type; tap one to open its day.
+  let feastTimer;
+  $('q').addEventListener('input', () => { clearTimeout(feastTimer); feastTimer = setTimeout(runFeastSearch, 250); });
+  $('feastlist').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-date]');
+    if (!b) return;
+    state.page = 'day';
+    syncControls();
+    go(b.dataset.date);
+    window.scrollTo(0, 0);
+  });
+  // Top bar: search opens (or closes) the search page; the menu opens the left panel.
+  $('search-btn').onclick = () => {
+    state.page = state.page === 'search' ? 'day' : 'search';
+    syncControls(); load(); window.scrollTo(0, 0);
+  };
   $('results').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-hit]');
     if (b) openHit(JSON.parse(b.dataset.hit));
@@ -131,6 +157,8 @@ export async function init() {
   };
   $('month-list').addEventListener('click', openDay);
   $('month-today').onclick = () => go(isoToday());
+  $('wheel-prev').onclick = () => go(shift(state.date, -1));
+  $('wheel-next').onclick = () => go(shift(state.date, 1));
   $('week').addEventListener('click', openDay);
   document.querySelectorAll('#size button').forEach((b) => (b.onclick = () => {
     if (b.disabled) return;
@@ -174,7 +202,12 @@ export async function load() {
   const seq = ++loadSeq;
   updateUrl();
   $('date').value = state.date;
-  if (state.page === 'month') { renderMonth(); return; }
+  if (state.page === 'month') {
+    renderMonth();
+    // The wheel: tapping the ring moves the day (and the month list with it); the middle opens it.
+    renderWheel((date, open) => { if (open) state.page = 'day'; if (open) syncControls(); go(date); });
+    return;
+  }
   if (state.page === 'search') { syncSearchOptions(); return; }
   if (state.page === 'sacristan') { renderWeek(); renderSacristan(); return; }
   renderWeek();

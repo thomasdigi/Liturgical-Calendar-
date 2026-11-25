@@ -44,8 +44,20 @@ are allowed. Office: rank, psalms, Matins (nocturns, lessons, Te Deum), Lauds sc
 Second Vespers. Read from DO's own texts for the day at build time (`src/ordo.ts`). The votive
 Mass line gives the general rule for the day's class.
 
-**Typography** (Settings): three typefaces (Classic, EB Garamond, Source Sans 3; the fonts are in
-`web/fonts`, SIL Open Font License), and for the Latin only: no accents (*Dóminus* → *Dominus*)
+**Top bar**: ☰ opens the menu (left panel, still empty), 🔍 the search, ⚙ the Settings (right panel).
+**Search** finds feasts and saints as you type (English or Latin names: "St. Lucy", "Christmas";
+`web/js/feasts.js`) and, with the Search button, words in the texts.
+
+**Month page**: a wheel of the liturgical year (`web/js/wheel.js`): the seasons around a circle,
+an arrow at the day, and the day, its feast and its season in the middle. Tap the ring to go to
+that time of year, the middle to open the day.
+
+**E-book** (Settings): an EPUB of a day, 7 days or a month (Mass, Office or both), made in the
+browser from the site's texts (`web/js/epub.js`), in the languages, calendar and version chosen.
+
+**Typography** (Settings): four typefaces (Classic, EB Garamond, Source Sans 3, Grenze Gotisch; the
+fonts are in `web/fonts`, SIL Open Font License), drop caps off, simple or medieval (UnifrakturMaguntia
+in a gilded frame), and for the Latin only: no accents (*Dóminus* → *Dominus*)
 and no ligatures (*æ, œ* → *ae, oe*) (`web/js/typography.js`).
 
 **Report a mistake** (Settings, and at the foot of each page): an email or a GitHub issue,

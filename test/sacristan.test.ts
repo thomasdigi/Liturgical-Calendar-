@@ -67,6 +67,6 @@ describe('crosses', () => {
     const p = parsePage(await renderPart('2026-11-14', 'compline', '1962', 'it'));
     const all = p.sections.map((s) => s.latin + s.vernacular).join(' ');
     expect(all).not.toMatch(/✙/);
-    expect(all).toMatch(/Convertici, <span class="rubric">✠<\/span>/);
+    expect(all).toMatch(/Convertici, <span class="rubric cross">✠<\/span>/);
   });
 });

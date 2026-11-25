@@ -170,6 +170,8 @@ export async function render() {
   // Reading mode hides instructions: longer red rubrics ("Secreto", "Deinde, clara voce…"),
   // but keeps the short markers (℣. ℟. Ant.) and the commemoration/suffrage labels.
   $('text').querySelectorAll('.rubric').forEach((el) => {
+    // Crosses stand upright (texts built before the build marked them are marked here).
+    if (/^\s*(✠|✙\uFE0E?|\+)\s*$/.test(el.textContent)) { el.textContent = '✠'; el.classList.add('cross'); return; }
     if (el.classList.contains('commem') || el.classList.contains('struct')) return;
     if (el.classList.contains('small') || el.textContent.trim().length > 14) el.classList.add('instr');
   });

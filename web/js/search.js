@@ -1,5 +1,6 @@
 // Search across the texts.
 import { getJson } from './data.js';
+import { findFeasts } from './feasts.js';
 import { avail, built, config, lang, state } from './state.js';
 import { $, addMonths, esc, monthLabel, monthOf } from './util.js';
 
@@ -133,6 +134,24 @@ export async function runSearch() {
   $('searchstatus').textContent = hits.length
     ? `${hits.length >= MAX_HITS ? `First ${MAX_HITS}` : hits.length} result${hits.length === 1 ? '' : 's'} in ${months.length === 1 ? monthLabel(months[0]) : `${monthLabel(months[0])} to ${monthLabel(months.at(-1))}`}.`
     : 'Nothing found. Try fewer words, or a longer period.';
+}
+
+/** Feasts and saints matching what's typed: shown as you type, above the text results. */
+let feastSeq = 0;
+export async function runFeastSearch() {
+  const mine = ++feastSeq;
+  const q = $('q').value.trim();
+  const found = q.length >= 3 ? await findFeasts(q) : [];
+  if (mine !== feastSeq) return;
+  $('feasthits').hidden = !found.length;
+  $('feastlist').innerHTML = found.map((f) => {
+    const dt = new Date(`${f.date}T12:00:00Z`);
+    return `<li><button type="button" data-date="${f.date}">
+      <span class="fdate">${esc(dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }))}</span>
+      <span class="ftitle rlatin">${esc(f.title)}</span>
+      ${f.also ? `<span class="falso rlatin">Com. ${esc(f.also)}</span>` : ''}
+      <span class="frank">${esc(f.rank)}</span></button></li>`;
+  }).join('');
 }
 
 export function renderHits(hits) {

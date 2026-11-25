@@ -31,6 +31,12 @@ export function initSettings() {
     if (panel.showModal) panel.showModal(); else panel.setAttribute('open', '');
   };
   const close = () => (panel.close ? panel.close() : panel.removeAttribute('open'));
+  // The menu (left panel): empty for now.
+  const menu = $('menu-panel');
+  const closeMenu = () => (menu.close ? menu.close() : menu.removeAttribute('open'));
+  $('menu-btn').onclick = () => (menu.showModal ? menu.showModal() : menu.setAttribute('open', ''));
+  $('menu-close').onclick = closeMenu;
+  menu.addEventListener('click', (e) => { if (e.target === menu) closeMenu(); });
   $('settings-close').onclick = close;
   // Tapping the dimmed area outside the panel closes it.
   panel.addEventListener('click', (e) => { if (e.target === panel) close(); });
@@ -43,6 +49,28 @@ export function initSettings() {
       $('ical-status').textContent = url; // couldn't copy: show it to copy by hand
     }
   }));
+  $('epub-btn').onclick = async () => {
+    const btn = $('epub-btn');
+    btn.disabled = true;
+    $('epub-status').textContent = 'Gathering the texts…';
+    try {
+      const { makeEpub } = await import('./epub.js');
+      const book = await makeEpub({ range: $('epub-range').value, contents: $('epub-contents').value },
+        (done, total) => { $('epub-status').textContent = `Gathering the texts: day ${done} of ${total}…`; });
+      const url = URL.createObjectURL(book.blob);
+      const a = Object.assign(document.createElement('a'), { href: url, download: book.filename });
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      $('epub-status').textContent = `Done: ${book.filename} (${book.days} day${book.days === 1 ? '' : 's'}, ${(book.blob.size / 1e6).toFixed(1)} MB)` +
+        (book.missing ? `. ${book.missing} day${book.missing === 1 ? ' was' : 's were'} not available and left out.` : '.');
+    } catch (e) {
+      $('epub-status').textContent = `Couldn't make the e-book: ${e.message}`;
+    } finally {
+      btn.disabled = false;
+    }
+  };
   $('print-btn').onclick = () => {
     close();
     // Let the panel disappear before the print preview is taken.

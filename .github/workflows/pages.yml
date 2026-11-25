@@ -15,8 +15,11 @@ name: Build and publish site
 on:
   workflow_dispatch:
     inputs:
+      start:
+        description: First month to build (YYYY-MM); leave empty for the current month
+        default: ''
       months:
-        description: Months to build, starting with the current one
+        description: Number of months to build
         default: '3'
       calendars:
         description: Calendars (general, usa, brazil, rome)
@@ -50,6 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
+      START: ${{ inputs.start || '' }}
       MONTHS: ${{ inputs.months || '3' }}
       CALENDARS: ${{ inputs.calendars || 'general' }}
       VERSIONS: ${{ inputs.versions || '1962' }}
@@ -80,7 +84,7 @@ jobs:
 
       - name: Build texts
         run: |
-          FROM=$(date -u +%Y-%m-01)
+          if [ -n "$START" ]; then FROM="$START-01"; else FROM=$(date -u +%Y-%m-01); fi
           TO=$(date -u -d "$FROM +${MONTHS} month -1 day" +%Y-%m-%d)
           echo "Building $FROM to $TO: calendars=$CALENDARS versions=$VERSIONS languages=$LANGUAGES"
           npm run build -- "$FROM" "$TO" --calendar "$CALENDARS" --version "$VERSIONS" --lang "$LANGUAGES" --votive "$VOTIVE_OFFICES"

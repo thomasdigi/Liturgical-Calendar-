@@ -154,7 +154,7 @@ function cleanCell($: cheerio.CheerioAPI, td: cheerio.Cheerio<AnyNode>): { headi
     // DO's crosses: ✠ (sign of the cross), ✙ (small cross on the lips), "+" (the three
     // crosses at the Gospel). All are shown as ✠, so they look alike in every language.
     const t = $(el).text().replace(/^\s*(?:✙\uFE0E?|\+)\s*$/, '✠');
-    $(el).replaceWith(`<span class="rubric">${escapeHtml(t)}</span>`);
+    $(el).replaceWith(`<span class="rubric${t.trim() === '✠' ? ' cross' : ''}">${escapeHtml(t)}</span>`);
   });
   cell.find('font[size="-1"]').each((_, el) => {
     $(el).replaceWith(`<span class="small">${escapeHtml($(el).text())}</span>`);

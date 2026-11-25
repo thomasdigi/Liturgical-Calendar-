@@ -18,6 +18,7 @@ export function syncControls() {
   $('searchpage').hidden = state.page !== 'search';
   $('dayview').hidden = state.page !== 'day';
   $('sacristan').hidden = state.page !== 'sacristan';
+  $('search-btn').setAttribute('aria-pressed', String(state.page === 'search'));
   $('sacristan-tab').hidden = !state.sacristan;
   $('sacristan-mode').checked = state.sacristan;
   document.querySelectorAll('#page button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
