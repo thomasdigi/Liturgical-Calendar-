@@ -1,6 +1,6 @@
 // Start-up and loading: wires the controls to the state.
 import { fastTipHtml, renderMonth, renderWeek } from './calendar.js';
-import { hideTip, initTips, toggleTip } from './tip.js';
+import { hideTip, initLongPress, initTips, toggleTip } from './tip.js';
 import { defaultComparison, fixComparison, openInfo, syncControls, syncMasses, syncOffice, updateUrl } from './controls.js';
 import { fetchDay } from './data.js';
 import { runFeastSearch, runSearch, syncSearchOptions } from './search.js';
@@ -8,9 +8,9 @@ import { RANGE, avail, calendarHas, clampDate, comboBuilt, config, day, maxSizeI
 import { render, setPendingScroll } from './text.js';
 import { renderSacristan } from './sacristan.js';
 import { renderWheel } from './wheel.js';
-import { initOffline, offlineHint } from './offline.js';
+import { initOffline, offlineHint, syncNetState } from './offline.js';
 import { scrollToTarget } from './outline.js';
-import { initSettings } from './settings.js';
+import { initSettings, syncSettingsText } from './settings.js';
 import { restorePlace, trackReading } from './lastread.js';
 import { initTheme } from './theme.js';
 import { initTypography } from './typography.js';
@@ -50,6 +50,7 @@ export async function init() {
   $('version').onchange = (e) => { state.version = e.target.value; store.set('version', state.version); syncControls(); load(); };
   $('lang').onchange = (e) => { state.lang = e.target.value; store.set('lang', state.lang); syncControls(); load(); };
   document.querySelectorAll('#display button').forEach((b) => (b.onclick = () => {
+    if (b.disabled) return;
     state.display = b.dataset.display; store.set('display', state.display); syncControls();
   }));
   document.querySelectorAll('#layout button').forEach((b) => (b.onclick = () => {
@@ -87,16 +88,6 @@ export async function init() {
     store.set('view', state.view);
     syncControls(); load(); window.scrollTo(0, 0);
   });
-  $('martyrology').onclick = () => {
-    state.office = 'day';
-    if (state.hour === 'prime') {
-      document.querySelector('#text section.martyrology')?.scrollIntoView({ block: 'start' });
-      return;
-    }
-    state.hour = 'prime';
-    setPendingScroll('martyrology');
-    syncControls(); render();
-  };
   // The outline bar sticks below the top bar, whose height depends on the screen.
   if (window.ResizeObserver) {
     // The top bar always stays; the controls below it stay too on wide screens (scroll away on phones).
@@ -144,7 +135,9 @@ export async function init() {
     state.massN = Number(b.dataset.n); syncMasses(); updateUrl(); render();
   });
   document.querySelectorAll('#view button').forEach((b) => (b.onclick = () => {
-    state.view = b.dataset.view; store.set('view', state.view); syncControls(); load();
+    state.view = b.dataset.view; store.set('view', state.view);
+    if (state.view === 'mass') state.compare = false; // Compare is for the Office only
+    syncControls(); load();
   }));
   document.querySelectorAll('#page button').forEach((b) => (b.onclick = () => {
     state.page = b.dataset.page; syncControls(); load(); window.scrollTo(0, 0);
@@ -339,10 +332,12 @@ document.addEventListener('keydown', (e) => {
 }, true);
 
 // The app's own language first: it notes the page's English before anything else changes it.
-initUi(() => { syncControls(); load(); });
+initUi(() => { syncControls(); load(); syncSettingsText(); syncNetState(); });
 initTheme();
 initTypography(() => { syncControls(); load(); });
 initReport();
+// Hold a button: what it does (its data-tip, else its title or label, in the app's language).
+initLongPress((b) => (b.dataset.tip ? t(b.dataset.tip) : b.title || b.getAttribute('aria-label') || ''));
 initOffline();
 initSettings();
 initTips();

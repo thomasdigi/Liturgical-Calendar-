@@ -3,7 +3,7 @@
 // "Save for offline" fills that cache ahead of time for the days the reader picks.
 import { altLangId, avail, comboLabel, lang, shownLangId, state } from './state.js';
 import { $, monthOf, shift } from './util.js';
-import { t } from './ui.js';
+import { fmtNum, t } from './ui.js';
 
 const DATA = 'data-v1'; // keep in step with web/sw.js
 const canSave = () => 'caches' in window && window.isSecureContext;
@@ -20,11 +20,7 @@ export function initOffline() {
     syncInstall();
   });
   window.addEventListener('appinstalled', () => { installPrompt = null; syncInstall(); });
-  const sync = () => {
-    document.body.classList.toggle('is-offline', !navigator.onLine);
-    $('offline-badge').hidden = navigator.onLine;
-    $('net-state').textContent = t(navigator.onLine ? 'Connected.' : 'No connection: showing what is saved on this device.');
-  };
+  const sync = syncNetState;
   window.addEventListener('online', sync);
   window.addEventListener('offline', sync);
   sync();
@@ -59,7 +55,7 @@ async function syncStorage() {
   const out = $('saved-size');
   if (!navigator.storage?.estimate) { out.textContent = ''; return; }
   const { usage } = await navigator.storage.estimate();
-  out.textContent = t('Saved on this device: about {mb} MB.', { mb: (usage / 1e6).toFixed(usage > 1e7 ? 0 : 1) });
+  out.textContent = t('Saved on this device: about {mb} MB.', { mb: fmtNum(usage / 1e6, usage > 1e7 ? 0 : 1) });
 }
 
 /** Fill in the Offline section of the Settings panel (called when the panel opens). */
@@ -160,6 +156,13 @@ async function clearSaved() {
   $('save-progress').hidden = false;
   $('save-bar').value = 0;
   syncStorage();
+}
+
+/** Connected or not: the badge in the top bar and the line in Settings. */
+export function syncNetState() {
+  document.body.classList.toggle('is-offline', !navigator.onLine);
+  $('offline-badge').hidden = navigator.onLine;
+  $('net-state').textContent = t(navigator.onLine ? 'Connected.' : 'No connection: showing what is saved on this device.');
 }
 
 /** Wording for "this day isn't available" when the reason may be the missing connection. */

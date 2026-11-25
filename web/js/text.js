@@ -2,7 +2,7 @@
 import { updateUrl } from './controls.js';
 import { fetchDay, fetchPart } from './data.js';
 import { renderChant } from './chant.js';
-import { RANGE, altLangId, built, chantAvailable, comboLabel, config, currentPartId, day, lang, offers, officeHours, shownLangId, state } from './state.js';
+import { RANGE, altLangId, built, chantAvailable, chanting, comboLabel, config, currentPartId, day, lang, offers, officeHours, shownLangId, state } from './state.js';
 import { rememberPlace } from './lastread.js';
 import { offlineHint } from './offline.js';
 import { markStructure, renderOutline } from './outline.js';
@@ -110,7 +110,7 @@ export async function render() {
   // Chant: DO's chant edition has the same sections, with the Latin as notation (GABC).
   // Put each one in place of the Latin; keep the translation column.
   let chanted = false;
-  if (state.chant && chantAvailable() && !state.compare) {
+  if (chanting()) {
     try {
       const gabc = await fetchPart(config.chant, main.part.id);
       if (gabc.length === main.part.sections.length) {
@@ -172,6 +172,7 @@ export async function render() {
   $('text').querySelectorAll('.rubric').forEach((el) => {
     // Crosses stand upright (texts built before the build marked them are marked here).
     if (/^\s*(✠|✙\uFE0E?|\+)\s*$/.test(el.textContent)) { el.textContent = '✠'; el.classList.add('cross'); return; }
+    if (/^\s*[‡†]\s*$/.test(el.textContent)) { el.classList.add('cross'); return; } // psalm marks: upright too
     if (el.classList.contains('commem') || el.classList.contains('struct')) return;
     if (el.classList.contains('small') || el.textContent.trim().length > 14) el.classList.add('instr');
   });

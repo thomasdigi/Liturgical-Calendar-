@@ -43,7 +43,7 @@ are allowed. Office: rank, psalms, Matins (nocturns, lessons, Te Deum), Lauds sc
 Second Vespers. Read from DO's own texts for the day at build time (`src/ordo.ts`). The votive
 Mass line gives the general rule for the day's class.
 
-**Language of the app** (Settings, with flags): English (US flag), Deutsch, Français (Quebec), Español (Mexico) or Latina (Vatican) for the
+**Language of the app** (Settings, with flags): English (US flag), Deutsch, Français (Quebec), Español (Mexico), Português (Brazil) or Latina (Vatican) for the
 buttons, menus, notes and dates (`web/js/ui.js`). The texts of the Mass and Office keep their own
 language. The translations are one table, `translations/app.tsv` (a column per language; any
 spreadsheet opens it): edit it, then `npm run translations`. `npx tsx scripts/ui-strings.ts --list`
@@ -67,7 +67,7 @@ browser from the site's texts (`web/js/epub.js`), in the languages, calendar and
 **Typography** (Settings): four typefaces (Classic, EB Garamond, Source Sans 3, Grenze Gotisch; the
 fonts are in `web/fonts`, SIL Open Font License), drop caps off, plain or medieval (a red UnifrakturMaguntia
 capital, three lines tall), and for the Latin only: no accents (*Dóminus* → *Dominus*)
-and no ligatures (*æ, œ* → *ae, oe*) (`web/js/typography.js`).
+no ligatures (*æ, œ* → *ae, oe*), u written v and j written i (`web/js/typography.js`).
 
 **Report a mistake** (Settings, and at the foot of each page): an email or a GitHub issue,
 filled in with the day, calendar, version, language and part on screen (`web/js/report.js`).

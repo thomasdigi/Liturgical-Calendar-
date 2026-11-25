@@ -41,7 +41,10 @@ function draw(ex, source, target) {
   if (dropCap && h.annotation) score.annotation = new ex.Annotation(ctxt, h.annotation);
   return new Promise((resolve) => {
     score.performLayoutAsync(ctxt, () => {
-      score.layoutChantLines(ctxt, Math.max(200, target.clientWidth || source.parentElement.clientWidth), () => {
+      // The column's width (the target may be empty or still narrow from an earlier layout).
+      const width = source.parentElement.clientWidth || target.clientWidth;
+      lastWidth = width;
+      score.layoutChantLines(ctxt, Math.max(200, width), () => {
         target.innerHTML = score.createSvg(ctxt);
         resolve();
       });
@@ -76,12 +79,23 @@ export async function renderChant(root) {
   return true;
 }
 
-/** Redraw chants when the width changes (rotate the phone, resize the window). */
+/**
+ * Redraw the chant whenever the room for it changes: turning the phone, resizing the window,
+ * or a change of layout. (It is drawn to fit the width it has when drawn.)
+ */
 let resizeTimer = null;
-let lastWidth = window.innerWidth;
-window.addEventListener('resize', () => {
-  if (Math.abs(window.innerWidth - lastWidth) < 40) return;
-  lastWidth = window.innerWidth;
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => renderChant(document.getElementById('text')), 300);
-});
+let lastWidth = 0;
+function watchWidth() {
+  const text = document.getElementById('text');
+  if (!text || !window.ResizeObserver) return;
+  new ResizeObserver(() => {
+    const col = text.querySelector('.GCHANT')?.parentElement;
+    const w = col ? col.clientWidth : 0;
+    if (!w || Math.abs(w - lastWidth) < 20) return;
+    lastWidth = w;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => renderChant(text), 200);
+  }).observe(text);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watchWidth);
+else watchWidth();

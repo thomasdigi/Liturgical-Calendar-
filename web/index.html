@@ -1,7 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
   <meta charset="utf-8">
+  <!-- The app has its own translations, and the Latin must stay Latin: no browser auto-translation. -->
+  <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Divine Office and Mass</title>
   <link rel="stylesheet" href="style.css">
@@ -44,12 +46,12 @@
       <button id="prev" type="button" aria-label="Previous day">‹</button>
       <input id="date" type="date" aria-label="Date">
       <button id="next" type="button" aria-label="Next day">›</button>
-      <button id="today" type="button">Today</button>
+      <button id="today" type="button" data-tip="Go to today">Today</button>
     </nav>
     <div class="pagebar">
       <div class="seg" id="page" role="group" aria-label="Day or month">
-        <button type="button" data-page="day" aria-pressed="true">Day</button>
-        <button type="button" data-page="month" aria-pressed="false">Month</button>
+        <button type="button" data-page="day" aria-pressed="true" data-tip="The texts of the day">Day</button>
+        <button type="button" data-page="month" aria-pressed="false" data-tip="The month and the liturgical year">Month</button>
       </div>
     </div>
     <div class="settings">
@@ -97,7 +99,7 @@
         <h1 id="month-title">Month</h1>
         <button type="button" id="month-next" aria-label="Next month">›</button>
       </div>
-      <p class="month-today"><button type="button" id="month-today">Today</button></p>
+      <p class="month-today"><button type="button" id="month-today" data-tip="Go to today">Today</button></p>
       <p class="legend">
         <span class="fastmark fast">F</span> fast
         <span class="fastmark abst">A</span> abstinence
@@ -141,13 +143,13 @@
     <nav class="week" id="week" aria-label="This week"></nav>
 
     <div class="view seg big" id="view" role="group" aria-label="Mass or Office">
-      <button type="button" data-view="mass" aria-pressed="false">Mass</button>
-      <button type="button" data-view="office" aria-pressed="true">Divine Office</button>
+      <button type="button" data-view="mass" aria-pressed="false" data-tip="The Mass of the day">Mass</button>
+      <button type="button" data-view="office" aria-pressed="true" data-tip="The Hours of the Divine Office">Divine Office</button>
     </div>
 
     <div class="massmode" id="massmode">
       <div class="seg" role="group" aria-label="Parts of the Mass">
-        <button type="button" data-mass="propers" aria-pressed="true">Propers only</button>
+        <button type="button" data-mass="propers" aria-pressed="true" data-tip="Only the parts proper to the day">Propers only</button>
         <button type="button" data-mass="full" aria-pressed="false" id="full-btn">Full Mass</button>
       </div>
       <p class="hint" id="full-hint" hidden></p>
@@ -156,20 +158,19 @@
 
     <div class="officebar" id="officebar">
       <label class="select"><span>Office</span><select id="office"></select></label>
-      <button type="button" id="martyrology" class="pill" title="Open the Martyrology, read at Prime">Martyrology</button>
       <button type="button" id="chant" class="pill" aria-pressed="false" title="Show the Gregorian chant notation in place of the Latin">Chant</button>
     </div>
     <nav class="hours" id="hours" role="tablist" aria-label="Hours"></nav>
 
     <div class="toolbar" aria-label="Display">
       <div class="seg" id="display" role="group" aria-label="Languages shown">
-        <button type="button" data-display="both" aria-pressed="true">Both</button>
-        <button type="button" data-display="latin" aria-pressed="false">Latin</button>
-        <button type="button" data-display="vernacular" aria-pressed="false" id="vernacular-btn">English</button>
+        <button type="button" data-display="both" aria-pressed="true" data-tip="The Latin and the translation">Both</button>
+        <button type="button" data-display="latin" aria-pressed="false" data-tip="The Latin only">Latin</button>
+        <button type="button" data-display="vernacular" aria-pressed="false" id="vernacular-btn" data-tip="The translation only">English</button>
       </div>
       <div class="seg" id="layout" role="group" aria-label="Layout">
-        <button type="button" data-layout="interlinear" aria-pressed="true">Interlinear</button>
-        <button type="button" data-layout="side" aria-pressed="false">Side by side</button>
+        <button type="button" data-layout="interlinear" aria-pressed="false" data-tip="Each Latin passage with its translation below it">Interlinear</button>
+        <button type="button" data-layout="side" aria-pressed="true" data-tip="The Latin and the translation in two columns">Side by side</button>
       </div>
       <div class="seg" id="size" role="group" aria-label="Text size">
         <button type="button" data-size="-1" aria-label="Smaller text">A−</button>
@@ -283,6 +284,8 @@
           <p class="sublabel">Latin text</p>
           <label class="check"><input type="checkbox" id="latin-accents"> No accents (Dóminus → Dominus)</label>
           <label class="check"><input type="checkbox" id="latin-ligatures"> No ligatures (æ, œ → ae, oe)</label>
+          <label class="check"><input type="checkbox" id="latin-uv"> Write u as v (Dominus → Dominvs)</label>
+          <label class="check"><input type="checkbox" id="latin-ji"> Write j as i (Jesus → Iesus)</label>
           <p class="hint">These change only the Latin, never the other languages.</p>
         </details>
       </section>

@@ -147,14 +147,15 @@ function cleanCell($: cheerio.CheerioAPI, td: cheerio.Cheerio<AnyNode>): { headi
   // Small red text: verse numbers ("92:1") or small-print rubrics.
   cell.find('font[size="1"][color="red"]').each((_, el) => {
     const t = $(el).text();
-    const cls = /^\s*\d+[:,]\d+[a-z]?\s*$/.test(t) ? 'verse' : 'rubric small';
+    const cls = /^\s*\d+[:,]\d+[a-z]?\s*$/.test(t) ? 'verse' : /^\s*[‡†]\s*$/.test(t) ? 'rubric small cross' : 'rubric small';
     $(el).replaceWith(`<span class="${cls}">${escapeHtml(t)}</span>`);
   });
   cell.find('font[color="red"], font[color="RED"], span[style*="color:red"]').each((_, el) => {
     // DO's crosses: ✠ (sign of the cross), ✙ (small cross on the lips), "+" (the three
     // crosses at the Gospel). All are shown as ✠, so they look alike in every language.
     const t = $(el).text().replace(/^\s*(?:✙\uFE0E?|\+)\s*$/, '✠');
-    $(el).replaceWith(`<span class="rubric${t.trim() === '✠' ? ' cross' : ''}">${escapeHtml(t)}</span>`);
+    // Crosses and the psalm marks ‡ and † stand upright (not in italics like the other red text).
+    $(el).replaceWith(`<span class="rubric${/^[✠‡†]$/.test(t.trim()) ? ' cross' : ''}">${escapeHtml(t)}</span>`);
   });
   cell.find('font[size="-1"]').each((_, el) => {
     $(el).replaceWith(`<span class="small">${escapeHtml($(el).text())}</span>`);

@@ -107,6 +107,29 @@ const NAMES = {
     martires: 'martirum', rey: 'regis',
   },
 };
+NAMES.pt = {
+  natal: 'nativitate domini', natividade: 'nativitate', epifania: 'epiphania', reis: 'epiphania', 'santos reis': 'epiphania',
+  pascoa: 'resurrectionis', ressurreicao: 'resurrectionis', pentecostes: 'pentecostes', ascensao: 'ascensione', assuncao: 'assumptione',
+  'imaculada conceicao': 'immaculata', imaculada: 'immaculata', anunciacao: 'annuntiatione', candelaria: 'purificatione',
+  purificacao: 'purificatione', apresentacao: 'purificatione', 'todos os santos': 'omnium sanctorum', finados: 'defunctorum',
+  'fieis defuntos': 'defunctorum', defuntos: 'defunctorum', 'corpus christi': 'corporis christi', 'sagrado coracao': 'cordis iesu',
+  'imaculado coracao': 'cordis mari', 'cristo rei': 'christi regis', 'santissima trindade': 'trinitate', trindade: 'trinitate',
+  transfiguracao: 'transfiguratione', 'quarta feira de cinzas': 'cinerum', cinzas: 'cinerum', 'domingo de ramos': 'palmis',
+  ramos: 'palmis', 'sexta feira santa': 'parasceve', 'quinta feira santa': 'cena domini', 'sabado santo': 'sabbato sancto',
+  'sagrada familia': 'familie', 'santo nome': 'nominis', 'santa cruz': 'crucis', cruz: 'crucis', 'anjos da guarda': 'angelorum custodum',
+  'sete dores': 'septem dolorum', dores: 'dolorum', rosario: 'rosarii', circuncisao: 'circumcisione', advento: 'adventus',
+  quaresma: 'quadragesim', dedicacao: 'dedicatione', aparecida: 'apparecida', 'nossa senhora': 'mari', virgem: 'mari', maria: 'mari',
+  pedro: 'petri', paulo: 'pauli', joao: 'ioannis', tiago: 'iacobi', andre: 'andre', estevao: 'stephani', antonio: 'antonii',
+  'sao domingos': 'dominici', jorge: 'georgii', lourenco: 'laurentii', lucas: 'luc', marcos: 'marci', mateus: 'matthei',
+  bartolomeu: 'bartholomei', filipe: 'philippi', 'judas tadeu': 'iude', matias: 'matthie', barnabe: 'barnab', luzia: 'luci',
+  catarina: 'catharin', clara: 'clar', agostinho: 'augustini', ambrosio: 'ambrosii', jeronimo: 'hieronimi', bonifacio: 'bonifatii',
+  patricio: 'patricii', nicolau: 'nicolai', isabel: 'elisabeth', ana: 'anne', joaquim: 'ioachim', jose: 'ioseph', gabriel: 'gabrielis',
+  rafael: 'raphelis', miguel: 'michelis', tome: 'thom', gregorio: 'gregorii', inacio: 'ignatii', pio: 'pii', leao: 'leonis',
+  bento: 'benedicti', francisco: 'francisci', teresa: 'teresi', ines: 'agnetis', cecilia: 'cecili', agueda: 'agath', vicente: 'vincentii',
+  sebastiao: 'sebastiani', carlos: 'caroli', bernardo: 'bernardi', boaventura: 'bonaventur', martinho: 'martini', apostolos: 'apostolorum',
+  anjos: 'angelorum', martires: 'martirum', rei: 'regis',
+};
+
 const ALIASES = Object.fromEntries(Object.entries(NAMES).map(([lang, names]) => [lang,
   Object.entries(names).map(([k, v]) => [norm(k), norm(v)]).sort((a, b) => b[0].length - a[0].length)]));
 
@@ -114,7 +137,8 @@ const ALIASES = Object.fromEntries(Object.entries(NAMES).map(([lang, names]) => 
 const STOP = new Set(['st', 's', 'ss', 'sts', 'saint', 'saints', 'feast', 'of', 'the', 'and', 'et', 'day', 'blessed', 'bl',
   'hl', 'heilige', 'heiliger', 'heiligen', 'sankt', 'fest', 'der', 'die', 'das', 'des', 'und', 'von',
   'ste', 'sainte', 'saintes', 'fete', 'de', 'du', 'la', 'le', 'les', 'd', 'l', 'bienheureux',
-  'san', 'santo', 'santa', 'santos', 'fiesta', 'del', 'el', 'los', 'las', 'y', 'beato', 'beata']);
+  'san', 'santo', 'santa', 'santos', 'fiesta', 'del', 'el', 'los', 'las', 'y', 'beato', 'beata',
+  'sao', 'festa', 'da', 'do', 'dos', 'das', 'e', 'o', 'a', 'os', 'as']);
 
 /** The names understood besides Latin: the app's language (and English when the app is in Latin). */
 const activeAliases = () => {
