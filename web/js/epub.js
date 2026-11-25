@@ -3,7 +3,7 @@
 // chapter; each section gives the Latin and then the translation (e-readers have no room for
 // columns). It follows the languages shown, the calendar and version, and the Typography
 // options for the Latin. Chant notation isn't included (e-readers can't draw it).
-import { getJson } from './data.js';
+import { getJson, readPart } from './data.js';
 import { comboLabel, config, inRange, lang, shownLangId, state } from './state.js';
 import { esc, monthOf, shift } from './util.js';
 import { simplifyLatin } from './typography.js';
@@ -66,9 +66,8 @@ export function zip(files) {
 const dir = (langId, date) => `data/${state.calendar}/${state.version}/${langId}/${date.slice(0, 4)}/${date.slice(5)}`;
 
 async function loadPart(langId, date, id) {
-  const own = await getJson(`${dir(langId, date)}/${id}.json`);
-  const latin = own.latin ?? (await getJson(`${dir('latin', date)}/${id}.json`)).sections;
-  return own.sections.map((s, i) => ({ heading: latin[i]?.heading ?? '', headingVn: s.heading, latin: latin[i]?.latin ?? '', vernacular: s.vernacular }));
+  const sections = await readPart(langId, id, date);
+  return sections.map((s) => ({ heading: s.heading.latin, headingVn: s.heading.vernacular, latin: s.latin, vernacular: s.vernacular }));
 }
 
 /** Which dates a range covers: 'day', 'week' (7 days from the date) or 'month'. */

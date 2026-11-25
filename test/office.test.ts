@@ -320,7 +320,7 @@ describe('search index', () => {
       .toBe('Dóminus ℣. regnávit est');
   });
   it('indexes the Mass and the Hours of each built day, not the Ordinary or votive offices', async () => {
-    const { buildSearchMonth } = await import('../src/search.ts');
+    const { buildSearchMonth, entryText } = await import('../src/search.ts');
     const { getDay } = await import('../src/day.ts');
     await getDay('2026-12-10', 'general', '1962', 'en');
     const { latin, vernacular } = await buildSearchMonth('general', '1962', 'en', '2026-12', { onlyBuilt: true });
@@ -329,7 +329,9 @@ describe('search index', () => {
     expect(parts).toContain('lauds');
     expect(parts).not.toContain('massFull');
     expect(parts.some((p) => p.startsWith('dead-'))).toBe(false);
-    expect(JSON.stringify(latin.days['10'].lauds)).toMatch(/Melchiadis/);
-    expect(JSON.stringify(vernacular.days['10'].lauds)).toMatch(/Melchiades/);
+    expect(latin.days['10'].lauds.map((e) => entryText(latin, e)).join(' ')).toMatch(/Melchiadis/);
+    expect(vernacular.days['10'].lauds.map((e) => entryText(vernacular, e)).join(' ')).toMatch(/Melchiades/);
+    // Pieces that recur (psalms, the Gloria Patri) are stored once in the month's texts.
+    expect(new Set(latin.texts).size).toBe(latin.texts.length);
   });
 });

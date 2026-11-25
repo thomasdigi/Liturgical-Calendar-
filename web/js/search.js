@@ -84,6 +84,12 @@ export const partLabel = (id) => {
   return t(config.hours.find((h) => h.id === id)?.label ?? id);
 };
 
+/** An entry's text: its pieces (numbers into the month's `texts`) joined, or (older files) the text itself. */
+const entryText = (month, entry) => {
+  if (!entry) return '';
+  return Array.isArray(entry[1]) ? entry[1].map((i) => month.texts[i]).join(' ') : entry[1] ?? '';
+};
+
 export let searchSeq = 0;
 
 export const MAX_HITS = 300;
@@ -112,7 +118,7 @@ export async function runSearch() {
         const laS = la?.days[dd]?.[pid] ?? [];
         const vnS = vn?.days[dd]?.[pid] ?? [];
         for (let i = 0; i < Math.max(laS.length, vnS.length); i++) {
-          const texts = [laS[i]?.[1] ?? '', vnS[i]?.[1] ?? ''];
+          const texts = [entryText(la, laS[i]), entryText(vn, vnS[i])];
           const n = normalize(texts.join(' \n ')).out;
           if (!terms.every((t) => n.includes(t))) continue;
           const which = snippet(texts[0], terms) ? 0 : 1;

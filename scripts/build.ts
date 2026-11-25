@@ -5,8 +5,13 @@
  *   npm run build -- 2026 --calendar general,usa --version 1962 --lang en,fr
  *   add --refresh to rebuild days that are already cached
  * Calendar/version pairs that don't exist (e.g. USA 1906) are skipped.
+ * Days already in data/ are kept, not built again (unless --refresh).
+ *   add --prune to delete everything else from data/ afterwards: days outside the dates, and
+ *   calendars, versions and languages not asked for (the publishing workflow keeps data/
+ *   between runs, so only new days are built; --prune stops it from growing).
  */
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
 import { resolve } from 'node:path';
 import {
@@ -24,7 +29,7 @@ import {
   type LanguageId,
   type VersionId,
 } from '../src/config.ts';
-import { DATA_DIR, getDay } from '../src/day.ts';
+import { DATA_DIR, getDay, indexPath } from '../src/day.ts';
 import { getMonth } from '../src/summary.ts';
 import { buildSearchMonth } from '../src/search.ts';
 import { buildIcs } from '../src/ical.ts';
@@ -36,6 +41,7 @@ const flag = (name: string) => {
   return i >= 0 ? args[i + 1] : undefined;
 };
 const refresh = args.includes('--refresh');
+const prune = args.includes('--prune');
 // Votive offices to build with each day (default all): --votive dead,parvum,sabbato | none
 if (flag('votive')) process.env.VOTIVES = flag('votive');
 const pos = args.filter((a, i) => !a.startsWith('--') && !FLAGS.includes(args[i - 1]));
@@ -73,6 +79,7 @@ for (let d = new Date(`${from}T12:00:00Z`); d <= new Date(`${to}T12:00:00Z`); d.
 }
 
 let done = 0;
+let reused = 0; // days already in data/ (kept from an earlier build)
 let failed = 0;
 const total = first.length + rest.length;
 const started = Date.now();
@@ -84,6 +91,7 @@ async function runAll(jobs: Job[]) {
     Array.from({ length: workers }, async () => {
       for (let job = queue.shift(); job; job = queue.shift()) {
         try {
+          if (!refresh && existsSync(indexPath(job.date, job.calendar, job.version, job.lang))) reused++;
           const day = await getDay(job.date, job.calendar, job.version, job.lang, { refresh });
           done++;
           if (done % 25 === 0 || total <= 30) {
@@ -165,6 +173,35 @@ for (const calendar of calendars)
     }
   }
 console.log('Calendar files: calendar.ics and fasting.ics per calendar/version.');
+// --prune: keep only what this build asked for (see the top of this file).
+if (prune) {
+  const dirs = async (p: string) => (existsSync(p) ? (await readdir(p, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name) : []);
+  const keepMonths = new Set([...months, ...rangeMonths]);
+  let removed = 0;
+  const remove = async (p: string) => { await rm(p, { recursive: true, force: true }); removed++; };
+  for (const cal of await dirs(DATA_DIR)) {
+    for (const ver of await dirs(resolve(DATA_DIR, cal))) {
+      const base = resolve(DATA_DIR, cal, ver);
+      if (!calendars.includes(cal as CalendarId) || !versions.includes(ver as VersionId)) { await remove(base); continue; }
+      for (const folder of await dirs(base)) {
+        const dir = resolve(base, folder);
+        if (folder === 'summary') continue;
+        if (folder !== 'latin' && !langs.includes(folder as LanguageId)) { await remove(dir); continue; }
+        for (const year of (await dirs(dir)).filter((y) => /^\d{4}$/.test(y)))
+          for (const md of await dirs(resolve(dir, year))) {
+            const date = `${year}-${md}`;
+            if (date < from || date > to) await remove(resolve(dir, year, md));
+          }
+        for (const f of existsSync(resolve(dir, 'search')) ? await readdir(resolve(dir, 'search')) : [])
+          if (!keepMonths.has(f.replace(/\.json$/, ''))) await remove(resolve(dir, 'search', f));
+      }
+      for (const f of existsSync(resolve(base, 'summary')) ? await readdir(resolve(base, 'summary')) : [])
+        if (!keepMonths.has(f.replace(/\.json$/, ''))) await remove(resolve(base, 'summary', f));
+    }
+  }
+  console.log(`Pruned: ${removed} old day folder(s) or file(s) removed from data/.`);
+}
+
 const secs = Math.round((Date.now() - started) / 1000);
-console.log(`Built ${done}/${total} day files in ${secs}s${failed ? `, ${failed} failed` : ''}.`);
+console.log(`Built ${done}/${total} day files in ${secs}s (${reused} kept from before, ${done - reused} new)${failed ? `, ${failed} failed` : ''}.`);
 process.exit(failed ? 1 : 0);

@@ -1,6 +1,7 @@
 // Fetching and caching the JSON files (see scripts/site.ts for their layout).
 import { state } from './state.js';
 import { $, monthOf } from './util.js';
+import { unpack } from './packed.js';
 
 export const cache = new Map();
 
@@ -22,14 +23,35 @@ export const dayDir = (langId, cal = state.calendar, ver = state.version) =>
 /** The day's index: header, the list of parts, and the Masses if there are several. */
 export const fetchDay = (langId, cal, ver) => getJson(`${dayDir(langId, cal, ver)}/index.json`);
 
-/** One part (an Hour or a Mass), with its Latin from the shared folder merged in. */
-export async function fetchPart(langId, id, cal, ver) {
-  const own = await getJson(`${dayDir(langId, cal, ver)}/${id}.json`);
-  const latin = own.latin ?? (await getJson(`${dayDir('latin', cal, ver)}/${id}.json`)).sections;
+/** One part (an Hour or a Mass) of the day on screen, with its Latin merged in. */
+export const fetchPart = (langId, id, cal = state.calendar, ver = state.version) => readPart(langId, id, state.date, cal, ver);
+
+/** A folder's pack of shared texts (see packed.js); null for files that aren't packed. */
+const packOf = (folder, file) => (file.pack ? getJson(`${folder}/${file.pack}`) : null);
+
+/**
+ * One part of any day: its own file and the shared Latin, with texts stored once put back
+ * together (the published site), or as they are (the local server).
+ */
+export async function readPart(langId, id, date, cal = state.calendar, ver = state.version) {
+  const dir = (l) => `data/${cal}/${ver}/${l}/${date.slice(0, 4)}/${date.slice(5)}`;
+  const folder = (l) => `data/${cal}/${ver}/${l}`;
+  const own = await getJson(`${dir(langId)}/${id}.json`);
+  const ownPack = await packOf(folder(langId), own);
+  let latin;
+  let latinPack;
+  if (own.latin) {
+    latin = own.latin;
+    latinPack = ownPack;
+  } else {
+    const shared = await getJson(`${dir('latin')}/${id}.json`);
+    latin = shared.sections;
+    latinPack = await packOf(folder('latin'), shared);
+  }
   return own.sections.map((s, i) => ({
     heading: { latin: latin[i]?.heading ?? '', vernacular: s.heading },
-    latin: latin[i]?.latin ?? '',
-    vernacular: s.vernacular,
+    latin: unpack(latin[i]?.latin, latinPack),
+    vernacular: unpack(s.vernacular, ownPack),
     fallback: s.fallback,
   }));
 }

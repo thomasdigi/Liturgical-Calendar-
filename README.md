@@ -185,6 +185,18 @@ and languages were built; anything else is greyed out as "not on this site".
 **Everything, on demand:** run `npm start` on a server with Perl (see Setup). It builds any
 day the first time it's asked for and caches it.
 
+## Size and build time
+
+- **Texts stored once.** The published site cuts each text into pieces (a psalm, a Gloria Patri,
+  an antiphon, a hymn…) and keeps every piece that recurs in one pack file per language
+  (`data/<calendar>/<version>/<language>/pack-<hash>.json`); the day files refer to it by number
+  (`web/js/packed.js`, `scripts/site.ts`). The search index does the same within each month.
+  About a quarter of the old size. `data/` (the build's own copy) keeps the plain form.
+- **Built days are kept between builds.** The publishing workflow keeps `data/` in GitHub's
+  cache, so a run builds only the days it doesn't have. Any change to `src/`, to Divinum
+  Officium's version or to the votive offices starts afresh. `npm run build -- … --prune`
+  removes days, languages and calendars that weren't asked for.
+
 ## How it works
 
 | File | Role |
