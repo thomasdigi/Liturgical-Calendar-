@@ -66,6 +66,9 @@ export function defaultHour() {
 
 export const lang = (id) => config.languages.find((l) => l.id === id) || config.languages.find((l) => l.id === config.defaultLanguage) || config.languages[0];
 
+/** Does this version have a Mass in Divinum Officium? (The Dominican and Monastic have the Office only.) */
+export const versionHasMass = (ver = state.version) => config.versions.find((v) => v.id === ver)?.mass !== false;
+
 export const viewKey = () => (state.view === 'mass' ? 'mass' : 'office');
 
 /** Was this language built for the current calendar/version (static site)? */

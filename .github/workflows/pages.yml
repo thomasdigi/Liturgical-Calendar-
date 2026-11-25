@@ -24,7 +24,7 @@ on:
         description: Calendars (general, usa, brazil)
         default: general
       versions:
-        description: Versions (1962, 1954, 1906)
+        description: Versions (1962, 1954, 1906, 1570, op1962 = Dominican, m1963 = Monastic)
         default: '1962'
       languages:
         description: Languages (en, la-bea, cs, da, de, es, fr, it, hu, hu-kaldi, nl, pl, pl-newer, pt, vi, uk, he; la-gabc is the chant notation)

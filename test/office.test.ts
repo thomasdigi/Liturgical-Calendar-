@@ -67,8 +67,8 @@ describe('Mass propers', () => {
     expect(text(m)).toMatch(/Gaudens gaudébo/);
   });
 
-  it('works for every version', async () => {
-    for (const v of VERSIONS) {
+  it('works for every version that has a Mass', async () => {
+    for (const v of VERSIONS.filter((x) => x.mass)) {
       const m = await page('2026-12-08', 'mass', v.id);
       expect(m.sections.some((s) => s.heading.latin === 'Evangelium')).toBe(true);
     }
@@ -79,8 +79,24 @@ describe('versions', () => {
   // DO silently uses its default version for a name it doesn't know, so check each one took.
   it.each(VERSIONS.map((v) => [v.id, v.office, v.mass] as const))('%s renders as itself', async (id, office, mass) => {
     expect((await page('2026-12-08', 'lauds', id)).versionShown).toBe(office);
+    if (!mass) return; // the Office only (Dominican, Monastic)
     expect((await page('2026-12-08', 'mass', id)).versionShown).toBe(mass);
     expect((await page('2026-12-08', 'massFull', id)).versionShown).toBe(mass);
+  });
+  it('the Dominican and Monastic versions have the Office only (DO has no Missal for them)', async () => {
+    const { buildDay } = await import('../src/day.ts');
+    for (const v of ['op1962', 'm1963'] as const) {
+      const day = await buildDay('2026-11-14', 'general', v, 'en');
+      expect(day.parts.some((p) => p.id.startsWith('mass'))).toBe(false);
+      expect(day.parts.some((p) => p.id === 'lauds')).toBe(true);
+    }
+  });
+  it('Monastic Matins on a Sunday: three Nocturns, twelve lessons, canticles in the third', async () => {
+    const o = await page('2026-11-15', 'matins', 'm1963');
+    const rubrics = o.sections.flatMap((s) => [...s.latin.matchAll(/<span class="rubric[^"]*">([^<]*)<\/span>/g)].map((m) => m[1].trim()));
+    expect(rubrics.filter((r) => /^Nocturnus [IV]+$/.test(r))).toEqual(['Nocturnus I', 'Nocturnus II', 'Nocturnus III']);
+    expect(rubrics.filter((r) => /^Lectio \d+$/.test(r)).length).toBe(12);
+    expect(rubrics.some((r) => /^Canticum/.test(r))).toBe(true);
   });
   it('1954 uses Divino Afflatu ranks', async () => {
     expect((await page('2026-12-08', 'lauds', '1954')).header.rank).toBe('Duplex I. classis');

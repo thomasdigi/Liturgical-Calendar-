@@ -5,7 +5,9 @@ For any date:
   Preface, Communion, Postcommunion), or the full Mass with the Ordinary
 - the **Divine Office**: Matins, Lauds, Prime, Terce, Sext, None, Vespers, Compline
 
-Versions: **1962 (Rubrics 1960)**, **Divino Afflatu 1954** and **Tridentine 1906**.
+Versions: **1962 (Rubrics 1960)**, **Divino Afflatu 1954**, **Tridentine 1906**, **Tridentine 1570**,
+and, for the Office only (DO has no Missal for them), **Dominican 1962** (Ordo Praedicatorum) and
+**Monastic 1963** (its Matins outline adds the canticles of the third Nocturn).
 Calendars: **General Roman**, **USA** (DO's "Rubrics 1960 - 2020 USA"; 1962 only) and
 **Brazil**.
 Texts are in Latin beside the Bea psalter or any of DO's translations, interlinear or
@@ -50,6 +52,10 @@ spreadsheet opens it): edit it, then `npm run translations`. `npx tsx scripts/ui
 shows any text without a translation (and `test/ui.test.ts` fails). The feast search understands
 names in the app's language (and English when it's in Latin), and Latin always. The translations
 were written for this app and would benefit from review by native speakers.
+
+**Angelus** (menu → Devotions): a reminder at 6:00, 12:00 and 18:00 through the phone's own
+calendar (a calendar file with daily events and alerts; `web/js/angelus.js`). **Print**
+(Settings), on the month page: the month's **Ordo**, one row a day (`web/js/ordoprint.js`).
 
 **Top bar**: ☰ opens the menu (left panel), 🔍 the search, ⚙ the Settings (right panel). The menu
 has the **Sacristan** page and **Devotions** (Rosary, Divine Mercy, Stations of the Cross, Via Petri,

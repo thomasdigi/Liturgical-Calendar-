@@ -121,6 +121,8 @@ export async function renderWheel(onPick) {
     <circle cx="${f2(mx)}" cy="${f2(my)}" r="7" class="w-dot"/>`;
 
   $('wheel-weekday').textContent = fmtDate(date, 'weekday');
+  // Long weekday names ("Quinta-feira", "Feria quinta") a little smaller, to stay inside the ring.
+  $('wheel-weekday').classList.toggle('long', fmtDate(date, 'weekday').length > 9);
   $('wheel-day').textContent = String(+date.slice(8));
   $('wheel-month').textContent = fmtDate(date, 'monthYear');
   $('wheel-season').textContent = t(seasonName(date));

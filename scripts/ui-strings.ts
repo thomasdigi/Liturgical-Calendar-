@@ -16,7 +16,7 @@ export const DYNAMIC = [
   // colours, Hours, parts, calendars, versions, votive offices (data/config.json)
   'White', 'Red', 'Green', 'Violet', 'Rose', 'Black',
   'Matins', 'Lauds', 'Prime', 'Terce', 'Sext', 'None', 'Vespers', 'Compline', 'Mass', 'Mass · Propers',
-  'General Roman', 'USA', 'Brazil', '1962 (Rubrics 1960)', 'Divino Afflatu 1954', 'Tridentine 1906',
+  'General Roman', 'USA', 'Brazil', '1962 (Rubrics 1960)', 'Divino Afflatu 1954', 'Tridentine 1906', 'Tridentine 1570', 'Dominican 1962', 'Monastic 1963',
   'Office of the Dead', 'Little Office of Our Lady', 'Our Lady on Saturday',
   // fasting (src/fasting.ts)
   'Friday', 'Lent', 'Ash Wednesday', 'Ember day', 'Vigil of Christmas', 'Vigil of the Assumption', 'Vigil of All Saints',

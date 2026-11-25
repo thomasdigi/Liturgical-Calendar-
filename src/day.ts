@@ -65,7 +65,7 @@ export interface DayData {
   date: string; // YYYY-MM-DD
   calendar: CalendarId;
   version: VersionId;
-  versionName: { office: string; mass: string }; // DO's names
+  versionName: { office: string; mass: string | null }; // DO's names (no Mass for some versions)
   lang: LanguageId;
   header: DayHeader; // the day's office (from Lauds)
   masses: MassChoice[]; // empty on ordinary days
@@ -169,7 +169,9 @@ export async function buildDay(date: string, calendar: CalendarId, version: Vers
 
   // The chant edition has the Hours of the day only (no Mass, no votive offices).
   const chant = isChant(lang);
-  const partIds = chant ? PARTS.filter((p) => p !== 'mass' && p !== 'massFull') : PARTS;
+  // Versions DO has only as an Office (Dominican, Monastic) have no Mass either.
+  const noMass = chant || !v.mass;
+  const partIds = noMass ? PARTS.filter((p) => p !== 'mass' && p !== 'massFull') : PARTS;
   const first = await Promise.all(partIds.map((p) => buildPart(date, p, version, lang, calendar)));
   // Several Masses today? DO lists them on the Mass page; build the 2nd, 3rd, … too.
   const names = first.find((p) => p.id === 'mass')?.masses ?? [];
