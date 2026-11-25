@@ -34,6 +34,9 @@
 }
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
+/* Never scroll sideways: wide things (the week strip, the Hour tabs, chant) scroll inside their own box. */
+html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+main, .month, .month-list, .mrow, .searchpage, .sacristan, #dayview { min-width: 0; max-width: 100%; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.55 var(--serif); }
 button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
@@ -190,6 +193,7 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
   background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 10px;
   box-shadow: 0 8px 26px rgb(0 0 0 / .22); font: 14px/1.45 var(--sans);
 }
+.tip { cursor: pointer; }
 .tip p { margin: 0 0 4px; }
 .tip p:last-child { margin-bottom: 0; }
 .tip-title { font-weight: 600; }
@@ -230,6 +234,11 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .drawer-body { overflow-y: auto; padding: 4px 20px calc(24px + env(safe-area-inset-bottom, 0px)); }
 .drawer section { padding: 14px 0; border-bottom: 1px solid var(--rule); }
 .drawer section:last-child { border-bottom: 0; }
+:root[data-font="garamond"] { --serif: "EB Garamond", Garamond, "Iowan Old Style", Georgia, serif; }
+:root[data-font="sans"] { --serif: "Source Sans 3", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+/* Garamond's letters are small for their size: a little larger to read the same. */
+:root[data-font="garamond"] body { font-size: 20px; }
+@media (max-width: 720px) { :root[data-font="garamond"] body { font-size: 19px; } }
 .drawer h3 { margin: 0 0 8px; font: 600 12px var(--sans); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .drawer p { margin: 0 0 10px; }
 .drawer .hint { color: var(--muted); font-size: 13px; }
@@ -328,6 +337,7 @@ body[data-reading="on"] .text .instr { display: none; }
 }
 .fastmark.fast { background: var(--rubric); color: var(--paper); }
 .fastmark.abst { border: 1.5px solid var(--rubric); color: var(--rubric); }
+.fastmark.partial { border: 1.5px dashed var(--rubric); color: var(--rubric); }
 .fastline { margin: 8px 0 0; display: flex; justify-content: center; gap: 6px; align-items: center; color: var(--rubric); font: 14px var(--sans); }
 .fastline[hidden] { display: none; }
 
@@ -348,8 +358,9 @@ body[data-reading="on"] .text .instr { display: none; }
 /* ---------- month ---------- */
 .month { max-width: 900px; margin: 0 auto; }
 .month[hidden], #dayview[hidden] { display: none; }
-.month-head { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 6px; }
-.month-head h1 { margin: 0; font-size: clamp(24px, 4vw, 32px); min-width: 9em; text-align: center; }
+.month-head { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 6px; }
+.month-head h1 { margin: 0; font-size: clamp(22px, 4vw, 32px); min-width: 0; flex: 0 1 9em; text-align: center; }
+.month-head button { flex: none; }
 .month-head button { border: 1px solid var(--rule); background: var(--paper); border-radius: 8px; width: 40px; height: 40px; cursor: pointer; font-size: 20px; }
 .legend { text-align: center; color: var(--muted); font: 13px var(--sans); margin: 0 0 14px; display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 8px; align-items: center; }
 .legend-note { flex-basis: 100%; }
@@ -366,6 +377,7 @@ body[data-reading="on"] .text .instr { display: none; }
 .mrow .md { font: 14px var(--sans); color: var(--muted); }
 .mrow .md b { color: var(--ink); font-size: 16px; margin-right: 2px; font-variant-numeric: tabular-nums; }
 .mrow .mc .swatch { vertical-align: -1px; }
+.mrow .mt { min-width: 0; overflow-wrap: anywhere; }
 .mrow .mt small { display: block; color: var(--muted); font-style: italic; font-size: .85em; }
 .mrow .mr { color: var(--muted); font: 13px var(--sans); white-space: nowrap; }
 .mrow .mf { display: flex; gap: 3px; justify-content: flex-end; }
@@ -441,7 +453,7 @@ body.comparing #layout { display: none; }
 @media (prefers-reduced-motion: reduce) { .flash { animation: none; outline: 2px solid var(--rubric); } }
 
 @media (max-width: 720px) {
-  .compare { --cmp-gap: 20px; font-size: 14px; }
+  .compare { --cmp-gap: 20px; font-size: .82em; }
   .week { grid-template-columns: repeat(7, minmax(4.6em, 1fr)); overflow-x: auto; padding-bottom: 4px; }
   .mrow button { grid-template-columns: 3.4em 1.2em minmax(0, 1fr) 2.8em; }
   .mrow .mr { grid-column: 3; grid-row: 2; white-space: normal; }
@@ -452,7 +464,7 @@ body.comparing #layout { display: none; }
   /* Each row of controls is centred on its own line. */
   .datenav, .pagebar, .settings { width: 100%; justify-content: center; }
   .select span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
-  body[data-layout="side"][data-display="both"] .text section { gap: 8px 14px; font-size: 15px; }
+  body[data-layout="side"][data-display="both"] .text section { gap: 8px 14px; font-size: .88em; }
   .hours { flex-wrap: nowrap; overflow-x: auto; justify-content: flex-start; scrollbar-width: thin; }
   .hours button { flex: none; padding: 8px 10px; }
 }
@@ -493,13 +505,13 @@ body.comparing #layout { display: none; }
 /* A saint's name added where the book has "N." (USA calendar texts) */
 .supplied { font-style: italic; color: var(--muted); }
 
-/* ---------- Clergy mode: the day's facts on one page ---------- */
-.clergy { max-width: 720px; margin: 0 auto; text-align: left; }
-.clergy[hidden] { display: none; }
-.clergy > .weekday, .clergy > .title, .clergy-combo { text-align: center; }
-.clergy > .title { margin: 6px 0; font-size: clamp(22px, 4vw, 30px); line-height: 1.2; font-weight: 600; text-wrap: balance; }
-.clergy-combo { margin: 0 0 14px; color: var(--muted); font-family: var(--sans); font-size: 13px; }
-.clergy .ccom, .clergy .cfast { text-align: center; color: var(--muted); font-style: italic; margin: 0 0 10px; }
+/* ---------- Sacristan mode: the day's facts on one page ---------- */
+.sacristan { max-width: 720px; margin: 0 auto; text-align: left; }
+.sacristan[hidden] { display: none; }
+.sacristan > .weekday, .sacristan > .title, .sacristan-combo { text-align: center; }
+.sacristan > .title { margin: 6px 0; font-size: clamp(22px, 4vw, 30px); line-height: 1.2; font-weight: 600; text-wrap: balance; }
+.sacristan-combo { margin: 0 0 14px; color: var(--muted); font-family: var(--sans); font-size: 13px; }
+.sacristan .ccom, .sacristan .cfast { text-align: center; color: var(--muted); font-style: italic; margin: 0 0 10px; }
 .ccard { background: var(--paper); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 18px; margin: 14px 0; }
 .ccard h2 { margin: 0 0 8px; font-size: 20px; color: var(--accent-ink); }
 .ccard dl { margin: 0; }
@@ -509,6 +521,9 @@ body.comparing #layout { display: none; }
 .crow dd { margin: 0; }
 .crow .swatch { vertical-align: -2px; }
 .cnote { display: block; color: var(--muted); font-size: 13px; font-style: italic; }
+.cnote.rank { font-style: normal; }
+/* Ranks ("III. classis") are always upright. */
+#rank, .mrow .mr, .wday .wr, .cmp-meta, .cnote.rank { font-style: normal; }
 .clinks { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 0; }
 .clinks button { font-family: var(--sans); font-size: 14px; border: 1px solid var(--rule); background: var(--tab-bg); color: var(--ink); border-radius: 9px; padding: 6px 14px; min-height: 36px; cursor: pointer; }
 .clinks button:hover { border-color: var(--accent-ink); }
@@ -522,3 +537,26 @@ body.comparing #layout { display: none; }
 }
 .drawer label.check { display: flex; align-items: center; gap: 10px; font-family: var(--sans); font-size: 15px; margin: 4px 0 8px; cursor: pointer; }
 .drawer label.check input { width: 20px; height: 20px; accent-color: var(--accent); }
+
+/* Settings → Typography */
+.submenu > summary { cursor: pointer; font: 15px var(--sans); padding: 8px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--tab-bg); list-style: none; display: flex; justify-content: space-between; align-items: center; }
+.submenu > summary::-webkit-details-marker { display: none; }
+.submenu > summary::after { content: '›'; font-size: 20px; line-height: 1; transition: transform .15s; }
+.submenu[open] > summary::after { transform: rotate(90deg); }
+.submenu[open] > summary { margin-bottom: 8px; }
+.sublabel { margin: 10px 0 6px; font: 600 13px var(--sans); color: var(--muted); }
+.fontpick { display: grid; gap: 6px; }
+.fontpick button { display: grid; gap: 2px; text-align: left; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.fontpick button[aria-pressed="true"] { border-color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent-ink); }
+.fp-sample { font-size: 20px; line-height: 1.25; }
+.fp-classic { font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; }
+.fp-garamond { font-family: "EB Garamond", Garamond, serif; font-size: 22px; }
+.fp-sans { font-family: "Source Sans 3", system-ui, sans-serif; }
+.fp-name { font: 12.5px var(--sans); color: var(--muted); }
+
+/* Report a mistake */
+.report-btns { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.report-btns .btn { display: inline-block; padding: 8px 14px; border-radius: 9px; font: 15px var(--sans); text-decoration: none; background: var(--accent); color: var(--on-accent); border: 1px solid var(--accent); }
+.report-btns .btn-quiet { background: var(--paper); color: var(--accent-ink); border-color: var(--rule); }
+.report-line { display: block; margin-top: 6px; }
+@media print { .report-line { display: none; } }

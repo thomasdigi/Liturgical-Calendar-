@@ -5,7 +5,7 @@
 //  - Texts (data/…): saved as they're read, and by "Save for offline" (web/js/offline.js),
 //    in the DATA cache. Served from there at once, refreshed in the background when online.
 //  - Site settings (data/config.json, data/available.json): network first.
-const SHELL = 'shell-v4';
+const SHELL = 'shell-v5';
 const DATA = 'data-v1'; // keep in step with web/js/offline.js
 
 const SHELL_FILES = [
@@ -14,7 +14,7 @@ const SHELL_FILES = [
   'style.css',
   'i18n.js',
   'manifest.webmanifest',
-  'icons/icon.svg',
+  'icons/favicon-64.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/apple-touch-icon.png',
@@ -33,7 +33,10 @@ const SHELL_FILES = [
   'js/tip.js',
   'js/lastread.js',
   'js/chant.js',
-  'js/clergy.js',
+  'js/sacristan.js',
+  'js/typography.js',
+  'js/report.js',
+  'fonts/fonts.css', // the font files themselves are saved when first used
   'vendor/exsurge.js', // chant notation (copied in by scripts/site.ts)
 ];
 

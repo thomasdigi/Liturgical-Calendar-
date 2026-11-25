@@ -1,4 +1,4 @@
-// Clergy mode: everything a priest needs about the liturgical day on one page (Mass: rank,
+// Sacristan mode: everything a priest or sacristan needs about the liturgical day on one page (Mass: rank,
 // colour, Gloria, Credo, Preface, votive Masses…; Office: Matins, Lauds scheme, Vespers…).
 // The facts come from the day's index (`ordo`, computed at build time in src/ordo.ts).
 import { fastMarks, fastText } from './calendar.js';
@@ -22,15 +22,15 @@ export function rankInEnglish(rank) {
 }
 
 const yesNo = (b) => (b ? 'Yes' : 'No');
-const row = (label, value, note = '') =>
+const row = (label, value, note = '', noteClass = '') =>
   value === '' || value == null ? '' :
-  `<div class="crow"><dt>${esc(label)}</dt><dd>${value}${note ? `<span class="cnote">${esc(note)}</span>` : ''}</dd></div>`;
+  `<div class="crow"><dt>${esc(label)}</dt><dd>${value}${note ? `<span class="cnote${noteClass ? ` ${noteClass}` : ''}">${esc(note)}</span>` : ''}</dd></div>`;
 const words = ['None', 'One', 'Two', 'Three'];
 
 let seq = 0;
-export async function renderClergy() {
+export async function renderSacristan() {
   const mine = ++seq;
-  const out = $('clergy-body');
+  const out = $('sacristan-body');
   out.innerHTML = '<p class="msg">Loading…</p>';
   let day;
   let sum;
@@ -43,11 +43,11 @@ export async function renderClergy() {
   if (mine !== seq) return;
   const o = day.ordo;
   const d = new Date(`${state.date}T12:00:00Z`);
-  $('clergy-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
-  $('clergy-title').textContent = day.header.title;
-  $('clergy-combo').textContent = comboLabel(state.calendar, state.version);
+  $('sacristan-date').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+  $('sacristan-title').textContent = day.header.title;
+  $('sacristan-combo').textContent = comboLabel(state.calendar, state.version);
   if (!o) {
-    out.innerHTML = '<p class="msg">The clergy summary for this day isn’t built yet. It appears after the site’s next rebuild.</p>';
+    out.innerHTML = '<p class="msg">This day’s summary isn’t built yet. It appears after the site’s next rebuild.</p>';
     return;
   }
   const colour = (c) => `<span class="swatch" style="background:${COLORS[c] || 'transparent'}"></span> ${esc(COLOR_NAMES[c] || c)}`;
@@ -60,7 +60,7 @@ export async function renderClergy() {
       <h2>Mass</h2>
       <dl>
         ${m.title !== day.header.title ? row('Mass of', esc(m.title)) : ''}
-        ${row('Rank', esc(rankInEnglish(m.rank)), m.rank)}
+        ${row('Rank', esc(rankInEnglish(m.rank)), m.rank, 'rank')}
         ${row('Liturgical colour', colour(m.color))}
         ${row('Gloria', yesNo(m.gloria))}
         ${row('Credo', yesNo(m.credo))}
@@ -78,7 +78,7 @@ export async function renderClergy() {
     <section class="ccard">
       <h2>Divine Office</h2>
       <dl>
-        ${row('Rank', esc(rankInEnglish(f.rank)), f.rank)}
+        ${row('Rank', esc(rankInEnglish(f.rank)), f.rank, 'rank')}
         ${row('Psalms', esc(f.psalter || '—'))}
         ${row('Matins', `${words[f.matins.nocturns] ?? f.matins.nocturns} nocturn${f.matins.nocturns === 1 ? '' : 's'}, ${f.matins.lessons} lessons`)}
         ${row('Te Deum', yesNo(f.matins.teDeum))}

@@ -1,5 +1,5 @@
 // Keeping the controls in step with the state; the translation pop-up; the page address.
-import { RANGE, SIZES, altLangId, built, calendarHas, chantAvailable, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey, viewName } from './state.js';
+import { RANGE, SIZES, altLangId, maxSizeIndex, built, calendarHas, chantAvailable, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey, viewName } from './state.js';
 import { $, INFO_ICON, esc } from './util.js';
 
 /** Buttons to choose between a day's Masses (Christmas, All Souls, …). */
@@ -17,15 +17,18 @@ export function syncControls() {
   $('month').hidden = state.page !== 'month';
   $('searchpage').hidden = state.page !== 'search';
   $('dayview').hidden = state.page !== 'day';
-  $('clergy').hidden = state.page !== 'clergy';
-  $('clergy-tab').hidden = !state.clergy;
-  $('clergy-mode').checked = state.clergy;
+  $('sacristan').hidden = state.page !== 'sacristan';
+  $('sacristan-tab').hidden = !state.sacristan;
+  $('sacristan-mode').checked = state.sacristan;
   document.querySelectorAll('#page button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
   $('prev').setAttribute('aria-label', 'Previous day');
   // Text size and reading mode
   document.body.style.setProperty('--text-scale', String(SIZES[sizeIndex()]));
   document.querySelector('#size [data-size="-1"]').disabled = sizeIndex() === 0;
-  document.querySelector('#size [data-size="1"]').disabled = sizeIndex() === SIZES.length - 1;
+  const plus = document.querySelector('#size [data-size="1"]');
+  plus.disabled = sizeIndex() >= maxSizeIndex();
+  plus.title = !plus.disabled ? '' : maxSizeIndex() < SIZES.length - 1
+    ? 'Largest size for two columns on this screen. Choose Interlinear for bigger text.' : 'Largest size';
   document.body.dataset.reading = state.reading ? 'on' : 'off';
   $('reading').setAttribute('aria-pressed', String(state.reading));
   const viewWord = state.view === 'mass' ? 'Mass' : 'Office';

@@ -3,9 +3,12 @@ import { fetchMonth, summariesFor } from './data.js';
 import { RANGE, day, inRange, state } from './state.js';
 import { $, COLORS, COLOR_NAMES, esc, isoToday, monthOf, shift } from './util.js';
 
+/** Fast without full abstinence: meat at the principal meal only (older summaries lack the field). */
+export const isPartial = (f) => !!f && (f.partial ?? (f.fast && !f.abstinence));
+
 export function fastText(f) {
   if (!f || (!f.fast && !f.abstinence)) return '';
-  const what = f.fast && f.abstinence ? 'Fast and abstinence' : f.fast ? 'Fast' : 'Abstinence';
+  const what = f.fast && f.abstinence ? 'Fast and abstinence' : isPartial(f) ? 'Fast and partial abstinence' : f.fast ? 'Fast' : 'Abstinence';
   return `${what}${f.note ? ` ${f.note}` : ''}${f.reasons.length ? ` · ${f.reasons.join(', ')}` : ''}`;
 }
 
@@ -17,20 +20,27 @@ export function fastText(f) {
 export function fastMarks(f) {
   if (!f) return '';
   const mark = (kind, letter, label) => {
-    const req = f.required?.[kind === 'fast' ? 'fast' : 'abstinence'];
+    // Partial abstinence is no longer required by current law anywhere.
+    const req = kind === 'partial' ? (f.required ? false : undefined) : f.required?.[kind === 'fast' ? 'fast' : 'abstinence'];
     const status = req === undefined ? '' : req ? ', mandatory' : ', suggested';
     return `<span class="fastmark ${kind}${req === false ? ' suggested' : ''}" role="button" tabindex="0"
       data-kind="${kind}" data-req="${req === undefined ? '' : req ? '1' : '0'}"
       data-reasons="${esc(f.reasons.join(', '))}" data-note="${esc(f.note ?? '')}"
       aria-label="${label}${status}. Tap for details">${letter}</span>`;
   };
-  return (f.fast ? mark('fast', 'F', 'Day of fasting') : '') + (f.abstinence ? mark('abst', 'A', 'Day of abstinence') : '');
+  return (f.fast ? mark('fast', 'F', 'Day of fasting') : '') + (f.abstinence ? mark('abst', 'A', 'Day of abstinence') : '') +
+    (isPartial(f) ? mark('partial', 'P', 'Partial abstinence: meat at the principal meal only') : '');
 }
 
 /** The pop-up for a tapped mark. */
 export function fastTipHtml(el) {
   const fast = el.dataset.kind === 'fast';
   const req = el.dataset.req;
+  if (el.dataset.kind === 'partial') {
+    return `<p class="tip-title">Partial abstinence</p><p>Meat may be eaten at the principal meal only.</p>` +
+      (req === '0' ? `<p class="tip-status suggested">Suggested</p><p>Kept by the traditional discipline of this calendar (1917 Code); no longer required.</p>` : '') +
+      (el.dataset.reasons ? `<p class="tip-small">${esc(el.dataset.reasons)}</p>` : '');
+  }
   const reasons = el.dataset.reasons;
   let status = '';
   if (req === '1') {

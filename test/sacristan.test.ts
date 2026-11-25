@@ -1,10 +1,10 @@
-// Clergy mode, chant, Holy Week and the USA texts. Runs DO's real engine (integration tests).
+// Sacristan mode, chant, Holy Week and the USA texts. Runs DO's real engine (integration tests).
 import { describe, expect, it } from 'vitest';
 import { buildDay, buildPart, supplyNames } from '../src/day.ts';
 import { parsePage } from '../src/parse.ts';
 import { renderPart } from '../src/render.ts';
 
-describe('clergy summary (ordo)', () => {
+describe('sacristan summary (ordo)', () => {
   it('St Josaphat, 2026-11-14, 1962: as in the request', async () => {
     const { ordo } = await buildDay('2026-11-14', 'general', '1962', 'en');
     expect(ordo?.mass).toMatchObject({
@@ -59,5 +59,14 @@ describe('USA texts: names for "N."', () => {
     expect(sec.latin).toMatch(/beáti N\. <span class="supplied"[^>]*>\[John Fisher and Thomas More\]/);
     expect(sec.latin).toMatch(/Papa nostro N\.$/);
     expect(sec.vernacular.match(/class="supplied"/g)?.length).toBe(1);
+  });
+});
+
+describe('crosses', () => {
+  it('shows every cross as ✠ (DO also uses ✙ and +)', async () => {
+    const p = parsePage(await renderPart('2026-11-14', 'compline', '1962', 'it'));
+    const all = p.sections.map((s) => s.latin + s.vernacular).join(' ');
+    expect(all).not.toMatch(/✙/);
+    expect(all).toMatch(/Convertici, <span class="rubric">✠<\/span>/);
   });
 });

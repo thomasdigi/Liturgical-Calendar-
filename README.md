@@ -38,11 +38,24 @@ feed of every day's feast or of fast days only (`data/<calendar>/<version>/calen
 chant edition (`la-gabc`, built like a language), drawn by exsurge (MIT License, shipped with
 DO) in place of the Latin; the translation stays beside it. The Mass has no chant edition in DO.
 
-**Clergy mode** (Settings): a **Clergy** page with the whole day on one screen. Mass: rank,
+**Sacristan mode** (Settings): a **Sacristan** page with the whole day on one screen. Mass: rank,
 colour, Gloria, Credo, Preface, what follows the Epistle, commemorations, whether votive Masses
 are allowed. Office: rank, psalms, Matins (nocturns, lessons, Te Deum), Lauds scheme, First or
 Second Vespers. Read from DO's own texts for the day at build time (`src/ordo.ts`). The votive
 Mass line gives the general rule for the day's class.
+
+**Typography** (Settings): three typefaces (Classic, EB Garamond, Source Sans 3; the fonts are in
+`web/fonts`, SIL Open Font License), and for the Latin only: no accents (*Dóminus* → *Dominus*)
+and no ligatures (*æ, œ* → *ae, oe*) (`web/js/typography.js`).
+
+**Report a mistake** (Settings, and at the foot of each page): an email or a GitHub issue,
+filled in with the day, calendar, version, language and part on screen (`web/js/report.js`).
+
+Fasting marks: **F** fast, **A** abstinence, **P** partial abstinence (a fast day without full
+abstinence: meat at the principal meal only). Tap a mark to open its note; tap again to close.
+
+DO's three crosses (✠ sign of the cross, ✙ small cross on the lips, + at the Gospel) are all
+shown as ✠.
 
 Holy Week's special services (Palm Sunday, the Triduum, the Easter Vigil) keep their headings.
 In the USA texts, where the book prints "N." for the saint's name, the name is added in

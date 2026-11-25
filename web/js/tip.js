@@ -1,9 +1,17 @@
 // A small pop-up next to something tapped (used for the fasting marks).
 let tip = null;
+let tipAnchor = null;
 
 export function hideTip() {
   tip?.remove();
   tip = null;
+  tipAnchor = null;
+}
+
+/** Tap a mark: open its bubble, or close it if it's already open. */
+export function toggleTip(anchor, html) {
+  if (tip && tipAnchor === anchor) hideTip();
+  else showTip(anchor, html);
 }
 
 /** Show `html` in a small bubble below (or above) `anchor`. */
@@ -13,7 +21,9 @@ export function showTip(anchor, html) {
   tip.className = 'tip';
   tip.setAttribute('role', 'tooltip');
   tip.innerHTML = html;
+  tip.title = 'Tap to close';
   document.body.append(tip);
+  tipAnchor = anchor;
   const r = anchor.getBoundingClientRect();
   const w = tip.offsetWidth;
   const h = tip.offsetHeight;
@@ -26,7 +36,7 @@ export function showTip(anchor, html) {
   tip.style.top = `${top + window.scrollY}px`;
 }
 
-/** Bubbles close on any other tap, on Escape, or when the page scrolls a lot. */
+/** Bubbles close on any tap (the bubble itself, its mark again, or elsewhere), on Escape, or on resize. */
 export function initTips() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideTip(); });
   window.addEventListener('resize', hideTip);

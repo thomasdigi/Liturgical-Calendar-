@@ -1,5 +1,5 @@
 /**
- * The Clergy summary of a day: what a priest needs to know about the Mass and Office at a
+ * The Sacristan summary of a day: what a priest or sacristan needs to know about the Mass and Office at a
  * glance (rank, colour, Gloria, Credo, Preface, votive Masses, Matins, Lauds scheme, Vespers…).
  * Read from Divinum Officium's own texts for the day (headings, notes, rubrics), so it follows
  * the calendar and version shown. Language-independent: computed from the Latin.

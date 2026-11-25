@@ -70,7 +70,7 @@ export interface DayData {
   header: DayHeader; // the day's office (from Lauds)
   masses: MassChoice[]; // empty on ordinary days
   votives: { id: VotiveId; hours: HourId[] }[]; // votive offices built for this day
-  ordo?: Ordo; // the Clergy summary (not for the chant edition)
+  ordo?: Ordo; // the Sacristan summary (not for the chant edition)
   parts: PartData[];
   source: string;
 }

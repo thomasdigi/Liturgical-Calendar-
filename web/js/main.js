@@ -1,17 +1,19 @@
 // Start-up and loading: wires the controls to the state.
 import { fastTipHtml, renderMonth, renderWeek } from './calendar.js';
-import { hideTip, initTips, showTip } from './tip.js';
+import { hideTip, initTips, toggleTip } from './tip.js';
 import { defaultComparison, fixComparison, openInfo, syncControls, syncMasses, syncOffice, updateUrl } from './controls.js';
 import { fetchDay } from './data.js';
 import { runSearch, syncSearchOptions } from './search.js';
-import { RANGE, SIZES, avail, calendarHas, clampDate, comboBuilt, config, day, params, setAvail, setConfig, setDay, setRANGE, shownLangId, state } from './state.js';
+import { RANGE, avail, calendarHas, clampDate, comboBuilt, config, day, maxSizeIndex, params, setAvail, setConfig, setDay, setRANGE, shownLangId, sizeIndex, state } from './state.js';
 import { render, setPendingScroll } from './text.js';
-import { renderClergy } from './clergy.js';
+import { renderSacristan } from './sacristan.js';
 import { initOffline, offlineHint } from './offline.js';
 import { scrollToTarget } from './outline.js';
 import { initSettings } from './settings.js';
 import { restorePlace, trackReading } from './lastread.js';
 import { initTheme } from './theme.js';
+import { initTypography } from './typography.js';
+import { initReport } from './report.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
 
 export async function init() {
@@ -72,13 +74,13 @@ export async function init() {
     if ($('chant').disabled) return;
     state.chant = !state.chant; store.set('chant', state.chant ? 'on' : 'off'); syncControls(); render();
   };
-  $('clergy-mode').onchange = (e) => {
-    state.clergy = e.target.checked; store.set('clergy', state.clergy ? 'on' : 'off');
-    if (!state.clergy && state.page === 'clergy') { state.page = 'day'; load(); }
+  $('sacristan-mode').onchange = (e) => {
+    state.sacristan = e.target.checked; store.set('sacristan', state.sacristan ? 'on' : 'off');
+    if (!state.sacristan && state.page === 'sacristan') { state.page = 'day'; load(); }
     syncControls();
   };
-  // Buttons on the Clergy page open the Mass or an Hour of the day.
-  $('clergy-body').addEventListener('click', (e) => {
+  // Buttons on the Sacristan page open the Mass or an Hour of the day.
+  $('sacristan-body').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-open]');
     if (!b) return;
     state.page = 'day';
@@ -131,9 +133,14 @@ export async function init() {
   $('month-today').onclick = () => go(isoToday());
   $('week').addEventListener('click', openDay);
   document.querySelectorAll('#size button').forEach((b) => (b.onclick = () => {
-    state.size = Math.min(SIZES.length - 3, Math.max(-2, state.size + Number(b.dataset.size)));
+    if (b.disabled) return;
+    // Start from the size actually shown (it may be capped for two columns).
+    state.size = Math.min(maxSizeIndex() - 2, Math.max(-2, sizeIndex() - 2 + Number(b.dataset.size)));
     store.set('textSize', String(state.size)); syncControls();
   }));
+  // Turning the phone changes which text sizes fit in two columns.
+  let resizeTimer;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(syncControls, 200); });
   $('reading').onclick = () => { state.reading = !state.reading; store.set('reading', state.reading ? 'on' : 'off'); syncControls(); };
   $('jump').onchange = (e) => {
     const el = document.getElementById(e.target.value);
@@ -169,7 +176,7 @@ export async function load() {
   $('date').value = state.date;
   if (state.page === 'month') { renderMonth(); return; }
   if (state.page === 'search') { syncSearchOptions(); return; }
-  if (state.page === 'clergy') { renderWeek(); renderClergy(); return; }
+  if (state.page === 'sacristan') { renderWeek(); renderSacristan(); return; }
   renderWeek();
   const shown = shownLangId();
   try {
@@ -209,7 +216,7 @@ export function go(date, { animate = 0 } = {}) {
     syncControls();
   }
   if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    const el = state.page === 'month' ? $('month') : state.page === 'clergy' ? $('clergy') : $('dayview');
+    const el = state.page === 'month' ? $('month') : state.page === 'sacristan' ? $('sacristan') : $('dayview');
     el.classList.remove('swipe-next', 'swipe-prev');
     void el.offsetWidth; // restart the animation
     el.classList.add(animate > 0 ? 'swipe-next' : 'swipe-prev');
@@ -271,9 +278,9 @@ document.addEventListener('click', (e) => {
   if (mark) {
     e.preventDefault();
     e.stopPropagation();
-    showTip(mark, fastTipHtml(mark));
-  } else if (!e.target.closest?.('.tip')) {
-    hideTip();
+    toggleTip(mark, fastTipHtml(mark));
+  } else {
+    hideTip(); // a tap on the bubble itself, or anywhere else, closes it
   }
 }, true);
 document.addEventListener('keydown', (e) => {
@@ -281,11 +288,13 @@ document.addEventListener('keydown', (e) => {
   if (mark && (e.key === 'Enter' || e.key === ' ')) {
     e.preventDefault();
     e.stopPropagation();
-    showTip(mark, fastTipHtml(mark));
+    toggleTip(mark, fastTipHtml(mark));
   }
 }, true);
 
 initTheme();
+initTypography(() => { syncControls(); load(); });
+initReport();
 initOffline();
 initSettings();
 initTips();

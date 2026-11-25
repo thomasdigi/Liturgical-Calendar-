@@ -45,11 +45,12 @@ function nextDay(iso: string) {
 export function fastingLine(d: DaySummary): string {
   const f = d.fasting;
   if (!f.fast && !f.abstinence) return '';
-  const what = f.fast && f.abstinence ? 'Fast and abstinence' : f.fast ? 'Fast' : 'Abstinence';
+  const partial = f.partial ?? (f.fast && !f.abstinence);
+  const what = f.fast && f.abstinence ? 'Fast and abstinence' : partial ? 'Fast and partial abstinence (meat at the principal meal only)' : f.fast ? 'Fast' : 'Abstinence';
   const why = f.reasons.length ? ` (${f.reasons.join(', ')}${f.note ? `, ${f.note}` : ''})` : '';
   const status = (kind: 'fast' | 'abstinence', name: string) =>
     f[kind] ? `${name} ${f.required?.[kind] ? 'mandatory' : 'suggested'}` : '';
-  const parts = [status('fast', 'fasting'), status('abstinence', 'abstinence')].filter(Boolean).join(', ');
+  const parts = [status('fast', 'fasting'), status('abstinence', 'abstinence'), partial ? 'partial abstinence suggested' : ''].filter(Boolean).join(', ');
   return `${what}${why}: ${parts} under current Church law.`;
 }
 
@@ -75,7 +76,8 @@ export function buildIcs(
   for (const d of [...days].sort((a, b) => a.date.localeCompare(b.date))) {
     const fast = fastingLine(d);
     if (kind === 'fasting' && !fast) continue;
-    const marks = [d.fasting.fast ? 'Fast' : '', d.fasting.abstinence ? 'Abstinence' : ''].filter(Boolean).join(' & ');
+    const partial = d.fasting.partial ?? (d.fasting.fast && !d.fasting.abstinence);
+    const marks = [d.fasting.fast ? 'Fast' : '', d.fasting.abstinence ? 'Abstinence' : '', partial ? 'Partial abstinence' : ''].filter(Boolean).join(' & ');
     const summary = kind === 'fasting' ? `${marks}${d.fasting.reasons.length ? ` · ${d.fasting.reasons.join(', ')}` : ''}` : d.title;
     const description = [
       kind === 'fasting' ? d.title : '',
