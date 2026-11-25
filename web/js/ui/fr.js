@@ -4,7 +4,6 @@ export default {
  "Office & Mass": "Office & Messe",
  "Menu": "Menu",
  "Close menu": "Fermer le menu",
- "More is coming here soon.": "D’autres choses viendront bientôt ici.",
  "Search texts, feasts and saints": "Chercher des textes, des fêtes et des saints",
  "Settings": "Réglages",
  "Close settings": "Fermer les réglages",
@@ -29,7 +28,6 @@ export default {
  "General Roman": "Romain général",
  "USA": "États-Unis",
  "Brazil": "Brésil",
- "Diocese of Rome": "Diocèse de Rome",
  "1962 (Rubrics 1960)": "1962 (rubriques de 1960)",
  "Divino Afflatu 1954": "Divino Afflatu 1954",
  "Tridentine 1906": "Tridentin 1906",
@@ -182,9 +180,6 @@ export default {
  "First {n} results in {when}.": "Les {n} premiers résultats en {when}.",
  "{from} to {to}": "{from} à {to}",
  "Nothing found. Try fewer words, or a longer period.": "Rien trouvé. Essayez moins de mots ou une période plus longue.",
- "Sacristan mode": "Mode sacristain",
- "Show the Sacristan page": "Afficher la page du sacristain",
- "Adds a “Sacristan” tab beside Day, Month and Search: the day’s rank, colour, Gloria, Credo, Preface, votive Masses, Matins, Lauds and Vespers on one page.": "Ajoute un onglet « Sacristain » à côté de Jour et Mois : le rang, la couleur, le Gloria, le Credo, la préface, les messes votives, Matines, Laudes et Vêpres du jour sur une seule page.",
  "No texts for this day on this site.": "Pas de textes pour ce jour sur ce site.",
  "This day’s summary isn’t built yet. It appears after the site’s next rebuild.": "Le résumé de ce jour n’est pas encore prêt. Il apparaîtra à la prochaine mise à jour du site.",
  "Rank": "Rang",
@@ -366,5 +361,10 @@ export default {
  "(MIT License).": "(licence MIT).",
  "(MIT License). Fasting follows the 1917 Code; marks say what current Church law still requires.": "(licence MIT). Le jeûne suit le Code de 1917 ; les marques indiquent ce que le droit actuel exige encore.",
  "No texts for {date} in this calendar, version and language yet.": "Pas encore de textes pour le {date} dans ce calendrier, cette version et cette langue.",
- "No texts for {date} in this calendar, version and language on this site.": "Pas de textes sur ce site pour le {date} dans ce calendrier, cette version et cette langue."
+ "No texts for {date} in this calendar, version and language on this site.": "Pas de textes sur ce site pour le {date} dans ce calendrier, cette version et cette langue.",
+ "Devotions": "Dévotions",
+ "Rosary": "Rosaire",
+ "Divine Mercy": "Miséricorde divine",
+ "Stations of the Cross": "Chemin de croix",
+ "Under Construction": "En construction"
 };

@@ -38,6 +38,13 @@ export function initSettings() {
   $('menu-btn').onclick = () => (menu.showModal ? menu.showModal() : menu.setAttribute('open', ''));
   $('menu-close').onclick = closeMenu;
   menu.addEventListener('click', (e) => { if (e.target === menu) closeMenu(); });
+  // Menu items open a page: the Sacristan page, or a devotion.
+  menu.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-menu-page], button[data-devotion]');
+    if (!b) return;
+    closeMenu();
+    window.dispatchEvent(new CustomEvent('open-page', { detail: b.dataset.devotion ? { page: 'devotion', devotion: b.dataset.devotion } : { page: b.dataset.menuPage } }));
+  });
   $('settings-close').onclick = close;
   // Tapping the dimmed area outside the panel closes it.
   panel.addEventListener('click', (e) => { if (e.target === panel) close(); });

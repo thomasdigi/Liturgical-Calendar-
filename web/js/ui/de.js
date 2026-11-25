@@ -4,7 +4,6 @@ export default {
  "Office & Mass": "Offizium & Messe",
  "Menu": "Menü",
  "Close menu": "Menü schließen",
- "More is coming here soon.": "Hier kommt bald mehr.",
  "Search texts, feasts and saints": "Texte, Feste und Heilige suchen",
  "Settings": "Einstellungen",
  "Close settings": "Einstellungen schließen",
@@ -29,7 +28,6 @@ export default {
  "General Roman": "Allgemeiner römischer Kalender",
  "USA": "USA",
  "Brazil": "Brasilien",
- "Diocese of Rome": "Bistum Rom",
  "1962 (Rubrics 1960)": "1962 (Rubriken 1960)",
  "Divino Afflatu 1954": "Divino Afflatu 1954",
  "Tridentine 1906": "Tridentinisch 1906",
@@ -182,9 +180,6 @@ export default {
  "First {n} results in {when}.": "Die ersten {n} Treffer in {when}.",
  "{from} to {to}": "{from} bis {to}",
  "Nothing found. Try fewer words, or a longer period.": "Nichts gefunden. Weniger Wörter oder einen längeren Zeitraum versuchen.",
- "Sacristan mode": "Sakristan-Modus",
- "Show the Sacristan page": "Die Sakristan-Seite zeigen",
- "Adds a “Sacristan” tab beside Day, Month and Search: the day’s rank, colour, Gloria, Credo, Preface, votive Masses, Matins, Lauds and Vespers on one page.": "Fügt neben Tag und Monat eine Registerkarte „Sakristan“ hinzu: Rang, Farbe, Gloria, Credo, Präfation, Votivmessen, Matutin, Laudes und Vesper des Tages auf einer Seite.",
  "No texts for this day on this site.": "Für diesen Tag gibt es auf dieser Seite keine Texte.",
  "This day’s summary isn’t built yet. It appears after the site’s next rebuild.": "Die Übersicht für diesen Tag ist noch nicht erstellt. Sie erscheint nach der nächsten Aktualisierung der Seite.",
  "Rank": "Rang",
@@ -366,5 +361,10 @@ export default {
  "(MIT License).": "(MIT-Lizenz).",
  "(MIT License). Fasting follows the 1917 Code; marks say what current Church law still requires.": "(MIT-Lizenz). Das Fasten folgt dem CIC von 1917; die Zeichen sagen, was das geltende Kirchenrecht noch vorschreibt.",
  "No texts for {date} in this calendar, version and language yet.": "Für {date} gibt es in diesem Kalender, dieser Fassung und Sprache noch keine Texte.",
- "No texts for {date} in this calendar, version and language on this site.": "Für {date} gibt es in diesem Kalender, dieser Fassung und Sprache keine Texte auf dieser Seite."
+ "No texts for {date} in this calendar, version and language on this site.": "Für {date} gibt es in diesem Kalender, dieser Fassung und Sprache keine Texte auf dieser Seite.",
+ "Devotions": "Andachten",
+ "Rosary": "Rosenkranz",
+ "Divine Mercy": "Göttliche Barmherzigkeit",
+ "Stations of the Cross": "Kreuzweg",
+ "Under Construction": "Im Aufbau"
 };

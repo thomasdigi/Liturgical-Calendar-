@@ -3,10 +3,9 @@ Divine Office and Mass	Stundengebet und Messe	Office divin et messe	Oficio divin
 Office & Mass	Offizium & Messe	Office & Messe	Oficio y Misa	Officium et Missa
 Menu	Menü	Menu	Menú	Index
 Close menu	Menü schließen	Fermer le menu	Cerrar el menú	Indicem claudere
-More is coming here soon.	Hier kommt bald mehr.	D’autres choses viendront bientôt ici.	Pronto habrá más aquí.	Mox plura hic addentur.
 Search texts, feasts and saints	Texte, Feste und Heilige suchen	Chercher des textes, des fêtes et des saints	Buscar textos, fiestas y santos	Textus, festa et sanctos quaerere
-Settings	Einstellungen	Réglages	Ajustes	Optiones
-Close settings	Einstellungen schließen	Fermer les réglages	Cerrar los ajustes	Optiones claudere
+Settings	Einstellungen	Réglages	Configuración	Optiones
+Close settings	Einstellungen schließen	Fermer les réglages	Cerrar la configuración	Optiones claudere
 Offline	Offline	Hors ligne	Sin conexión	Sine nexu
 Date	Datum	Date	Fecha	Dies
 Previous day	Vorheriger Tag	Jour précédent	Día anterior	Dies prior
@@ -28,7 +27,6 @@ Could not load settings	Einstellungen konnten nicht geladen werden	Impossible de
 General Roman	Allgemeiner römischer Kalender	Romain général	Romano general	Generale Romanum
 USA	USA	États-Unis	EE. UU.	Civitates Foederatae
 Brazil	Brasilien	Brésil	Brasil	Brasilia
-Diocese of Rome	Bistum Rom	Diocèse de Rome	Diócesis de Roma	Dioecesis Urbis
 1962 (Rubrics 1960)	1962 (Rubriken 1960)	1962 (rubriques de 1960)	1962 (rúbricas de 1960)	1962 (Rubricae 1960)
 Divino Afflatu 1954	Divino Afflatu 1954	Divino Afflatu 1954	Divino Afflatu 1954	Divino Afflatu 1954
 Tridentine 1906	Tridentinisch 1906	Tridentin 1906	Tridentino 1906	Tridentinum 1906
@@ -181,9 +179,6 @@ Searching {month}…	Durchsuche {month}…	Recherche dans {month}…	Buscando en
 First {n} results in {when}.	Die ersten {n} Treffer in {when}.	Les {n} premiers résultats en {when}.	Los primeros {n} resultados en {when}.	Prima {n} inventa in {when}.
 {from} to {to}	{from} bis {to}	{from} à {to}	{from} a {to}	{from} ad {to}
 Nothing found. Try fewer words, or a longer period.	Nichts gefunden. Weniger Wörter oder einen längeren Zeitraum versuchen.	Rien trouvé. Essayez moins de mots ou une période plus longue.	No se encontró nada. Pruebe con menos palabras o un periodo más largo.	Nihil inventum. Tenta pauciora verba vel tempus longius.
-Sacristan mode	Sakristan-Modus	Mode sacristain	Modo sacristán	Modus sacristae
-Show the Sacristan page	Die Sakristan-Seite zeigen	Afficher la page du sacristain	Mostrar la página del sacristán	Paginam sacristae ostendere
-Adds a “Sacristan” tab beside Day, Month and Search: the day’s rank, colour, Gloria, Credo, Preface, votive Masses, Matins, Lauds and Vespers on one page.	Fügt neben Tag und Monat eine Registerkarte „Sakristan“ hinzu: Rang, Farbe, Gloria, Credo, Präfation, Votivmessen, Matutin, Laudes und Vesper des Tages auf einer Seite.	Ajoute un onglet « Sacristain » à côté de Jour et Mois : le rang, la couleur, le Gloria, le Credo, la préface, les messes votives, Matines, Laudes et Vêpres du jour sur une seule page.	Añade una pestaña «Sacristán» junto a Día y Mes: el rango, el color, el Gloria, el Credo, el prefacio, las misas votivas, maitines, laudes y vísperas del día en una sola página.	Addit paginam ‘Sacrista’ iuxta Diem et Mensem: gradum, colorem, Gloria, Credo, Praefationem, Missas votivas, Matutinum, Laudes et Vesperas diei in una pagina.
 No texts for this day on this site.	Für diesen Tag gibt es auf dieser Seite keine Texte.	Pas de textes pour ce jour sur ce site.	No hay textos para este día en este sitio.	Textus huius diei in hoc situ non sunt.
 This day’s summary isn’t built yet. It appears after the site’s next rebuild.	Die Übersicht für diesen Tag ist noch nicht erstellt. Sie erscheint nach der nächsten Aktualisierung der Seite.	Le résumé de ce jour n’est pas encore prêt. Il apparaîtra à la prochaine mise à jour du site.	El resumen de este día aún no está listo. Aparecerá en la próxima actualización del sitio.	Summarium huius diei nondum paratum est. Post proximam situs renovationem apparebit.
 Rank	Rang	Rang	Rango	Gradus
@@ -266,7 +261,7 @@ Light or dark	Hell oder dunkel	Clair ou sombre	Claro u oscuro	Clarum vel obscuru
 Light	Hell	Clair	Claro	Clarum
 Dark	Dunkel	Sombre	Oscuro	Obscurum
 Automatic	Automatisch	Automatique	Automático	Sponte
-Automatic follows your phone or computer.	„Automatisch“ folgt der Einstellung des Telefons oder Computers.	« Automatique » suit votre téléphone ou votre ordinateur.	«Automático» sigue la configuración del teléfono o del ordenador.	‘Sponte’ telephonum vel computatrum tuum sequitur.
+Automatic follows your phone or computer.	„Automatisch“ folgt der Einstellung des Telefons oder Computers.	« Automatique » suit votre téléphone ou votre ordinateur.	«Automático» sigue la configuración del teléfono o de la computadora.	‘Sponte’ telephonum vel computatrum tuum sequitur.
 Typography	Schrift	Typographie	Tipografía	Typographia
 Typeface, accents and ligatures	Schriftart, Akzente und Ligaturen	Police, accents et ligatures	Tipo de letra, acentos y ligaduras	Typus litterarum, accentus et ligaturae
 Typeface	Schriftart	Police	Tipo de letra	Typus litterarum
@@ -310,7 +305,7 @@ Saved 1 day from {from}. It opens without a connection.	1 Tag ab {from} gespeich
 Saved {n} days from {from}. They open without a connection.	{n} Tage ab {from} gespeichert. Sie lassen sich ohne Verbindung öffnen.	{n} jours enregistrés à partir du {from}. Ils s’ouvrent sans connexion.	{n} días guardados desde el {from}. Se abren sin conexión.	{n} dies servati a {from}. Sine nexu aperiuntur.
 Couldn't save: {error}	Speichern nicht möglich: {error}	Enregistrement impossible : {error}	No se pudo guardar: {error}	Servari non potuit: {error}
 Removed the saved texts. Pages you open are saved again as you read.	Gespeicherte Texte entfernt. Geöffnete Seiten werden beim Lesen wieder gespeichert.	Textes enregistrés supprimés. Les pages ouvertes sont de nouveau enregistrées pendant la lecture.	Textos guardados eliminados. Las páginas que abra se volverán a guardar mientras las lee.	Textus servati deleti sunt. Paginae quas aperis legendo iterum servantur.
-You are offline, and this day hasn’t been saved on this device. Use “Save” in Settings when connected.	Keine Verbindung, und dieser Tag ist auf diesem Gerät nicht gespeichert. Bei bestehender Verbindung in den Einstellungen „Speichern“ verwenden.	Vous êtes hors ligne et ce jour n’est pas enregistré sur cet appareil. Utilisez « Enregistrer » dans les réglages une fois connecté.	Está sin conexión y este día no está guardado en este dispositivo. Use «Guardar» en Ajustes cuando tenga conexión.	Sine nexu es, et hic dies in hoc instrumento servatus non est. Cum nexus aderit, ‘Servare’ in Optionibus adhibe.
+You are offline, and this day hasn’t been saved on this device. Use “Save” in Settings when connected.	Keine Verbindung, und dieser Tag ist auf diesem Gerät nicht gespeichert. Bei bestehender Verbindung in den Einstellungen „Speichern“ verwenden.	Vous êtes hors ligne et ce jour n’est pas enregistré sur cet appareil. Utilisez « Enregistrer » dans les réglages une fois connecté.	Está sin conexión y este día no está guardado en este dispositivo. Use «Guardar» en Configuración cuando tenga conexión.	Sine nexu es, et hic dies in hoc instrumento servatus non est. Cum nexus aderit, ‘Servare’ in Optionibus adhibe.
 Add to your calendar	Zum Kalender hinzufügen	Ajouter à votre agenda	Añadir a su calendario	Calendario tuo addere
 Every day: feast, class, colour, fasting	Jeder Tag: Fest, Klasse, Farbe, Fasten	Chaque jour : fête, classe, couleur, jeûne	Cada día: fiesta, clase, color, ayuno	Omnes dies: festum, classis, color, ieiunium
 Fast days only	Nur Fasttage	Jours de jeûne seulement	Solo días de ayuno	Dies ieiunii tantum
@@ -323,7 +318,7 @@ Not available for this calendar and version on this site.	Für diesen Kalender u
 iPhone:	iPhone:	iPhone :	iPhone:	iPhone:
 tap Subscribe, then confirm in the Calendar app.	„Abonnieren“ tippen und in der Kalender-App bestätigen.	touchez « S’abonner », puis confirmez dans l’app Calendrier.	toque «Suscribirse» y confirme en la app Calendario.	tange ‘Subscribere’, deinde in applicatione Calendarii confirma.
 Android (Google Calendar):	Android (Google Kalender):	Android (Google Agenda) :	Android (Google Calendar):	Android (Google Calendar):
-tap Copy link; then, on a computer, open calendar.google.com → Other calendars + → From URL, and paste it. A subscribed calendar updates itself as new months are added; a downloaded one doesn't.	„Link kopieren“ tippen; dann am Computer calendar.google.com öffnen → Weitere Kalender + → Per URL, und den Link einfügen. Ein abonnierter Kalender aktualisiert sich, wenn neue Monate hinzukommen; ein heruntergeladener nicht.	touchez « Copier le lien » ; puis, sur un ordinateur, ouvrez calendar.google.com → Autres agendas + → À partir de l’URL, et collez-le. Un agenda auquel on est abonné se met à jour quand de nouveaux mois sont ajoutés ; un agenda téléchargé, non.	toque «Copiar enlace»; luego, en un ordenador, abra calendar.google.com → Otros calendarios + → Desde URL, y péguelo. Un calendario suscrito se actualiza cuando se añaden meses nuevos; uno descargado, no.	tange ‘Nexum exscribere’; deinde in computatro aperi calendar.google.com → Other calendars + → From URL, et nexum insere. Calendarium subscriptum se renovat cum novi menses adduntur; depromptum non.
+tap Copy link; then, on a computer, open calendar.google.com → Other calendars + → From URL, and paste it. A subscribed calendar updates itself as new months are added; a downloaded one doesn't.	„Link kopieren“ tippen; dann am Computer calendar.google.com öffnen → Weitere Kalender + → Per URL, und den Link einfügen. Ein abonnierter Kalender aktualisiert sich, wenn neue Monate hinzukommen; ein heruntergeladener nicht.	touchez « Copier le lien » ; puis, sur un ordinateur, ouvrez calendar.google.com → Autres agendas + → À partir de l’URL, et collez-le. Un agenda auquel on est abonné se met à jour quand de nouveaux mois sont ajoutés ; un agenda téléchargé, non.	toque «Copiar enlace»; luego, en una computadora, abra calendar.google.com → Otros calendarios + → Desde URL, y péguelo. Un calendario suscrito se actualiza cuando se añaden meses nuevos; uno descargado, no.	tange ‘Nexum exscribere’; deinde in computatro aperi calendar.google.com → Other calendars + → From URL, et nexum insere. Calendarium subscriptum se renovat cum novi menses adduntur; depromptum non.
 Print	Drucken	Imprimer	Imprimir	Imprimere
 Prints the Mass or Hour on screen, with the day's heading, in the languages and layout you've chosen, without the buttons.	Druckt die angezeigte Messe oder Hore mit der Überschrift des Tages, in den gewählten Sprachen und der gewählten Anordnung, ohne die Schaltflächen.	Imprime la messe ou l’heure affichée, avec l’en-tête du jour, dans les langues et la disposition choisies, sans les boutons.	Imprime la Misa o la hora en pantalla, con el encabezado del día, en los idiomas y la disposición elegidos, sin los botones.	Imprimit Missam vel Horam quae ostenditur, cum titulo diei, linguis et dispositione electis, sine bullis.
 Print this page	Diese Seite drucken	Imprimer cette page	Imprimir esta página	Hanc paginam imprimere
@@ -366,3 +361,8 @@ Texts generated by	Texte erzeugt von	Textes produits par	Textos generados por	Te
 (MIT License). Fasting follows the 1917 Code; marks say what current Church law still requires.	(MIT-Lizenz). Das Fasten folgt dem CIC von 1917; die Zeichen sagen, was das geltende Kirchenrecht noch vorschreibt.	(licence MIT). Le jeûne suit le Code de 1917 ; les marques indiquent ce que le droit actuel exige encore.	(licencia MIT). El ayuno sigue el Código de 1917; las marcas indican lo que el derecho vigente aún exige.	(licentia MIT) facti. Ieiunium Codicem 1917 sequitur; signa ostendunt quid ius vigens adhuc praescribat.
 No texts for {date} in this calendar, version and language yet.	Für {date} gibt es in diesem Kalender, dieser Fassung und Sprache noch keine Texte.	Pas encore de textes pour le {date} dans ce calendrier, cette version et cette langue.	Aún no hay textos para el {date} en este calendario, versión e idioma.	Textus pro {date} in hoc calendario, editione et lingua nondum sunt.
 No texts for {date} in this calendar, version and language on this site.	Für {date} gibt es in diesem Kalender, dieser Fassung und Sprache keine Texte auf dieser Seite.	Pas de textes sur ce site pour le {date} dans ce calendrier, cette version et cette langue.	No hay textos en este sitio para el {date} en este calendario, versión e idioma.	Textus pro {date} in hoc calendario, editione et lingua in hoc situ non sunt.
+Devotions	Andachten	Dévotions	Devociones	Devotiones
+Rosary	Rosenkranz	Rosaire	Rosario	Rosarium
+Divine Mercy	Göttliche Barmherzigkeit	Miséricorde divine	Divina Misericordia	Divina Misericordia
+Stations of the Cross	Kreuzweg	Chemin de croix	Vía Crucis	Via Crucis
+Under Construction	Im Aufbau	En construction	En construcción	In aedificatione

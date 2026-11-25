@@ -4,7 +4,6 @@ export default {
  "Office & Mass": "Officium et Missa",
  "Menu": "Index",
  "Close menu": "Indicem claudere",
- "More is coming here soon.": "Mox plura hic addentur.",
  "Search texts, feasts and saints": "Textus, festa et sanctos quaerere",
  "Settings": "Optiones",
  "Close settings": "Optiones claudere",
@@ -29,7 +28,6 @@ export default {
  "General Roman": "Generale Romanum",
  "USA": "Civitates Foederatae",
  "Brazil": "Brasilia",
- "Diocese of Rome": "Dioecesis Urbis",
  "1962 (Rubrics 1960)": "1962 (Rubricae 1960)",
  "Divino Afflatu 1954": "Divino Afflatu 1954",
  "Tridentine 1906": "Tridentinum 1906",
@@ -182,9 +180,6 @@ export default {
  "First {n} results in {when}.": "Prima {n} inventa in {when}.",
  "{from} to {to}": "{from} ad {to}",
  "Nothing found. Try fewer words, or a longer period.": "Nihil inventum. Tenta pauciora verba vel tempus longius.",
- "Sacristan mode": "Modus sacristae",
- "Show the Sacristan page": "Paginam sacristae ostendere",
- "Adds a “Sacristan” tab beside Day, Month and Search: the day’s rank, colour, Gloria, Credo, Preface, votive Masses, Matins, Lauds and Vespers on one page.": "Addit paginam ‘Sacrista’ iuxta Diem et Mensem: gradum, colorem, Gloria, Credo, Praefationem, Missas votivas, Matutinum, Laudes et Vesperas diei in una pagina.",
  "No texts for this day on this site.": "Textus huius diei in hoc situ non sunt.",
  "This day’s summary isn’t built yet. It appears after the site’s next rebuild.": "Summarium huius diei nondum paratum est. Post proximam situs renovationem apparebit.",
  "Rank": "Gradus",
@@ -366,5 +361,10 @@ export default {
  "(MIT License).": "(licentia MIT) facti.",
  "(MIT License). Fasting follows the 1917 Code; marks say what current Church law still requires.": "(licentia MIT) facti. Ieiunium Codicem 1917 sequitur; signa ostendunt quid ius vigens adhuc praescribat.",
  "No texts for {date} in this calendar, version and language yet.": "Textus pro {date} in hoc calendario, editione et lingua nondum sunt.",
- "No texts for {date} in this calendar, version and language on this site.": "Textus pro {date} in hoc calendario, editione et lingua in hoc situ non sunt."
+ "No texts for {date} in this calendar, version and language on this site.": "Textus pro {date} in hoc calendario, editione et lingua in hoc situ non sunt.",
+ "Devotions": "Devotiones",
+ "Rosary": "Rosarium",
+ "Divine Mercy": "Divina Misericordia",
+ "Stations of the Cross": "Via Crucis",
+ "Under Construction": "In aedificatione"
 };

@@ -7,8 +7,7 @@ For any date:
 
 Versions: **1962 (Rubrics 1960)**, **Divino Afflatu 1954** and **Tridentine 1906**.
 Calendars: **General Roman**, **USA** (DO's "Rubrics 1960 - 2020 USA"; 1962 only) and
-**Brazil**. (The **Diocese of Rome** is set aside but kept working: in `src/config.ts`,
-delete its `hidden: true` to bring it back.)
+**Brazil**.
 Texts are in Latin beside the Bea psalter or any of DO's translations, interlinear or
 side by side, or one language alone. Light and dark modes.
 
@@ -38,13 +37,13 @@ feed of every day's feast or of fast days only (`data/<calendar>/<version>/calen
 chant edition (`la-gabc`, built like a language), drawn by exsurge (MIT License, shipped with
 DO) in place of the Latin; the translation stays beside it. The Mass has no chant edition in DO.
 
-**Sacristan mode** (Settings): a **Sacristan** page with the whole day on one screen. Mass: rank,
+**Sacristan** (menu): a page with the whole day on one screen. Mass: rank,
 colour, Gloria, Credo, Preface, what follows the Epistle, commemorations, whether votive Masses
 are allowed. Office: rank, psalms, Matins (nocturns, lessons, Te Deum), Lauds scheme, First or
 Second Vespers. Read from DO's own texts for the day at build time (`src/ordo.ts`). The votive
 Mass line gives the general rule for the day's class.
 
-**Language of the app** (Settings, with flags): English, Deutsch, Français, Español or Latina for the
+**Language of the app** (Settings, with flags): English (US flag), Deutsch, Français (Quebec), Español (Mexico) or Latina (Vatican) for the
 buttons, menus, notes and dates (`web/js/ui.js`). The texts of the Mass and Office keep their own
 language. The translations are one table, `translations/app.tsv` (a column per language; any
 spreadsheet opens it): edit it, then `npm run translations`. `npx tsx scripts/ui-strings.ts --list`
@@ -52,7 +51,9 @@ shows any text without a translation (and `test/ui.test.ts` fails). The feast se
 names in the app's language (and English when it's in Latin), and Latin always. The translations
 were written for this app and would benefit from review by native speakers.
 
-**Top bar**: ☰ opens the menu (left panel, still empty), 🔍 the search, ⚙ the Settings (right panel).
+**Top bar**: ☰ opens the menu (left panel), 🔍 the search, ⚙ the Settings (right panel). The menu
+has the **Sacristan** page and **Devotions** (Rosary, Divine Mercy, Stations of the Cross, Via Petri,
+Angelus; each page is still under construction).
 **Search** finds feasts and saints as you type (English or Latin names: "St. Lucy", "Christmas";
 `web/js/feasts.js`) and, with the Search button, words in the texts.
 

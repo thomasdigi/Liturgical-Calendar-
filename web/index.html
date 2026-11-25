@@ -50,7 +50,6 @@
       <div class="seg" id="page" role="group" aria-label="Day or month">
         <button type="button" data-page="day" aria-pressed="true">Day</button>
         <button type="button" data-page="month" aria-pressed="false">Month</button>
-        <button type="button" data-page="sacristan" aria-pressed="false" id="sacristan-tab" hidden>Sacristan</button>
       </div>
     </div>
     <div class="settings">
@@ -67,6 +66,12 @@
       <h1 class="title" id="sacristan-title"></h1>
       <p class="sacristan-combo" id="sacristan-combo"></p>
       <div id="sacristan-body"></div>
+    </section>
+
+    <!-- Devotions (from the menu): each its own page; for now, under construction -->
+    <section class="devotion" id="devotion" hidden aria-labelledby="devotion-title">
+      <h1 id="devotion-title"></h1>
+      <p class="msg">Under Construction</p>
     </section>
 
     <!-- Month view -->
@@ -218,7 +223,17 @@
       <button type="button" class="drawer-close" id="menu-close" aria-label="Close menu">×</button>
     </div>
     <div class="drawer-body">
-      <p class="hint menu-empty">More is coming here soon.</p>
+      <nav class="menu-list" aria-label="Menu">
+        <button type="button" class="menu-item" data-menu-page="sacristan">Sacristan</button>
+        <details class="menu-group" id="devotions">
+          <summary>Devotions</summary>
+          <button type="button" class="menu-item" data-devotion="rosary">Rosary</button>
+          <button type="button" class="menu-item" data-devotion="mercy">Divine Mercy</button>
+          <button type="button" class="menu-item" data-devotion="stations">Stations of the Cross</button>
+          <button type="button" class="menu-item" data-devotion="via-petri" lang="la">Via Petri</button>
+          <button type="button" class="menu-item" data-devotion="angelus" lang="la">Angelus</button>
+        </details>
+      </nav>
     </div>
   </dialog>
 
@@ -270,12 +285,6 @@
           <label class="check"><input type="checkbox" id="latin-ligatures"> No ligatures (æ, œ → ae, oe)</label>
           <p class="hint">These change only the Latin, never the other languages.</p>
         </details>
-      </section>
-
-      <section aria-labelledby="set-sacristan">
-        <h3 id="set-sacristan">Sacristan mode</h3>
-        <label class="check"><input type="checkbox" id="sacristan-mode"> Show the Sacristan page</label>
-        <p class="hint">Adds a “Sacristan” tab beside Day, Month and Search: the day’s rank, colour, Gloria, Credo, Preface, votive Masses, Matins, Lauds and Vespers on one page.</p>
       </section>
 
       <section aria-labelledby="set-offline">

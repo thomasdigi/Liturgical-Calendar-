@@ -236,7 +236,6 @@ span.ohead { color: var(--muted); padding: 0 4px 0 0; }
 .drawer-left { margin: 0 auto 0 0; border-left: 0; border-right: 1px solid var(--rule); box-shadow: 10px 0 40px rgb(0 0 0 / .2); }
 .drawer-left[open] { animation-name: drawer-in-left; }
 @keyframes drawer-in-left { from { transform: translateX(-30px); opacity: .4; } to { transform: none; opacity: 1; } }
-.menu-empty { margin-top: 16px; }
 @keyframes drawer-in { from { transform: translateX(30px); opacity: .4; } to { transform: none; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .drawer[open] { animation: none; } }
 .drawer::backdrop { background: rgb(0 0 0 / .35); }
@@ -637,8 +636,9 @@ body.comparing #layout { display: none; }
 .epub-opts select { font: inherit; padding: 6px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
 
 /* Settings → Language of the app (flags) */
-.flag { display: inline-block; width: 30px; height: 20px; flex: none; border-radius: 3px; overflow: hidden; box-shadow: 0 0 0 1px var(--rule); }
-.flag svg { width: 100%; height: 100%; display: block; }
+.flag { display: inline-flex; justify-content: center; align-items: center; width: 40px; height: 22px; flex: none; }
+/* Each flag keeps its own shape (the Vatican's is square, Mexico's 7:4). */
+.flag svg { height: 22px; width: auto; display: block; border-radius: 2px; box-shadow: 0 0 0 1px var(--rule); }
 .flagmenu { position: relative; }
 .flagmenu > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; border: 1px solid var(--rule); border-radius: 9px; background: var(--tab-bg); font: 15px var(--sans); }
 .flagmenu > summary::-webkit-details-marker { display: none; }
@@ -649,3 +649,19 @@ body.comparing #layout { display: none; }
 .drawer .flagmenu-list button:hover { background: var(--tab-bg); }
 .drawer .flagmenu-list button[aria-checked="true"] { background: var(--tab-bg); font-weight: 600; }
 .drawer .flagmenu-list button[aria-checked="true"]::after { content: '✓'; margin-left: auto; color: var(--accent-ink); }
+
+/* The menu (left panel) */
+.menu-list { display: grid; gap: 4px; padding-top: 12px; }
+.drawer .menu-item { display: block; width: 100%; text-align: left; border: 0; border-radius: 8px; background: none; padding: 10px 12px; font: 16px var(--sans); }
+.drawer .menu-item:hover { background: var(--tab-bg); }
+.menu-group > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 8px; font: 16px var(--sans); }
+.menu-group > summary::-webkit-details-marker { display: none; }
+.menu-group > summary::after { content: '›'; font-size: 20px; line-height: 1; color: var(--muted); transition: transform .15s; }
+.menu-group[open] > summary::after { transform: rotate(90deg); }
+.menu-group > summary:hover { background: var(--tab-bg); }
+.menu-group .menu-item { padding-left: 28px; }
+
+/* A devotion's page */
+.devotion { max-width: 720px; margin: 0 auto; text-align: center; padding: 40px 0; }
+.devotion[hidden] { display: none; }
+.devotion h1 { margin: 0 0 16px; font-size: clamp(24px, 4vw, 34px); }

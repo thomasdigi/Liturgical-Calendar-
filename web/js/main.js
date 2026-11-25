@@ -76,11 +76,6 @@ export async function init() {
     if ($('chant').disabled) return;
     state.chant = !state.chant; store.set('chant', state.chant ? 'on' : 'off'); syncControls(); render();
   };
-  $('sacristan-mode').onchange = (e) => {
-    state.sacristan = e.target.checked; store.set('sacristan', state.sacristan ? 'on' : 'off');
-    if (!state.sacristan && state.page === 'sacristan') { state.page = 'day'; load(); }
-    syncControls();
-  };
   // Buttons on the Sacristan page open the Mass or an Hour of the day.
   $('sacristan-body').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-open]');
@@ -127,6 +122,12 @@ export async function init() {
     syncControls();
     go(b.dataset.date);
     window.scrollTo(0, 0);
+  });
+  // The menu (left panel) asks for a page: the Sacristan page or a devotion.
+  window.addEventListener('open-page', (e) => {
+    state.page = e.detail.page;
+    if (e.detail.devotion) state.devotion = e.detail.devotion;
+    syncControls(); load(); window.scrollTo(0, 0);
   });
   // Top bar: search opens (or closes) the search page; the menu opens the left panel.
   $('search-btn').onclick = () => {
@@ -199,6 +200,16 @@ export async function init() {
 
 export let loadSeq = 0;
 
+/** The devotions in the menu. Latin names stay Latin in every language of the app. */
+export const DEVOTIONS = { rosary: 'Rosary', mercy: 'Divine Mercy', stations: 'Stations of the Cross', 'via-petri': 'Via Petri', angelus: 'Angelus' };
+const LATIN_NAMES = new Set(['via-petri', 'angelus']);
+function renderDevotion() {
+  if (!(state.devotion in DEVOTIONS)) state.devotion = 'rosary';
+  const name = DEVOTIONS[state.devotion];
+  $('devotion-title').textContent = LATIN_NAMES.has(state.devotion) ? name : t(name);
+  $('devotion-title').lang = LATIN_NAMES.has(state.devotion) ? 'la' : '';
+}
+
 export async function load() {
   const seq = ++loadSeq;
   updateUrl();
@@ -211,6 +222,7 @@ export async function load() {
   }
   if (state.page === 'search') { syncSearchOptions(); return; }
   if (state.page === 'sacristan') { renderWeek(); renderSacristan(); return; }
+  if (state.page === 'devotion') { renderDevotion(); return; }
   renderWeek();
   const shown = shownLangId();
   try {
@@ -267,7 +279,7 @@ function initSwipe() {
       ? { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now() } : null;
   }, { passive: true });
   document.addEventListener('touchend', (e) => {
-    if (!start || state.page === 'search') return;
+    if (!start || state.page === 'search' || state.page === 'devotion') return;
     const dx = e.changedTouches[0].clientX - start.x;
     const dy = e.changedTouches[0].clientY - start.y;
     const quick = Date.now() - start.t < 700;

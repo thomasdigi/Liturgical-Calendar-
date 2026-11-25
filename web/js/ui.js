@@ -27,15 +27,43 @@ const FLAGS = {
     const fleur = (x, y) => `<g transform="translate(${x} ${y})" fill="#fff"><path d="M0-3.2C.9-2.2 1-1.1.45-.1L.45 1.2-.45 1.2-.45-.1C-1-1.1-.9-2.2 0-3.2Z"/><path d="M.5 0C1.2-1.4 2.6-1.2 2.6-.2 2.6.6 1.8.9 1.2.6 1.7.2 1.4-.4.9-.1Z"/><path d="M-.5 0C-1.2-1.4-2.6-1.2-2.6-.2-2.6.6-1.8.9-1.2.6-1.7.2-1.4-.4-.9-.1Z"/><rect x="-1.5" y=".9" width="3" height=".5"/><path d="M-.3 1.4h.6L0 2.6Z"/></g>`;
     return `<svg viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#003da5"/><rect x="13" width="4" height="20" fill="#fff"/><rect y="8" width="30" height="4" fill="#fff"/>${fleur(6.5, 4)}${fleur(23.5, 4)}${fleur(6.5, 15.2)}${fleur(23.5, 15.2)}</svg>`;
   })(),
-  es: '<svg viewBox="0 0 6 4" aria-hidden="true"><rect width="6" height="4" fill="#aa151b"/><rect y="1" width="6" height="2" fill="#f1bf00"/></svg>',
-  va: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="10" height="20" fill="#ffe000"/><rect x="10" width="10" height="20" fill="#fff"/><g stroke-width="1.1" stroke-linecap="round" fill="none"><path d="M11.6 6.2 18 14.4" stroke="#c9a227"/><path d="M18 6.2 11.6 14.4" stroke="#a7a9ac"/><circle cx="11.4" cy="5.8" r="1" stroke="#a7a9ac"/><circle cx="18.2" cy="5.8" r="1" stroke="#c9a227"/></g><path d="M12.6 3.4h4.4l-.5 1.6h-3.4z" fill="#c9a227"/></svg>',
+  // Mexico: green, white and red, with the eagle on the cactus, holding the serpent, in an oak and laurel wreath.
+  mx: `<svg viewBox="0 0 28 16" aria-hidden="true"><rect width="9.34" height="16" fill="#006847"/><rect x="9.33" width="9.34" height="16" fill="#fff"/><rect x="18.66" width="9.34" height="16" fill="#ce1126"/>
+    <path d="M10.8 8.2Q10.9 12.5 14 12.8Q17.1 12.5 17.2 8.2" fill="none" stroke="#3a7d32" stroke-width=".7"/>
+    <path d="M13 12.4Q14 13 15 12.4" fill="none" stroke="#3b6fb6" stroke-width=".55"/>
+    <path d="M13.3 10.2h1.6v1.7h-1.6zM12.6 10.6q-.6-.8 0-1.3q.5.4 .6 1.1zM15.6 10.6q.6-.8 0-1.3q-.5.4-.6 1.1z" fill="#4c8c2b"/>
+    <path d="M14.5 6.5L15.3 2.9L15.9 3.9L16.5 3.1L16.8 4.4L17.5 4L17.1 6L16.2 7.6Z" fill="#5c3416"/>
+    <path d="M12.3 4.9Q11.5 4.9 11.2 5.6L11.9 5.9Q12.3 7.3 13.1 8.3L13.6 9.2L13.2 10.2H14.9L14.6 9.3L15.9 9.7L15.3 8.7Q16.3 7.2 15.4 6Q14 4.4 12.3 4.9Z" fill="#7b4a22"/>
+    <circle cx="12.3" cy="5.5" r=".28" fill="#fff"/>
+    <path d="M11.3 5.8Q10.5 6.6 11.3 7.2Q12 7.7 11.3 8.4Q10.9 8.8 11.4 9.1" fill="none" stroke="#3a7d32" stroke-width=".4" stroke-linecap="round"/></svg>`,
+  // The Vatican: yellow and white, with the crossed keys (gold over silver, tied with a red cord) under the papal tiara.
+  va: (() => {
+    const key = (fill, stroke) => `<g fill="${fill}" stroke="${stroke}" stroke-width="1">
+      <rect x="-2" y="-25" width="4" height="40"/><path d="M2-25h10v4h-3.5v3h3.5v4H2z"/><rect x="-3.6" y="13.5" width="7.2" height="3.4" rx=".8"/>
+      <circle cx="0" cy="24.5" r="7" fill="none" stroke="${stroke}" stroke-width="4.6"/><circle cx="0" cy="24.5" r="7" fill="none" stroke="${fill}" stroke-width="2.8"/></g>`;
+    return `<svg viewBox="0 0 120 120" aria-hidden="true"><rect width="60" height="120" fill="#ffe000"/><rect x="60" width="60" height="120" fill="#fff"/>
+      <g transform="translate(90 74)">
+        <g transform="rotate(38)">${key('#cfd2d6', '#7a7f86')}</g>
+        <g transform="rotate(-38) scale(-1 1)">${key('#e0b22e', '#8c6a12')}</g>
+        <path d="M-16.8 24Q-8 40 0 32Q8 40 16.8 24" fill="none" stroke="#c8102e" stroke-width="1.8"/>
+        <path d="M-1.6 32l-1.4 8M1.6 32l1.4 8" stroke="#c8102e" stroke-width="1.6" stroke-linecap="round"/>
+      </g>
+      <g stroke="#8c6a12" stroke-width="1">
+        <path d="M84 47v7M96 47v7" stroke="#c8102e" stroke-width="3"/>
+        <path d="M78.5 47.5V34Q78.5 21 90 19Q101.5 21 101.5 34V47.5Z" fill="#fff"/>
+        <path d="M79.5 42.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M84.1 42.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M88.7 42.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M93.3 42.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M97.9 42.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><rect x="78" y="42.6" width="24" height="5" fill="#e0b22e"/>
+        <path d="M80.6 34.4l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M86.0 34.4l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M91.4 34.4l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M96.8 34.4l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><rect x="78.8" y="34.4" width="22.4" height="3.8" fill="#e0b22e"/>
+        <path d="M83.4 26.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M88.7 26.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><path d="M94.0 26.6l1.3-2.6l1.3 2.6z" fill="#e0b22e" stroke-width=".6"/><rect x="81.8" y="26.6" width="16.4" height="3.3" fill="#e0b22e"/>
+        <circle cx="90" cy="17.5" r="2.6" fill="#e0b22e"/><path d="M90 6v10M86.4 10h7.2" stroke="#e0b22e" stroke-width="2.2"/>
+      </g></svg>`;
+  })(),
 };
 
 export const UI_LANGS = [
   { id: 'en', label: 'English', flag: 'us', locale: 'en-US', flagName: 'United States' },
   { id: 'de', label: 'Deutsch', flag: 'de', locale: 'de-DE', flagName: 'Deutschland' },
   { id: 'fr', label: 'Français', flag: 'qc', locale: 'fr-CA', flagName: 'Québec' },
-  { id: 'es', label: 'Español', flag: 'es', locale: 'es-ES', flagName: 'España' },
+  { id: 'es', label: 'Español', flag: 'mx', locale: 'es-MX', flagName: 'México' },
   { id: 'la', label: 'Latina', flag: 'va', locale: 'la', flagName: 'Civitas Vaticana' },
 ];
 export const flagSvg = (id) => FLAGS[UI_LANGS.find((l) => l.id === id)?.flag ?? 'us'];

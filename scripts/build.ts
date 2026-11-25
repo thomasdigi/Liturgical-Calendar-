@@ -10,7 +10,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { availableParallelism } from 'node:os';
 import { resolve } from 'node:path';
 import {
-  ACTIVE_CALENDARS,
+  CALENDARS,
   doSettings,
   FALLBACK_LANGUAGE,
   getCalendar,
@@ -43,7 +43,7 @@ const pos = args.filter((a, i) => !a.startsWith('--') && !FLAGS.includes(args[i 
 let [from, to] = pos;
 if (!from) {
   console.error(
-    'Usage: npm run build -- <year> | <from YYYY-MM-DD> <to YYYY-MM-DD> [--calendar general,usa,brazil,rome] [--version 1962,1954,1906] [--lang en,fr,...] [--votive dead,parvum,sabbato|none] [--refresh]',
+    'Usage: npm run build -- <year> | <from YYYY-MM-DD> <to YYYY-MM-DD> [--calendar general,usa,brazil] [--version 1962,1954,1906] [--lang en,fr,...] [--votive dead,parvum,sabbato|none] [--refresh]',
   );
   process.exit(1);
 }
@@ -52,7 +52,7 @@ to ??= from;
 
 const list = <T extends { id: string }>(name: string, all: readonly T[], get: (id: string) => T) =>
   (flag(name)?.split(',') ?? all.map((x) => x.id)).map((id) => get(id).id);
-const calendars = list('calendar', ACTIVE_CALENDARS, getCalendar) as CalendarId[]; // hidden ones only on request
+const calendars = list('calendar', CALENDARS, getCalendar) as CalendarId[];
 const versions = list('version', VERSIONS, getVersion) as VersionId[];
 const langs = list('lang', LANGUAGES, getLanguage) as LanguageId[];
 
