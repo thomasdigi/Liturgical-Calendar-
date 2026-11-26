@@ -5,11 +5,10 @@
 # the dates forward. To choose different months, calendars or languages, run it from the Actions
 # tab ("Build and publish site" → Run workflow).
 #
-# Size, per calendar/version per day: about 0.7 MB of shared Latin plus about 0.65 MB per
-# language (each about 0.45 MB without the votive offices), search index included.
-# GitHub Pages sites should stay under 1 GB, so choose the range and languages to fit:
-# the defaults (three months, General 1962, eight languages plus the chant, all votive offices) are about 0.6 GB.
-# Adding the USA calendar doubles that; use fewer languages or months, or --votive none.
+# Size: each psalm and prayer is stored once (scripts/site.ts), about a quarter of the old size:
+# a month of one language is roughly 2.5 MB with its search index. GitHub Pages sites should stay
+# under 1 GB; the defaults (three months, General 1962, eight languages plus the chant, all
+# votive offices) come to about 60 MB (before, about 600 MB).
 name: Build and publish site
 
 on:
@@ -25,7 +24,7 @@ on:
         description: Calendars (general, usa, brazil)
         default: general
       versions:
-        description: Versions (1962, 1954, 1906)
+        description: Versions (1962, 1954, 1906, 1570, op1962 = Dominican, m1963 = Monastic)
         default: '1962'
       languages:
         description: Languages (en, la-bea, cs, da, de, es, fr, it, hu, hu-kaldi, nl, pl, pl-newer, pt, vi, uk, he; la-gabc is the chant notation)
@@ -79,6 +78,20 @@ jobs:
 
       - run: npm ci
 
+      # Days built by earlier runs are kept (GitHub's cache), so only new days are built: a few
+      # minutes instead of 40. The key changes whenever anything that shapes the texts changes
+      # (our code, Divinum Officium's version, the votive offices), and then everything is rebuilt.
+      - name: Fingerprint of what shapes the texts
+        id: fingerprint
+        run: echo "key=days-${{ hashFiles('src/**', 'package-lock.json') }}-$(git rev-parse HEAD:vendor/divinum-officium)-${VOTIVE_OFFICES//,/_}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the days built before
+        uses: actions/cache/restore@v4
+        with:
+          path: data
+          key: ${{ steps.fingerprint.outputs.key }}-${{ github.run_id }}
+          restore-keys: ${{ steps.fingerprint.outputs.key }}-
+
       - name: Test
         run: npm test
 
@@ -87,7 +100,14 @@ jobs:
           if [ -n "$START" ]; then FROM="$START-01"; else FROM=$(date -u +%Y-%m-01); fi
           TO=$(date -u -d "$FROM +${MONTHS} month -1 day" +%Y-%m-%d)
           echo "Building $FROM to $TO: calendars=$CALENDARS versions=$VERSIONS languages=$LANGUAGES"
-          npm run build -- "$FROM" "$TO" --calendar "$CALENDARS" --version "$VERSIONS" --lang "$LANGUAGES" --votive "$VOTIVE_OFFICES"
+          # --prune: drop days and languages this build didn't ask for (keeps the kept copy small).
+          npm run build -- "$FROM" "$TO" --calendar "$CALENDARS" --version "$VERSIONS" --lang "$LANGUAGES" --votive "$VOTIVE_OFFICES" --prune
+
+      - name: Keep the days for next time
+        uses: actions/cache/save@v4
+        with:
+          path: data
+          key: ${{ steps.fingerprint.outputs.key }}-${{ github.run_id }}
 
       - name: Assemble site
         run: npm run site

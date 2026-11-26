@@ -34,10 +34,11 @@ export async function renderPart(
   const lang2 = getLanguage(lang).do;
   const date = toDoDate(isoDate);
   const { dioecesis } = v;
+  if ((part === 'mass' || part === 'massFull') && !v.mass) throw Object.assign(new Error(`${version} has no Mass in Divinum Officium`), { code: 'ENOENT' });
 
   const [dir, script, params] =
     part === 'mass' || part === 'massFull'
-      ? ['missa', 'missa.pl', { date, version: v.mass, lang2, dioecesis, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '', missanumber: String(missanumber) }]
+      ? ['missa', 'missa.pl', { date, version: v.mass ?? '', lang2, dioecesis, command: 'praySanctaMissa', Propers: part === 'mass' ? '1' : '', missanumber: String(missanumber) }]
       : ['horas', 'officium.pl', { date1: date, version: v.office, lang2, dioecesis, command: getHour(part).command, ...(votive ? { votive: getVotive(votive).do } : {}) }];
 
   const cwd = resolve(CGI, dir);

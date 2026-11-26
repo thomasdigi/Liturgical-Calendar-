@@ -105,6 +105,9 @@ async function saveDays() {
     // The chosen language, and the alternative used where it has gaps.
     const langs = [...new Set([shownLangId(), altLangId()])];
     const files = new Set(['data/config.json', 'data/available.json']);
+    // The shared texts (each psalm and prayer stored once): one pack per language and the Latin.
+    const packs = avail?.packs?.[`${state.calendar}/${state.version}`] ?? {};
+    for (const l of [...langs, 'latin']) if (packs[l]) files.add(`data/${state.calendar}/${state.version}/${l}/${packs[l]}`);
     const months = new Set(dates.flatMap((d) => [monthOf(shift(d, -6)), monthOf(d), monthOf(shift(d, 6))]));
     for (const m of months) {
       files.add(`data/${state.calendar}/${state.version}/summary/${m}.json`);

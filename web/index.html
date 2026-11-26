@@ -73,6 +73,19 @@
     <!-- Devotions (from the menu): each its own page; for now, under construction -->
     <section class="devotion" id="devotion" hidden aria-labelledby="devotion-title">
       <h1 id="devotion-title"></h1>
+      <!-- The Angelus: a daily reminder through the phone's own calendar (web/js/angelus.js) -->
+      <div class="angelus-reminder" id="angelus-reminder" hidden>
+        <h2>Angelus reminder</h2>
+        <p>Your phone's calendar can remind you to pray the Angelus every day, even when this app is closed.</p>
+        <fieldset class="angelus-times">
+          <legend>When</legend>
+          <label class="check"><input type="checkbox" value="06:00" checked> 6:00 (morning)</label>
+          <label class="check"><input type="checkbox" value="12:00" checked> 12:00 (noon)</label>
+          <label class="check"><input type="checkbox" value="18:00" checked> 18:00 (evening)</label>
+        </fieldset>
+        <p><button type="button" id="angelus-add" class="primary">Add to my calendar</button></p>
+        <p class="hint">Your phone opens the reminders in its calendar app: confirm there to add them. In Eastertide, the Regina Caeli is said instead.</p>
+      </div>
       <p class="msg">Under Construction</p>
     </section>
 
@@ -338,10 +351,17 @@
           A subscribed calendar updates itself as new months are added; a downloaded one doesn't.</p>
       </section>
 
-      <section aria-labelledby="set-print">
+      <!-- Print: only on the day page (the Mass or Hour) and the month page (the month's Ordo). -->
+      <section aria-labelledby="set-print" id="print-section">
         <h3 id="set-print">Print</h3>
-        <p class="hint">Prints the Mass or Hour on screen, with the day's heading, in the languages and layout you've chosen, without the buttons.</p>
-        <p><button type="button" id="print-btn" class="primary">Print this page</button></p>
+        <div id="print-day">
+          <p class="hint">Prints the Mass or Hour on screen, with the day's heading, in the languages and layout you've chosen, without the buttons.</p>
+          <p><button type="button" class="primary print-go">Print this page</button></p>
+        </div>
+        <div id="print-month" hidden>
+          <p class="hint">Prints the whole month as an Ordo: for each day the feast, rank and colour, the Mass (Gloria, Credo, Preface), the Office (Matins, Vespers) and fasting.</p>
+          <p><button type="button" class="primary print-go">Print this month's Ordo</button></p>
+        </div>
       </section>
 
       <section aria-labelledby="set-epub">

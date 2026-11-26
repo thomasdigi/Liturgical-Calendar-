@@ -16,6 +16,7 @@ import { initTheme } from './theme.js';
 import { initTypography } from './typography.js';
 import { fmtDate, initUi, t } from './ui.js';
 import { initReport } from './report.js';
+import { initAngelus } from './angelus.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
 
 export async function init() {
@@ -135,6 +136,7 @@ export async function init() {
     state.massN = Number(b.dataset.n); syncMasses(); updateUrl(); render();
   });
   document.querySelectorAll('#view button').forEach((b) => (b.onclick = () => {
+    if (b.disabled) return;
     state.view = b.dataset.view; store.set('view', state.view);
     if (state.view === 'mass') state.compare = false; // Compare is for the Office only
     syncControls(); load();
@@ -201,6 +203,7 @@ function renderDevotion() {
   const name = DEVOTIONS[state.devotion];
   $('devotion-title').textContent = LATIN_NAMES.has(state.devotion) ? name : t(name);
   $('devotion-title').lang = LATIN_NAMES.has(state.devotion) ? 'la' : '';
+  $('angelus-reminder').hidden = state.devotion !== 'angelus';
 }
 
 export async function load() {
@@ -336,6 +339,7 @@ initUi(() => { syncControls(); load(); syncSettingsText(); syncNetState(); });
 initTheme();
 initTypography(() => { syncControls(); load(); });
 initReport();
+initAngelus();
 // Hold a button: what it does (its data-tip, else its title or label, in the app's language).
 initLongPress((b) => (b.dataset.tip ? t(b.dataset.tip) : b.title || b.getAttribute('aria-label') || ''));
 initOffline();

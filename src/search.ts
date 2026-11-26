@@ -2,7 +2,9 @@
  * Search index: the plain text of each section, a month per file.
  *   data/<cal>/<ver>/<lang>/search/YYYY-MM.json    second-language text
  *   data/<cal>/<ver>/latin/search/YYYY-MM.json     Latin (shared by every language)
- * Shape: { month, days: { "25": { "lauds": [[heading, text], …], "mass-2": … } } }
+ * Shape: { month, texts: [piece, …], days: { "25": { "lauds": [[heading, [n, …]], …], "mass-2": … } } }
+ * Each section's text is the pieces it lists (numbers into `texts`), joined with spaces: a psalm
+ * or prayer that comes back on many days is stored once a month (see web/js/packed.js).
  * The section number (position in the list) matches the day's part file, so a hit can
  * open the right place. Indexed: the Mass propers (each Mass on days with several) and the
  * Hours of the day. Not the Ordinary or the votive offices, which repeat every day.
@@ -11,12 +13,30 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { FALLBACK_LANGUAGE, HOURS, type CalendarId, type LanguageId, type VersionId } from './config.ts';
 import { DATA_DIR, getDay, readDay, type DayData } from './day.ts';
+import { splitPieces } from '../web/js/packed.js';
 
-type Entries = [heading: string, text: string][];
+type Entries = [heading: string, text: number[]][];
 export interface SearchMonth {
   month: string;
+  texts: string[];
   days: Record<string, Record<string, Entries>>;
 }
+
+/** A section's plain text as numbers into the month's `texts` (adding new pieces). */
+function textRefs(month: SearchMonth, index: Map<string, number>, html: string): number[] {
+  return splitPieces(html).map(plainText).filter(Boolean).map((piece) => {
+    let i = index.get(piece);
+    if (i === undefined) {
+      i = month.texts.push(piece) - 1;
+      index.set(piece, i);
+    }
+    return i;
+  });
+}
+
+/** The plain text of an entry (for tests and tools). */
+export const entryText = (month: SearchMonth, entry: [string, number[] | string]) =>
+  typeof entry[1] === 'string' ? entry[1] : entry[1].map((i) => month.texts[i]).join(' ');
 
 const HOUR_IDS = new Set<string>(HOURS.map((h) => h.id));
 const indexed = (id: string) => HOUR_IDS.has(id) || id === 'mass' || /^mass-\d+$/.test(id);
@@ -60,8 +80,10 @@ export async function buildSearchMonth(
 ): Promise<{ vernacular: SearchMonth; latin: SearchMonth }> {
   const [y, m] = month.split('-').map(Number);
   const count = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const vernacular: SearchMonth = { month, days: {} };
-  const latin: SearchMonth = { month, days: {} };
+  const vernacular: SearchMonth = { month, texts: [], days: {} };
+  const latin: SearchMonth = { month, texts: [], days: {} };
+  const vnIndex = new Map<string, number>();
+  const laIndex = new Map<string, number>();
   // Load (or build) the days, a few at a time.
   const days: (DayData | null)[] = new Array(count).fill(null);
   const queue = Array.from({ length: count }, (_, i) => i);
@@ -85,8 +107,8 @@ export async function buildSearchMonth(
     latin.days[key] = {};
     for (const part of day.parts) {
       if (!indexed(part.id)) continue;
-      vernacular.days[key][part.id] = part.sections.map((s) => [s.heading.vernacular, plainText(s.vernacular)]);
-      latin.days[key][part.id] = part.sections.map((s) => [s.heading.latin, plainText(s.latin)]);
+      vernacular.days[key][part.id] = part.sections.map((s) => [s.heading.vernacular, textRefs(vernacular, vnIndex, s.vernacular)]);
+      latin.days[key][part.id] = part.sections.map((s) => [s.heading.latin, textRefs(latin, laIndex, s.latin)]);
     }
   }
   await writeJson(searchPath(calendar, version, lang, month), vernacular);

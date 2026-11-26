@@ -1,5 +1,5 @@
 // Keeping the controls in step with the state; the translation pop-up; the page address.
-import { RANGE, SIZES, altLangId, maxSizeIndex, built, calendarHas, chantAvailable, chanting, shownDisplay, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey } from './state.js';
+import { RANGE, SIZES, altLangId, maxSizeIndex, versionHasMass, built, calendarHas, chantAvailable, chanting, shownDisplay, comboBuilt, config, day, fullAvailable, lang, offers, showFull, shownLangId, sizeIndex, state, viewKey } from './state.js';
 import { $, INFO_ICON, esc } from './util.js';
 import { t } from './ui.js';
 
@@ -74,7 +74,15 @@ export function syncControls() {
   $('layout').title = display === 'both' ? '' : t('Layout applies when both languages are shown');
   // Compare is for the Office only.
   $('compare').hidden = state.view === 'mass';
-  document.querySelectorAll('#view button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === state.view)));
+  // Versions with the Office only (Dominican, Monastic): the Mass is greyed out.
+  if (!versionHasMass() && state.view === 'mass') state.view = 'office';
+  document.querySelectorAll('#view button').forEach((b) => {
+    b.setAttribute('aria-pressed', String(b.dataset.view === state.view));
+    if (b.dataset.view === 'mass') {
+      b.disabled = !versionHasMass();
+      b.title = b.disabled ? t('Divinum Officium has the Office only for this version, not the Mass') : '';
+    }
+  });
   $('hours').hidden = state.view !== 'office';
   $('massmode').hidden = state.view !== 'mass';
   $('officebar').hidden = state.view !== 'office';

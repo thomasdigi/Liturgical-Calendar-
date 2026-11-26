@@ -28,6 +28,14 @@ function syncCalendarExport() {
 export function syncSettingsText() {
   syncOfflinePanel();
   syncCalendarExport();
+  syncPrint();
+}
+
+/** Print is offered on the day page and the month page only. */
+function syncPrint() {
+  $('print-section').hidden = state.page !== 'day' && state.page !== 'month';
+  $('print-day').hidden = state.page !== 'day';
+  $('print-month').hidden = state.page !== 'month';
 }
 
 export function initSettings() {
@@ -35,6 +43,7 @@ export function initSettings() {
   $('settings-btn').onclick = () => {
     syncOfflinePanel();
     syncCalendarExport();
+    syncPrint();
     if (panel.showModal) panel.showModal(); else panel.setAttribute('open', '');
   };
   const close = () => (panel.close ? panel.close() : panel.removeAttribute('open'));
@@ -85,9 +94,15 @@ export function initSettings() {
       btn.disabled = false;
     }
   };
-  $('print-btn').onclick = () => {
+  document.querySelectorAll('.print-go').forEach((b) => (b.onclick = async () => {
     close();
-    // Let the panel disappear before the print preview is taken.
-    setTimeout(() => window.print(), 150);
-  };
+    // The month page prints the month's Ordo; the day page, what's on screen.
+    if (state.page === 'month') {
+      const { printOrdo } = await import('./ordoprint.js');
+      printOrdo();
+    } else {
+      // Let the panel disappear before the print preview is taken.
+      setTimeout(() => window.print(), 150);
+    }
+  }));
 }

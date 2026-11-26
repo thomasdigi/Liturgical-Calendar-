@@ -27,6 +27,26 @@ export const VERSIONS = [
     // DO's missal has no separate 1906 setting; its nearest is the 1910 missal.
     mass: 'Tridentine - 1910',
   },
+  {
+    id: '1570',
+    label: 'Tridentine 1570',
+    office: 'Tridentine - 1570',
+    mass: 'Tridentine - 1570',
+  },
+  {
+    id: 'op1962',
+    label: 'Dominican 1962',
+    office: 'Ordo Praedicatorum - 1962',
+    // Office only: DO has the Dominican Breviary but not the Dominican Missal.
+    mass: null,
+  },
+  {
+    id: 'm1963',
+    label: 'Monastic 1963',
+    office: 'Monastic - 1963',
+    // Office only: DO has no monastic Missal (its Mass page would follow the Roman calendar).
+    mass: null,
+  },
 ] as const;
 
 /**
@@ -153,7 +173,7 @@ export const getLanguage = (id: string) => find(LANGUAGES, id, 'language');
 export const getHour = (id: string) => find(HOURS, id, 'hour');
 
 /** DO's settings for a calendar + version, or null if that calendar has no such version. */
-export function doSettings(calendar: string, version: string): { office: string; mass: string; dioecesis: string } | null {
+export function doSettings(calendar: string, version: string): { office: string; mass: string | null; dioecesis: string } | null {
   const c = getCalendar(calendar);
   const v = getVersion(version);
   if ('versions' in c) {
@@ -172,7 +192,8 @@ export function languageOffers(id: string) {
 /** What the viewer needs to know (served as data/config.json). */
 export function publicConfig() {
   return {
-    versions: VERSIONS.map(({ id, label }) => ({ id, label })),
+    // mass: false for versions DO has only as an Office (the Mass is greyed out there).
+    versions: VERSIONS.map((v) => ({ id: v.id, label: v.label, mass: !!v.mass })),
     calendars: CALENDARS.map((c) => ({
       id: c.id,
       label: c.label,
