@@ -87,7 +87,7 @@ const longDate = (d) => fmtDate(d, 'long');
 const COLOURS = { white: 'White', red: 'Red', green: 'Green', violet: 'Violet', rose: 'Rose', black: 'Black' };
 
 /** HTML (to become XHTML) for one day. */
-async function dayChapter(date, n, { langId, contents, display }) {
+export async function dayChapter(date, n, { langId, contents, display }) {
   const index = await getJson(`${dir(langId, date)}/index.json`);
   const L = lang(langId);
   const want = index.parts.filter((p) =>

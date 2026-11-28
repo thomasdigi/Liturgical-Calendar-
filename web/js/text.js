@@ -1,6 +1,6 @@
 // Drawing a Mass or an Hour (and, in compare mode, two side by side).
 import { updateUrl } from './controls.js';
-import { fetchDay, fetchPart } from './data.js';
+import { fetchDay, fetchPart, prefetchNeighbours, skeletonAfter } from './data.js';
 import { renderChant } from './chant.js';
 import { RANGE, altLangId, built, chantAvailable, chanting, comboLabel, config, currentPartId, day, lang, offers, officeHours, shownLangId, state } from './state.js';
 import { rememberPlace } from './lastread.js';
@@ -84,9 +84,12 @@ export async function render() {
   const id = currentPartId();
   const shown = shownLangId();
   let main;
+  const stopSkeleton = skeletonAfter($('text'));
   try {
     main = await loadPart(shown, id);
+    stopSkeleton();
   } catch {
+    stopSkeleton();
     if (seq !== renderSeq) return;
     $('text').innerHTML = `<p class="msg">${navigator.onLine ? t('This part could not be loaded.') : offlineHint().trim()}</p>`;
     return;
@@ -215,5 +218,6 @@ export async function render() {
     }
   }
   rememberPlace(); // this day's Mass or Hour, for next time
+  prefetchNeighbours(shown, id); // the day before and after, so moving to them is instant
 }
 export function setPendingScroll(value) { pendingScroll = value; }

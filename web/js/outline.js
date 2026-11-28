@@ -4,6 +4,7 @@
 import { $, esc } from './util.js';
 import { t } from './ui.js';
 import { state } from './state.js';
+import { reducedMotion } from './a11y.js';
 
 /** An outline label in the app's language ("Nocturn II" → "Nokturn II"). */
 const shown = (label) => label.replace(/^Nocturn\b/, t('Nocturn')).replace(/^(Te Deum|Martyrology|Lessons)$/, (m) => t(m));
@@ -90,5 +91,5 @@ export function renderOutline(items) {
 export function scrollToTarget(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+  el.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
 }

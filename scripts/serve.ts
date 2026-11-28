@@ -9,7 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { extname, resolve } from 'node:path';
 import { getCalendar, getLanguage, getVersion, publicConfig, type CalendarId, type LanguageId, type VersionId } from '../src/config.ts';
 import { DATA_DIR, getDay } from '../src/day.ts';
-import { getMonth } from '../src/summary.ts';
+import { getMonth, getYear } from '../src/summary.ts';
 import { getSearchMonth } from '../src/search.ts';
 import { buildIcs } from '../src/ical.ts';
 
@@ -43,6 +43,10 @@ createServer(async (req, res) => {
     // data/<cal>/<ver>/summary/YYYY-MM.json
     const sm = /^\/data\/([\w-]+)\/([\w-]+)\/summary\/(\d{4}-\d{2})\.json$/.exec(path);
     if (sm) return sendJson(res, await getMonth(getCalendar(sm[1]).id as CalendarId, getVersion(sm[2]).id as VersionId, sm[3]));
+
+    // data/<cal>/<ver>/year/YYYY.json: the year index for the feast pages (built if missing)
+    const yr = /^\/data\/([\w-]+)\/([\w-]+)\/year\/(\d{4})\.json$/.exec(path);
+    if (yr) return sendJson(res, await getYear(getCalendar(yr[1]).id as CalendarId, getVersion(yr[2]).id as VersionId, +yr[3]));
 
     // data/<cal>/<ver>/(calendar|fasting).ics: last month to two months ahead
     const ic = /^\/data\/([\w-]+)\/([\w-]+)\/(calendar|fasting)\.ics$/.exec(path);

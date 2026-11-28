@@ -5,11 +5,11 @@
 // never to the other languages, and not to chant notation.
 import { store } from './util.js';
 
-export const FONTS = ['classic', 'garamond', 'sans', 'gothic'];
+export const FONTS = ['classic', 'alegreya', 'sans', 'gothic'];
 export const INITIALS = ['off', 'normal', 'fancy'];
 
 const opts = {
-  font: store.get('font', 'classic'),
+  font: ((f) => (f === 'garamond' ? 'alegreya' : f))(store.get('font', 'classic')), // Garamond became Alegreya
   initials: store.get('initials', 'normal'), // drop caps: off, as now, or medieval
   accents: store.get('latinAccents', 'on') === 'on',
   ligatures: store.get('latinLigatures', 'on') === 'on',
@@ -69,7 +69,7 @@ function applyFont() {
 }
 
 function sync() {
-  document.querySelectorAll('#font button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.font === opts.font)));
+  document.getElementById('font-select').value = opts.font;
   document.querySelectorAll('#initials button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.initials === opts.initials)));
   document.getElementById('latin-accents').checked = !opts.accents;
   document.getElementById('latin-ligatures').checked = !opts.ligatures;
@@ -88,12 +88,12 @@ export function initTypography(rerender) {
       else for (const n of r.addedNodes) simplifyLatin(n.nodeType === 1 ? n : n.parentElement);
     }
   }).observe(document.body, { childList: true, subtree: true, characterData: true });
-  document.querySelectorAll('#font button').forEach((b) => (b.onclick = () => {
-    opts.font = b.dataset.font;
+  document.getElementById('font-select').onchange = (e) => {
+    opts.font = e.target.value;
     store.set('font', opts.font);
     applyFont();
     sync();
-  }));
+  };
   document.querySelectorAll('#initials button').forEach((b) => (b.onclick = () => {
     opts.initials = b.dataset.initials;
     store.set('initials', opts.initials);

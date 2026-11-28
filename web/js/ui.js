@@ -168,7 +168,7 @@ export function applyPage() {
 function syncFlagMenu() {
   const cur = info();
   document.getElementById('flagmenu-current').innerHTML = `<span class="flag">${flagSvg(cur.id)}</span><span>${cur.label}</span>`;
-  document.querySelectorAll('#flagmenu-list button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.ui === current)));
+  document.querySelectorAll('#flagmenu-list button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.ui === current)));
 }
 
 /** `onChange` redraws whatever the scripts wrote (the day, the month, the menus). */
@@ -176,7 +176,7 @@ export function initUi(onChange) {
   recordPage();
   const list = document.getElementById('flagmenu-list');
   list.innerHTML = UI_LANGS.map((l) =>
-    `<li><button type="button" role="menuitemradio" data-ui="${l.id}" aria-checked="false" lang="${l.id}">
+    `<li><button type="button" data-ui="${l.id}" aria-pressed="false" lang="${l.id}">
       <span class="flag" title="${l.flagName}">${flagSvg(l.id)}</span><span>${l.label}</span></button></li>`).join('');
   list.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-ui]');

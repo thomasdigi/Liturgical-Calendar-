@@ -36,6 +36,14 @@ function syncPrint() {
   $('print-section').hidden = state.page !== 'day' && state.page !== 'month';
   $('print-day').hidden = state.page !== 'day';
   $('print-month').hidden = state.page !== 'month';
+  syncPrintChoice();
+}
+
+/** "This page" prints what's on screen; a booklet also asks which texts. */
+function syncPrintChoice() {
+  const page = $('print-what').value === 'page';
+  $('print-contents').disabled = page;
+  $('print-day').querySelector('.print-go').textContent = t(page ? 'Print this page' : 'Print the booklet');
 }
 
 export function initSettings() {
@@ -94,12 +102,22 @@ export function initSettings() {
       btn.disabled = false;
     }
   };
+  $('print-what').onchange = syncPrintChoice;
   document.querySelectorAll('.print-go').forEach((b) => (b.onclick = async () => {
     close();
     // The month page prints the month's Ordo; the day page, what's on screen.
     if (state.page === 'month') {
       const { printOrdo } = await import('./ordoprint.js');
       printOrdo();
+    } else if ($('print-what').value !== 'page') {
+      // A booklet: the coming Sunday, or a week.
+      const { printBooklet } = await import('./booklet.js');
+      try {
+        await printBooklet({ what: $('print-what').value, contents: $('print-contents').value });
+      } catch (e) {
+        if (panel.showModal) panel.showModal();
+        $('print-status').textContent = e.message;
+      }
     } else {
       // Let the panel disappear before the print preview is taken.
       setTimeout(() => window.print(), 150);
