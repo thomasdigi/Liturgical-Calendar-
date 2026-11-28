@@ -74,3 +74,45 @@ export async function summariesFor(dates) {
   for (const m of loaded) if (m) for (const d of m.days) byDate.set(d.date, d);
   return dates.map((d) => byDate.get(d) || null);
 }
+
+// ---------- feeling fast ----------
+/** Grey lines shown while a text loads (instead of a blank page). */
+export const SKELETON = `<div class="skeleton" role="status"><span class="sr">…</span>${
+  '<span class="sk-h"></span><span></span><span></span><span class="sk-short"></span>'.repeat(3)}</div>`;
+
+/** Show the placeholder in `el` only if loading takes a moment (no flash when it's quick). Returns a cancel function. */
+export function skeletonAfter(el, ms = 150) {
+  const timer = setTimeout(() => { el.innerHTML = SKELETON; }, ms);
+  return () => clearTimeout(timer);
+}
+
+const shiftDay = (date, n) => new Date(Date.parse(`${date}T12:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
+
+/**
+ * Load the day before and the day after in the background (the same Mass or Hour), so moving
+ * to them is instant. Waits until the browser is idle; errors are ignored.
+ */
+export function prefetchNeighbours(langId, partId, date = state.date) {
+  const idle = window.requestIdleCallback ?? ((f) => setTimeout(f, 400));
+  idle(async () => {
+    for (const d of [shiftDay(date, 1), shiftDay(date, -1)]) {
+      try {
+        const index = await getJson(`data/${state.calendar}/${state.version}/${langId}/${d.slice(0, 4)}/${d.slice(5)}/index.json`);
+        if (index.parts.some((p) => p.id === partId)) await readPart(langId, partId, d);
+      } catch { /* not on this site: nothing to load */ }
+    }
+  });
+}
+
+/** The nearest day (within ten days) whose texts are on this site, or null. */
+export async function nearestBuiltDay(langId, date = state.date) {
+  for (let k = 1; k <= 10; k++) {
+    for (const d of [shiftDay(date, k), shiftDay(date, -k)]) {
+      try {
+        await getJson(`data/${state.calendar}/${state.version}/${langId}/${d.slice(0, 4)}/${d.slice(5)}/index.json`);
+        return d;
+      } catch { /* keep looking */ }
+    }
+  }
+  return null;
+}

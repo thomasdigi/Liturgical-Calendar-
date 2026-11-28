@@ -58,6 +58,9 @@ jobs:
       VERSIONS: ${{ inputs.versions || '1962' }}
       LANGUAGES: ${{ inputs.languages || 'en,la-bea,es,fr,de,it,pt,pl,la-gabc' }}
       VOTIVE_OFFICES: ${{ inputs.votives || 'dead,parvum,sabbato' }}
+      # Private visit counts (optional): your GoatCounter code, set as a repository variable
+      # (Settings → Secrets and variables → Actions → Variables → GOATCOUNTER_CODE). Empty = off.
+      GOATCOUNTER_CODE: ${{ vars.GOATCOUNTER_CODE }}
       # The site's address, so calendar events can link back to their day.
       SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
     steps:

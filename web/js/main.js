@@ -2,12 +2,15 @@
 import { fastTipHtml, renderMonth, renderWeek } from './calendar.js';
 import { hideTip, initLongPress, initTips, toggleTip } from './tip.js';
 import { defaultComparison, fixComparison, openInfo, syncControls, syncMasses, syncOffice, updateUrl } from './controls.js';
-import { fetchDay } from './data.js';
-import { runFeastSearch, runSearch, syncSearchOptions } from './search.js';
-import { RANGE, avail, calendarHas, clampDate, comboBuilt, config, day, maxSizeIndex, params, setAvail, setConfig, setDay, setRANGE, shownLangId, sizeIndex, state } from './state.js';
+import { fetchDay, nearestBuiltDay, skeletonAfter } from './data.js';
+import { clearRecent, renderRecent, runFeastSearch, runSearch, syncSearchOptions } from './search.js';
+import { initA11y, reducedMotion } from './a11y.js';
+import { RANGE, avail, calendarHas, clampDate, comboBuilt, config, day, maxSizeIndex, params, setAvail, setConfig, setDay, setRANGE, shownLangId, sizeIndex, state, versionHasMass } from './state.js';
 import { render, setPendingScroll } from './text.js';
 import { renderSacristan } from './sacristan.js';
 import { renderWheel } from './wheel.js';
+import { initYear, renderYear } from './yearpage.js';
+import { renderFeast } from './feastpage.js';
 import { initOffline, offlineHint, syncNetState } from './offline.js';
 import { scrollToTarget } from './outline.js';
 import { initSettings, syncSettingsText } from './settings.js';
@@ -17,6 +20,9 @@ import { initTypography } from './typography.js';
 import { fmtDate, initUi, t } from './ui.js';
 import { initReport } from './report.js';
 import { initAngelus } from './angelus.js';
+import { initDevotions, renderDevotionBody } from './devotions.js';
+import { initAnalytics, trackEvent, trackPage } from './analytics.js';
+import { initPsalms } from './psalms.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
 
 export async function init() {
@@ -46,6 +52,7 @@ export async function init() {
     state.calendar = c; state.version = v;
   }
   if (RANGE) Object.assign($('date'), { min: RANGE.first, max: RANGE.last });
+  initAnalytics(config);
 
   $('calendar').onchange = (e) => { state.calendar = e.target.value; store.set('calendar', state.calendar); syncControls(); load(); };
   $('version').onchange = (e) => { state.version = e.target.value; store.set('version', state.version); syncControls(); load(); };
@@ -65,6 +72,7 @@ export async function init() {
   $('office').onchange = (e) => { state.office = e.target.value; syncControls(); render(); };
   $('compare').onclick = () => {
     state.compare = !state.compare;
+    if (state.compare) trackEvent('feature/compare');
     if (state.compare && !state.cmpVersion) defaultComparison();
     syncControls(); render();
   };
@@ -77,6 +85,7 @@ export async function init() {
   $('chant').onclick = () => {
     if ($('chant').disabled) return;
     state.chant = !state.chant; store.set('chant', state.chant ? 'on' : 'off'); syncControls(); render();
+    if (state.chant) trackEvent('feature/chant');
   };
   // Buttons on the Sacristan page open the Mass or an Hour of the day.
   $('sacristan-body').addEventListener('click', (e) => {
@@ -103,10 +112,19 @@ export async function init() {
     ro.observe(document.querySelector('.top'));
     ro.observe($('appbar'));
   }
-  $('searchform').onsubmit = (e) => { e.preventDefault(); runFeastSearch(); runSearch(); };
+  $('searchform').onsubmit = (e) => { e.preventDefault(); runFeastSearch(); runSearch(); trackEvent('feature/search'); };
   // Feasts and saints appear as you type; tap one to open its day.
   let feastTimer;
   $('q').addEventListener('input', () => { clearTimeout(feastTimer); feastTimer = setTimeout(runFeastSearch, 250); });
+  // Recent searches: tap one to search again.
+  renderRecent();
+  $('recent-list').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-q]');
+    if (!b) return;
+    $('q').value = b.dataset.q;
+    runFeastSearch(); runSearch();
+  });
+  $('recent-clear').onclick = clearRecent;
   $('feastlist').addEventListener('click', (e) => {
     const b = e.target.closest('button[data-date]');
     if (!b) return;
@@ -149,11 +167,27 @@ export async function init() {
   const openDay = (e) => {
     const b = e.target.closest('button[data-date]');
     if (!b || b.disabled) return;
-    state.page = 'day';
+    if (!b.dataset.monthGo) state.page = 'day'; // "Go to {month}" stays on the month page
     go(b.dataset.date);
   };
   $('month-list').addEventListener('click', openDay);
   $('month-today').onclick = () => go(isoToday());
+  initYear(openFromYear);
+  // The feast's name on the day page opens its page; its dates open those days.
+  const openFeast = () => {
+    if (!day) return;
+    state.feastDate = state.date;
+    state.page = 'feast';
+    trackEvent('feature/feast-page');
+    syncControls(); load(); window.scrollTo(0, 0);
+  };
+  $('title').addEventListener('click', openFeast);
+  $('title').addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFeast(); } });
+  $('feast-back').onclick = () => { state.page = 'day'; syncControls(); load(); window.scrollTo(0, 0); };
+  $('feast-body').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-date]');
+    if (b) openFromYear(b.dataset.date);
+  });
   $('wheel-prev').onclick = () => go(shift(state.date, -1));
   $('wheel-next').onclick = () => go(shift(state.date, 1));
   $('week').addEventListener('click', openDay);
@@ -166,10 +200,13 @@ export async function init() {
   // Turning the phone changes which text sizes fit in two columns.
   let resizeTimer;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(syncControls, 200); });
-  $('reading').onclick = () => { state.reading = !state.reading; store.set('reading', state.reading ? 'on' : 'off'); syncControls(); };
+  $('reading').onclick = () => {
+    if (!state.reading) trackEvent('feature/reading-mode');
+    state.reading = !state.reading; store.set('reading', state.reading ? 'on' : 'off'); syncControls();
+  };
   $('jump').onchange = (e) => {
     const el = document.getElementById(e.target.value);
-    if (el) el.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+    if (el) el.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
     e.target.value = '';
   };
   $('totop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -181,10 +218,26 @@ export async function init() {
   $('alt-lang').onchange = (e) => { state.altLang = e.target.value; store.set('altLang', state.altLang); syncControls(); load(); };
   $('text').addEventListener('click', (e) => { if (e.target.closest('.info')) openInfo(e.target.closest('.info').dataset.kind); });
   $('fallback').addEventListener('click', (e) => { if (e.target.closest('.info')) openInfo('view'); });
+  // Keyboard shortcuts (listed in Settings → Accessibility).
   document.addEventListener('keydown', (e) => {
-    if (/INPUT|SELECT/.test(e.target.tagName) || $('info').open) return;
-    if (e.key === 'ArrowLeft') go(shift(state.date, -1));
-    if (e.key === 'ArrowRight') go(shift(state.date, 1));
+    if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.target.isContentEditable || $('info').open) return;
+    if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
+    const page = (p) => { state.page = p; syncControls(); load(); window.scrollTo(0, 0); };
+    const k = e.key;
+    if (k === 'ArrowLeft') go(shift(state.date, -1));
+    else if (k === 'ArrowRight') go(shift(state.date, 1));
+    else if (k === 't' || k === 'T') go(isoToday());
+    else if (k === 'd' || k === 'D') page('day');
+    else if (k === 'm' || k === 'M') page('month');
+    else if (k === 'y' || k === 'Y') page('year');
+    else if (k === '/') { e.preventDefault(); if (state.page !== 'search') $('search-btn').click(); $('q').focus(); }
+    else if (k === 's' || k === 'S') $('settings-btn').click();
+    else if (k === '0' && versionHasMass()) { state.page = 'day'; state.view = 'mass'; syncControls(); load(); }
+    else if (/^[1-8]$/.test(k)) {
+      state.page = 'day'; state.view = 'office'; state.office = 'day'; state.hour = config.hours[Number(k) - 1].id;
+      syncControls(); load();
+    } else return;
+    store.set('view', state.view);
   });
 
   // Opened without naming a Mass or Hour: continue where this day was left.
@@ -192,6 +245,9 @@ export async function init() {
   syncControls();
   load();
 }
+
+/** From the Year page: open that day (its Mass or Hour as before). */
+function openFromYear(date) { state.page = 'day'; syncControls(); go(date); window.scrollTo(0, 0); }
 
 export let loadSeq = 0;
 
@@ -204,11 +260,23 @@ function renderDevotion() {
   $('devotion-title').textContent = LATIN_NAMES.has(state.devotion) ? name : t(name);
   $('devotion-title').lang = LATIN_NAMES.has(state.devotion) ? 'la' : '';
   $('angelus-reminder').hidden = state.devotion !== 'angelus';
+  renderDevotionBody(state.devotion);
+}
+
+/** The page shown, for the private visit counts (no dates, nothing personal). */
+function pageName() {
+  if (state.page === 'day') return state.view === 'mass' ? 'day/mass' : `day/office/${state.office === 'day' ? state.hour : state.office}`;
+  if (state.page === 'devotion') return `devotion/${state.devotion}`;
+  return state.page;
 }
 
 export async function load() {
   const seq = ++loadSeq;
   updateUrl();
+  trackPage(pageName());
+  trackEvent(`setting/version/${state.version}`, { perSession: true });
+  trackEvent(`setting/calendar/${state.calendar}`, { perSession: true });
+  trackEvent(`setting/text-language/${state.lang}`, { perSession: true });
   $('date').value = state.date;
   if (state.page === 'month') {
     renderMonth();
@@ -219,13 +287,18 @@ export async function load() {
   if (state.page === 'search') { syncSearchOptions(); return; }
   if (state.page === 'sacristan') { renderWeek(); renderSacristan(); return; }
   if (state.page === 'devotion') { renderDevotion(); return; }
+  if (state.page === 'year') { renderYear(openFromYear); return; }
+  if (state.page === 'feast') { renderFeast(); return; }
   renderWeek();
   const shown = shownLangId();
+  const stopSkeleton = skeletonAfter($('text'));
   try {
     const d = await fetchDay(shown);
+    stopSkeleton();
     if (seq !== loadSeq) return;
     setDay(d);
   } catch {
+    stopSkeleton();
     if (seq !== loadSeq) return;
     setDay(null);
     $('weekday').textContent = '';
@@ -233,10 +306,19 @@ export async function load() {
     $('rank').textContent = ''; $('comm').textContent = ''; $('swatch').style.background = 'transparent';
     $('hours').innerHTML = '';
     $('fallback').hidden = true;
-    $('text').innerHTML = navigator.onLine
-      ? `<p class="msg">${t(RANGE ? 'No texts for {date} in this calendar, version and language on this site.' : 'No texts for {date} in this calendar, version and language yet.', { date: fmtDate(state.date, 'long') })}</p>`
-      : `<p class="msg">${offlineHint().trim()}</p>`;
     $('masschoice').hidden = true;
+    if (!navigator.onLine) { $('text').innerHTML = `<p class="msg">${offlineHint().trim()}</p>`; return; }
+    // A friendly note, and a way out: the nearest day that is on the site.
+    $('text').innerHTML = `<div class="empty">
+      <p class="msg">${t(RANGE ? 'No texts for {date} in this calendar, version and language on this site.' : 'No texts for {date} in this calendar, version and language yet.', { date: fmtDate(state.date, 'long') })}</p>
+      ${RANGE ? `<p class="hint">${t('This site has the days from {first} to {last}.', { first: fmtDate(RANGE.first, 'long'), last: fmtDate(RANGE.last, 'long') })}</p>` : ''}
+      <p class="empty-actions" id="empty-actions"></p></div>`;
+    const near = await nearestBuiltDay(shown);
+    if (seq !== loadSeq) return;
+    if (near) {
+      $('empty-actions').innerHTML = `<button type="button" class="primary" data-go="${near}">${t('Go to the nearest day: {date}', { date: fmtDate(near, 'medium') })}</button>`;
+      $('empty-actions').querySelector('button').onclick = () => go(near);
+    }
     return;
   }
   if (state.massN > Math.max(1, day.masses?.length ?? 0)) state.massN = 1;
@@ -257,7 +339,7 @@ export function go(date, { animate = 0 } = {}) {
     if (!back) window.scrollTo(0, 0);
     syncControls();
   }
-  if (animate && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  if (animate && !reducedMotion()) {
     const el = state.page === 'month' ? $('month') : state.page === 'sacristan' ? $('sacristan') : $('dayview');
     el.classList.remove('swipe-next', 'swipe-prev');
     void el.offsetWidth; // restart the animation
@@ -337,9 +419,12 @@ document.addEventListener('keydown', (e) => {
 // The app's own language first: it notes the page's English before anything else changes it.
 initUi(() => { syncControls(); load(); syncSettingsText(); syncNetState(); });
 initTheme();
+initA11y();
 initTypography(() => { syncControls(); load(); });
+initPsalms(() => { syncControls(); load(); });
 initReport();
 initAngelus();
+initDevotions();
 // Hold a button: what it does (its data-tip, else its title or label, in the app's language).
 initLongPress((b) => (b.dataset.tip ? t(b.dataset.tip) : b.title || b.getAttribute('aria-label') || ''));
 initOffline();

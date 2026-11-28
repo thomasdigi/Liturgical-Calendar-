@@ -57,9 +57,44 @@ were written for this app and would benefit from review by native speakers.
 calendar (a calendar file with daily events and alerts; `web/js/angelus.js`). **Print**
 (Settings), on the month page: the month's **Ordo**, one row a day (`web/js/ordoprint.js`).
 
+**Year** page: the liturgical year as a wheel with the moveable feasts numbered, and an Easter
+calculator for any year from 1583 (`web/js/yearpage.js`). **Feast pages**: tap the feast's name on
+the day page for its dates this year and next, its date, rank and colour in each version, and the
+days it is commemorated; read from year indexes (`data/<cal>/<ver>/year/YYYY.json`, built for this
+year and next in every version; `src/summary.ts`, `web/js/feastpage.js`).
+
+**Search** also takes a psalm by number ("Psalm 50", Vulgate numbering), can be limited to the Mass
+or the Office, and remembers recent searches. **Print** (day page): this page, or a booklet of the
+coming Sunday or a week with page numbers (`web/js/booklet.js`).
+
+**Accessibility** (Settings, folded away): high contrast, a dyslexia-friendly typeface
+(OpenDyslexic), less motion, and keyboard shortcuts (← → days, T today, D/M/Y pages, 0 Mass,
+1–8 Hours, / search, S settings); saved on the device (`web/js/a11y.js`). Checked with axe.
+
+The next and previous days load in the background, so moving between days is instant; grey
+placeholder lines show while a text loads, and a missing day offers the nearest one on the site.
+
 **Top bar**: ☰ opens the menu (left panel), 🔍 the search, ⚙ the Settings (right panel). The menu
 has the **Sacristan** page and **Devotions** (Rosary, Divine Mercy, Stations of the Cross, Via Petri,
-Angelus; each page is still under construction).
+Angelus; the Rosary and the Stations of the Cross are still under construction).
+
+**Devotions** (`web/js/devotions.js`, texts in `web/js/devotions/`): the prayers in Latin, in the
+app's language, or both side by side (the switch at the top). **Via Petri**: twelve stations on the
+life of St Peter, each with its passage of Scripture (Latin: Clementine Vulgate; English:
+Douay-Rheims; German: Grünewald 1924; French: Crampon 1923; Spanish: Straubinger; Portuguese:
+Bíblia Livre). The passages are extracted by `npm run scripture` (`scripts/scripture.ts`) from the
+public-domain Bibles of github.com/scrollmapper/bible_databases. **Angelus**, with the Regina Caeli
+(shown first in Eastertide). **Divine Mercy**: the Chaplet prayer by prayer, with the beads to tap.
+Via Petri and Divine Mercy have a **reminder** at the time and on the days chosen, through the
+phone's calendar.
+
+**Psalm numbering** (Settings → Typography): the Vulgate's or the Hebrew one of most modern Bibles;
+headings, citations, verse numbers and the psalm search follow it (`web/js/psalms.js`).
+
+**Visit counts** (`web/js/analytics.js`): a cookie-free count of pages and features used, through
+GoatCounter, when the repository variable `GOATCOUNTER_CODE` is set (Settings → Secrets and
+variables → Actions → Variables). Off for Do Not Track / Global Privacy Control, and in Settings →
+About.
 **Search** finds feasts and saints as you type (English or Latin names: "St. Lucy", "Christmas";
 `web/js/feasts.js`) and, with the Search button, words in the texts.
 
@@ -70,8 +105,8 @@ that time of year, the middle to open the day.
 **E-book** (Settings): an EPUB of a day, 7 days or a month (Mass, Office or both), made in the
 browser from the site's texts (`web/js/epub.js`), in the languages, calendar and version chosen.
 
-**Typography** (Settings): four typefaces (Classic, EB Garamond, Source Sans 3, Grenze Gotisch; the
-fonts are in `web/fonts`, SIL Open Font License), drop caps off, plain or medieval (a red UnifrakturMaguntia
+**Typography** (Settings): four typefaces in a menu (Classic, Alegreya, Source Sans 3, Grenze Gotisch;
+the fonts are in `web/fonts`, SIL Open Font License), drop caps off, plain or medieval (a red UnifrakturMaguntia
 capital, three lines tall), and for the Latin only: no accents (*Dóminus* → *Dominus*)
 no ligatures (*æ, œ* → *ae, oe*), u written v and j written i (`web/js/typography.js`).
 

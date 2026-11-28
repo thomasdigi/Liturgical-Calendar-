@@ -30,7 +30,7 @@ import {
   type VersionId,
 } from '../src/config.ts';
 import { DATA_DIR, getDay, indexPath } from '../src/day.ts';
-import { getMonth } from '../src/summary.ts';
+import { getMonth, getYear } from '../src/summary.ts';
 import { buildSearchMonth } from '../src/search.ts';
 import { buildIcs } from '../src/ical.ts';
 
@@ -132,6 +132,23 @@ for (const calendar of calendars)
   }
 console.log(`Month summaries: ${months.size} month(s) per calendar/version.`);
 
+// Year indexes for the feast pages: this year and next, in every version (not only those built),
+// so a feast page can show its dates across years and its rank in each version.
+const indexYears = [+from.slice(0, 4), +from.slice(0, 4) + 1];
+for (const calendar of calendars)
+  for (const v of VERSIONS) {
+    if (!doSettings(calendar, v.id)) continue;
+    for (const year of indexYears) {
+      try {
+        await getYear(calendar, v.id as VersionId, year, { refresh });
+      } catch (e) {
+        failed++;
+        console.error(`FAILED year index ${calendar} ${v.id} ${year}: ${(e as Error).message}`);
+      }
+    }
+  }
+console.log(`Year indexes: ${indexYears.join(' and ')}, every version, for the feast pages.`);
+
 // Search index: for each month in the range, from the days just built (English first: it writes the Latin).
 const rangeMonths = new Set<string>();
 for (let d = new Date(`${from}T12:00:00Z`); d <= new Date(`${to}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
@@ -177,15 +194,18 @@ console.log('Calendar files: calendar.ics and fasting.ics per calendar/version.'
 if (prune) {
   const dirs = async (p: string) => (existsSync(p) ? (await readdir(p, { withFileTypes: true })).filter((d) => d.isDirectory()).map((d) => d.name) : []);
   const keepMonths = new Set([...months, ...rangeMonths]);
+  for (const y of indexYears) for (let m = 1; m <= 12; m++) keepMonths.add(`${y}-${String(m).padStart(2, '0')}`);
   let removed = 0;
   const remove = async (p: string) => { await rm(p, { recursive: true, force: true }); removed++; };
   for (const cal of await dirs(DATA_DIR)) {
     for (const ver of await dirs(resolve(DATA_DIR, cal))) {
       const base = resolve(DATA_DIR, cal, ver);
-      if (!calendars.includes(cal as CalendarId) || !versions.includes(ver as VersionId)) { await remove(base); continue; }
+      if (!calendars.includes(cal as CalendarId)) { await remove(base); continue; }
+      const builtVersion = versions.includes(ver as VersionId);
       for (const folder of await dirs(base)) {
         const dir = resolve(base, folder);
-        if (folder === 'summary') continue;
+        if (folder === 'summary' || folder === 'year') continue; // every version keeps these (feast pages)
+        if (!builtVersion) { await remove(dir); continue; }
         if (folder !== 'latin' && !langs.includes(folder as LanguageId)) { await remove(dir); continue; }
         for (const year of (await dirs(dir)).filter((y) => /^\d{4}$/.test(y)))
           for (const md of await dirs(resolve(dir, year))) {
@@ -197,6 +217,8 @@ if (prune) {
       }
       for (const f of existsSync(resolve(base, 'summary')) ? await readdir(resolve(base, 'summary')) : [])
         if (!keepMonths.has(f.replace(/\.json$/, ''))) await remove(resolve(base, 'summary', f));
+      for (const f of existsSync(resolve(base, 'year')) ? await readdir(resolve(base, 'year')) : [])
+        if (!indexYears.includes(+f.replace(/\.json$/, ''))) await remove(resolve(base, 'year', f));
     }
   }
   console.log(`Pruned: ${removed} old day folder(s) or file(s) removed from data/.`);

@@ -21,6 +21,8 @@ export function syncControls() {
   $('sacristan').hidden = state.page !== 'sacristan';
   $('search-btn').setAttribute('aria-pressed', String(state.page === 'search'));
   $('devotion').hidden = state.page !== 'devotion';
+  $('yearpage').hidden = state.page !== 'year';
+  $('feastpage').hidden = state.page !== 'feast';
   document.querySelectorAll('#page button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.page === state.page)));
   $('prev').setAttribute('aria-label', t('Previous day'));
   // Text size and reading mode
@@ -194,6 +196,7 @@ export function updateUrl() {
   const p = new URLSearchParams({ date: state.date, view: state.view, calendar: state.calendar, version: state.version, lang: state.lang });
   if (state.page !== 'day') p.set('page', state.page);
   if (state.page === 'devotion') p.set('d', state.devotion);
+  if (state.page === 'feast' && state.feastDate) p.set('f', state.feastDate);
   if (state.view === 'office') {
     p.set('hour', state.hour);
     if (state.office !== 'day') p.set('office', state.office);

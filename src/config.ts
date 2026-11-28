@@ -207,6 +207,9 @@ export function publicConfig() {
       rtl: 'rtl' in l && l.rtl,
       ...languageOffers(l.id), // office / mass false: greyed out there
     })),
+    // Private visit counts (web/js/analytics.js): the site's GoatCounter code, from the
+    // GOATCOUNTER_CODE setting of the publishing workflow; empty = no counting.
+    analytics: { goatcounter: process.env.GOATCOUNTER_CODE ?? '' },
     fallbackLanguage: FALLBACK_LANGUAGE,
     defaultLanguage: DEFAULT_LANGUAGE,
     hours: HOURS.map(({ id, label, latin }) => ({ id, label, latin })),

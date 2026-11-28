@@ -2,8 +2,9 @@
 import { getJson } from './data.js';
 import { findFeasts } from './feasts.js';
 import { avail, built, config, lang, state } from './state.js';
-import { $, addMonths, esc, monthOf } from './util.js';
+import { $, addMonths, esc, monthOf, store } from './util.js';
 import { fmtDate, t } from './ui.js';
+import { fromHebrew, hebrewNumbering } from './psalms.js';
 
 const monthLabel = (m) => fmtDate(m, 'monthYear');
 
@@ -94,11 +95,45 @@ export let searchSeq = 0;
 
 export const MAX_HITS = 300;
 
+/** "Psalm 50", "Ps 50", "Psalmus 50", "Psaume 50", "Salmo 50"… → 50 (Vulgate numbering). */
+export function psalmNumber(q) {
+  const m = /^\s*(?:ps\.?|psalm|psalmus|psaume|salmo|salmos|psalmo)\s*(\d{1,3})\s*$/i.exec(q);
+  return m && +m[1] >= 1 && +m[1] <= 150 ? +m[1] : null;
+}
+
+// ---------- recent searches (saved on the device) ----------
+const RECENT_MAX = 8;
+const recent = () => { try { return JSON.parse(store.get('recentSearches', '[]')); } catch { return []; } };
+function remember(q) {
+  const list = [q, ...recent().filter((x) => x !== q)].slice(0, RECENT_MAX);
+  store.set('recentSearches', JSON.stringify(list));
+  renderRecent();
+}
+export function renderRecent() {
+  const list = recent();
+  $('recent').hidden = !list.length;
+  $('recent-list').innerHTML = list.map((q) => `<li><button type="button" class="chip" data-q="${esc(q)}">${esc(q)}</button></li>`).join('');
+}
+export function clearRecent() { store.set('recentSearches', '[]'); renderRecent(); }
+
+/** Which parts to look in: everything, the Mass, or the Office. */
+const partWanted = (pid, which) => which === 'all' || (which === 'mass') === /^mass(-\d+)?$/.test(pid);
+
 export async function runSearch() {
   const seq = ++searchSeq;
-  const terms = parseQuery($('q').value);
+  const query = $('q').value.trim();
+  // A psalm by number: its heading in the Latin ("Psalmus 50"), wherever it's said.
+  // With Hebrew numbering chosen, "Psalm 51" means the Vulgate's 50 (the texts keep the Vulgate's numbers).
+  const typed = psalmNumber(query);
+  const psalms = typed ? (hebrewNumbering() ? fromHebrew(typed) : [typed]) : null;
+  const terms = psalms ? psalms.map((n) => `psalmus ${n}`) : parseQuery(query);
   if (!terms.length) { $('searchstatus').textContent = t('Type a word or phrase to find.'); return; }
-  const within = $('searchin').value;
+  remember(query);
+  const matches = psalms
+    ? (n) => psalms.some((p) => new RegExp(`psalmus ${p}(?!\\d)`).test(n))
+    : (n) => terms.every((term) => n.includes(term));
+  const which = $('searchparts').value;
+  const within = psalms ? 'latin' : $('searchin').value;
   const langId = searchLangId();
   const hits = [];
   $('results').innerHTML = '';
@@ -115,20 +150,21 @@ export async function runSearch() {
     for (const dd of [...days].sort()) {
       const parts = new Set([...Object.keys(la?.days[dd] ?? {}), ...Object.keys(vn?.days[dd] ?? {})]);
       for (const pid of parts) {
+        if (!partWanted(pid, which)) continue;
         const laS = la?.days[dd]?.[pid] ?? [];
         const vnS = vn?.days[dd]?.[pid] ?? [];
         for (let i = 0; i < Math.max(laS.length, vnS.length); i++) {
           const texts = [entryText(la, laS[i]), entryText(vn, vnS[i])];
           const n = normalize(texts.join(' \n ')).out;
-          if (!terms.every((t) => n.includes(t))) continue;
-          const which = snippet(texts[0], terms) ? 0 : 1;
+          if (!matches(n)) continue;
+          const col = snippet(texts[0], terms) ? 0 : 1;
           hits.push({
             date: `${month}-${dd}`,
             part: pid,
             section: i,
             heading: laS[i]?.[0] || vnS[i]?.[0] || '',
-            html: snippet(texts[which], terms) || snippet(texts[1 - which], terms),
-            lang: which === 0 ? 'la' : lang(langId).htmlLang,
+            html: snippet(texts[col], terms) || snippet(texts[1 - col], terms),
+            lang: col === 0 ? 'la' : lang(langId).htmlLang,
           });
           if (hits.length >= MAX_HITS) break;
         }

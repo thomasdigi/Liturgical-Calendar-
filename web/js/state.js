@@ -24,8 +24,9 @@ export const state = {
   layout: store.get('layout', 'side'), // 'side' (the default) | 'interlinear'
   massMode: params.get('mass') || store.get('massMode', 'propers'), // 'propers' | 'full'
   massN: Number(params.get('n')) || 1, // which Mass, on days with several
-  page: ['month', 'search', 'sacristan', 'devotion'].includes(params.get('page')) ? params.get('page') : params.get('page') === 'clergy' ? 'sacristan' : 'day',
+  page: ['month', 'year', 'search', 'sacristan', 'devotion', 'feast'].includes(params.get('page')) ? params.get('page') : params.get('page') === 'clergy' ? 'sacristan' : 'day',
   devotion: params.get('d') || 'rosary', // which devotion page (from the menu)
+  feastDate: params.get('f') || null, // the feast page: the feast of this date
   chant: store.get('chant', 'off') === 'on', // Gregorian notation in place of the Latin (Office)
   office: params.get('office') || 'day', // 'day' or a votive office id (dead, parvum, sabbato)
   compare: !!params.get('cmp'), // show another calendar/version beside this one

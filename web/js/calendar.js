@@ -21,13 +21,16 @@ export function fastText(f) {
  * abstinence, and whether current Church law requires it or it's only suggested.
  * Summaries built before `required` existed show the marks without that detail.
  */
-export function fastMarks(f) {
+export function fastMarks(f, { inButton = false } = {}) {
   if (!f) return '';
   const mark = (kind, letter, label) => {
     // Partial abstinence is no longer required by current law anywhere.
     const req = kind === 'partial' ? (f.required ? false : undefined) : f.required?.[kind === 'fast' ? 'fast' : 'abstinence'];
     const status = req === undefined ? '' : `, ${t(req ? 'mandatory' : 'suggested')}`;
-    return `<span class="fastmark ${kind}${req === false ? ' suggested' : ''}" role="button" tabindex="0"
+    // Inside a day's button (week strip, month list) a mark is a picture, not a second control;
+    // it still opens its note when tapped. Elsewhere it is a button of its own.
+    const role = inButton ? 'role="img"' : 'role="button" tabindex="0"';
+    return `<span class="fastmark ${kind}${req === false ? ' suggested' : ''}" ${role}
       data-kind="${kind}" data-req="${req === undefined ? '' : req ? '1' : '0'}"
       data-reasons="${esc(reasonsText(f))}" data-note="${esc(f.note ? t(f.note) : '')}" data-lent="${f.reasons.some((r) => /Lent|Ash Wednesday/.test(r)) ? '1' : ''}"
       aria-label="${esc(t(label))}${status}. ${esc(t('Tap for details'))}">${letter}</span>`;
@@ -78,7 +81,7 @@ export async function renderWeek() {
       ${date === state.date ? 'aria-current="date"' : ''} title="${esc(s ? `${s.title} · ${s.rank}` : date)}">
       <span class="wd">${wd} ${+date.slice(8)}</span>
       <span class="wt"><span class="dot" style="background:${s ? COLORS[s.color] : 'transparent'}"></span>${esc(s ? s.title : '—')}</span>
-      <span class="wf">${fastMarks(s?.fasting)}</span>
+      <span class="wf">${fastMarks(s?.fasting, { inButton: true })}</span>
     </button>`;
   }).join('');
   // On narrow screens the strip scrolls: bring the current day into view.
@@ -104,7 +107,10 @@ export async function renderMonth() {
   try { data = await fetchMonth(month); } catch { data = null; }
   if (seq !== monthSeq) return;
   if (!data) {
-    $('month-list').innerHTML = `<li class="msg">${t(RANGE ? 'No calendar for this month on this site.' : 'No calendar for this month yet.')}</li>`;
+    // A way out: the nearest month that is on the site.
+    const near = RANGE ? (month < monthOf(RANGE.first) ? RANGE.first : month > monthOf(RANGE.last) ? RANGE.last : null) : null;
+    $('month-list').innerHTML = `<li class="msg">${t(RANGE ? 'No calendar for this month on this site.' : 'No calendar for this month yet.')}
+      ${near ? `<p class="empty-actions"><button type="button" class="primary" data-date="${near}" data-month-go="1">${t('Go to {month}', { month: fmtDate(near, 'monthYear') })}</button></p>` : ''}</li>`;
     return;
   }
   $('month-list').innerHTML = data.days.map((s) => {
@@ -117,7 +123,7 @@ export async function renderMonth() {
         <span class="mc"><span class="swatch" style="background:${COLORS[s.color]}" title="${t(COLOR_NAMES[s.color] ?? s.color)}"></span></span>
         <span class="mt">${esc(s.title)}${s.commemorations.length ? `<small>${t('Com.')} ${esc(s.commemorations.join('; '))}</small>` : ''}</span>
         <span class="mr">${esc(s.rank)}</span>
-        <span class="mf">${fastMarks(s.fasting)}</span>
+        <span class="mf">${fastMarks(s.fasting, { inButton: true })}</span>
       </button></li>`;
   }).join('');
 }

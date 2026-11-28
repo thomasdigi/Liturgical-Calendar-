@@ -86,3 +86,37 @@ export async function getMonth(
   await writeFile(p, JSON.stringify(s));
   return s;
 }
+
+// ---------- a whole year, compactly (for the feast pages) ----------
+
+/**
+ * Every day of a year in one small file, for the feast pages (a feast's dates across years and
+ * its rank in each version): data/<calendar>/<version>/year/YYYY.json
+ *   { year, days: { "MM-DD": [title, rank, colour, [commemorations…]] } }
+ * Made from the month summaries (built if missing: one Lauds page per day).
+ */
+export interface YearIndex {
+  year: number;
+  days: Record<string, [title: string, rank: string, color: string, commemorations: string[]]>;
+}
+export const yearPath = (calendar: CalendarId, version: VersionId, year: number) =>
+  resolve(DATA_DIR, calendar, version, 'year', `${year}.json`);
+
+export async function getYear(calendar: CalendarId, version: VersionId, year: number, { refresh = false } = {}): Promise<YearIndex> {
+  const p = yearPath(calendar, version, year);
+  if (!refresh) {
+    try {
+      return JSON.parse(await readFile(p, 'utf8')) as YearIndex;
+    } catch {
+      /* not built yet */
+    }
+  }
+  const index: YearIndex = { year, days: {} };
+  for (let m = 1; m <= 12; m++) {
+    const month = await getMonth(calendar, version, `${year}-${String(m).padStart(2, '0')}`, { refresh });
+    for (const d of month.days) index.days[d.date.slice(5)] = [d.title, d.rank, d.color, d.commemorations];
+  }
+  await mkdir(dirname(p), { recursive: true });
+  await writeFile(p, JSON.stringify(index));
+  return index;
+}

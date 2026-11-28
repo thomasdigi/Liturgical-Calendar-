@@ -40,11 +40,14 @@ export const DYNAMIC = [
   // outline and messages built from parts
   'Lessons', 'Martyrology', 'Fast', 'Abstinence', 'mandatory', 'suggested',
   'Divine Office and Mass',
+  // the Year page's moveable feasts (web/js/yearpage.js)
+  'Septuagesima Sunday', 'Passion Sunday', 'Palm Sunday', 'Easter Sunday', 'Ascension', 'Trinity Sunday', 'Corpus Christi',
+  'Sacred Heart', 'Christ the King', 'First Sunday of Advent',
 ];
 
 /** The page's text, recorded as web/js/ui.js does (keep SKIP in step with it). */
 export function pageStrings(): string[] {
-  const SKIP = '#text, #month-list, #week, #results, #feastlist, #sacristan-body, #hours, #masschoice, #outline, #jump, #wheel-svg, #info, select:not([data-t]), [lang="la"], .fp-sample, .initials-demo, .flagmenu-list, script, style, svg';
+  const SKIP = '#text, #month-list, #week, #results, #feastlist, #sacristan-body, #devotion-body, #dv-days, #hours, #masschoice, #outline, #jump, #wheel-svg, #info, select:not([data-t]), [lang="la"], .fp-sample, .initials-demo, .flagmenu-list, script, style, svg';
   const $ = cheerio.load(readFileSync(resolve(WEB, 'index.html'), 'utf8'));
   const out = new Set<string>();
   const squash = (s: string) => s.replace(/\s+/g, ' ').trim();
@@ -87,7 +90,7 @@ export function scriptStrings(): string[] {
 }
 
 /** Picked up by the scan but not text to translate (marks, symbols, values compared in code). */
-const NOT_TEXT = new Set(['A', 'F', 'P', 'A+', 'A−', 'English', 'English text', 'Divinum Officium', 'day', 'mass', 'office', 'suffrage']);
+const NOT_TEXT = new Set(['A', 'F', 'P', 'A+', 'A−', 'D', 'M', 'S', 'T', 'Y', 'English', 'English text', 'Divinum Officium', 'day', 'mass', 'office', 'suffrage']);
 
 export const allStrings = () => [...new Set([...pageStrings(), ...scriptStrings(), ...DYNAMIC])].filter((s) => !NOT_TEXT.has(s)).sort();
 
