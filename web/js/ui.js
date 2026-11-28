@@ -124,7 +124,7 @@ export function fmtDate(iso, style = 'long') {
 
 // ---------- the page's own text ----------
 /** Not translated (fixed menus marked data-t are): the texts, Latin samples, and lists the scripts fill in themselves. */
-const SKIP = '#text, #month-list, #week, #results, #feastlist, #sacristan-body, #hours, #masschoice, #outline, #jump, #wheel-svg, #info, select:not([data-t]), [lang="la"], .fp-sample, .initials-demo, .flagmenu-list, script, style, svg';
+const SKIP = '#text, #month-list, #week, #results, #feastlist, #sacristan-body, #devotion-body, #dv-days, #hours, #masschoice, #outline, #jump, #wheel-svg, #info, select:not([data-t]), [lang="la"], .fp-sample, .initials-demo, .flagmenu-list, script, style, svg';
 const ATTRS = ['aria-label', 'title', 'placeholder'];
 const recorded = []; // [node, attribute or null, English]
 

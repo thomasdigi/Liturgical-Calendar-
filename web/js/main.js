@@ -20,6 +20,9 @@ import { initTypography } from './typography.js';
 import { fmtDate, initUi, t } from './ui.js';
 import { initReport } from './report.js';
 import { initAngelus } from './angelus.js';
+import { initDevotions, renderDevotionBody } from './devotions.js';
+import { initAnalytics, trackEvent, trackPage } from './analytics.js';
+import { initPsalms } from './psalms.js';
 import { $, isoToday, monthOf, shift, store } from './util.js';
 
 export async function init() {
@@ -49,6 +52,7 @@ export async function init() {
     state.calendar = c; state.version = v;
   }
   if (RANGE) Object.assign($('date'), { min: RANGE.first, max: RANGE.last });
+  initAnalytics(config);
 
   $('calendar').onchange = (e) => { state.calendar = e.target.value; store.set('calendar', state.calendar); syncControls(); load(); };
   $('version').onchange = (e) => { state.version = e.target.value; store.set('version', state.version); syncControls(); load(); };
@@ -68,6 +72,7 @@ export async function init() {
   $('office').onchange = (e) => { state.office = e.target.value; syncControls(); render(); };
   $('compare').onclick = () => {
     state.compare = !state.compare;
+    if (state.compare) trackEvent('feature/compare');
     if (state.compare && !state.cmpVersion) defaultComparison();
     syncControls(); render();
   };
@@ -80,6 +85,7 @@ export async function init() {
   $('chant').onclick = () => {
     if ($('chant').disabled) return;
     state.chant = !state.chant; store.set('chant', state.chant ? 'on' : 'off'); syncControls(); render();
+    if (state.chant) trackEvent('feature/chant');
   };
   // Buttons on the Sacristan page open the Mass or an Hour of the day.
   $('sacristan-body').addEventListener('click', (e) => {
@@ -106,7 +112,7 @@ export async function init() {
     ro.observe(document.querySelector('.top'));
     ro.observe($('appbar'));
   }
-  $('searchform').onsubmit = (e) => { e.preventDefault(); runFeastSearch(); runSearch(); };
+  $('searchform').onsubmit = (e) => { e.preventDefault(); runFeastSearch(); runSearch(); trackEvent('feature/search'); };
   // Feasts and saints appear as you type; tap one to open its day.
   let feastTimer;
   $('q').addEventListener('input', () => { clearTimeout(feastTimer); feastTimer = setTimeout(runFeastSearch, 250); });
@@ -172,6 +178,7 @@ export async function init() {
     if (!day) return;
     state.feastDate = state.date;
     state.page = 'feast';
+    trackEvent('feature/feast-page');
     syncControls(); load(); window.scrollTo(0, 0);
   };
   $('title').addEventListener('click', openFeast);
@@ -193,7 +200,10 @@ export async function init() {
   // Turning the phone changes which text sizes fit in two columns.
   let resizeTimer;
   window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(syncControls, 200); });
-  $('reading').onclick = () => { state.reading = !state.reading; store.set('reading', state.reading ? 'on' : 'off'); syncControls(); };
+  $('reading').onclick = () => {
+    if (!state.reading) trackEvent('feature/reading-mode');
+    state.reading = !state.reading; store.set('reading', state.reading ? 'on' : 'off'); syncControls();
+  };
   $('jump').onchange = (e) => {
     const el = document.getElementById(e.target.value);
     if (el) el.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' });
@@ -250,11 +260,23 @@ function renderDevotion() {
   $('devotion-title').textContent = LATIN_NAMES.has(state.devotion) ? name : t(name);
   $('devotion-title').lang = LATIN_NAMES.has(state.devotion) ? 'la' : '';
   $('angelus-reminder').hidden = state.devotion !== 'angelus';
+  renderDevotionBody(state.devotion);
+}
+
+/** The page shown, for the private visit counts (no dates, nothing personal). */
+function pageName() {
+  if (state.page === 'day') return state.view === 'mass' ? 'day/mass' : `day/office/${state.office === 'day' ? state.hour : state.office}`;
+  if (state.page === 'devotion') return `devotion/${state.devotion}`;
+  return state.page;
 }
 
 export async function load() {
   const seq = ++loadSeq;
   updateUrl();
+  trackPage(pageName());
+  trackEvent(`setting/version/${state.version}`, { perSession: true });
+  trackEvent(`setting/calendar/${state.calendar}`, { perSession: true });
+  trackEvent(`setting/text-language/${state.lang}`, { perSession: true });
   $('date').value = state.date;
   if (state.page === 'month') {
     renderMonth();
@@ -399,8 +421,10 @@ initUi(() => { syncControls(); load(); syncSettingsText(); syncNetState(); });
 initTheme();
 initA11y();
 initTypography(() => { syncControls(); load(); });
+initPsalms(() => { syncControls(); load(); });
 initReport();
 initAngelus();
+initDevotions();
 // Hold a button: what it does (its data-tip, else its title or label, in the app's language).
 initLongPress((b) => (b.dataset.tip ? t(b.dataset.tip) : b.title || b.getAttribute('aria-label') || ''));
 initOffline();

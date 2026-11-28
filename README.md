@@ -76,7 +76,25 @@ placeholder lines show while a text loads, and a missing day offers the nearest 
 
 **Top bar**: ☰ opens the menu (left panel), 🔍 the search, ⚙ the Settings (right panel). The menu
 has the **Sacristan** page and **Devotions** (Rosary, Divine Mercy, Stations of the Cross, Via Petri,
-Angelus; each page is still under construction).
+Angelus; the Rosary and the Stations of the Cross are still under construction).
+
+**Devotions** (`web/js/devotions.js`, texts in `web/js/devotions/`): the prayers in Latin, in the
+app's language, or both side by side (the switch at the top). **Via Petri**: twelve stations on the
+life of St Peter, each with its passage of Scripture (Latin: Clementine Vulgate; English:
+Douay-Rheims; German: Grünewald 1924; French: Crampon 1923; Spanish: Straubinger; Portuguese:
+Bíblia Livre). The passages are extracted by `npm run scripture` (`scripts/scripture.ts`) from the
+public-domain Bibles of github.com/scrollmapper/bible_databases. **Angelus**, with the Regina Caeli
+(shown first in Eastertide). **Divine Mercy**: the Chaplet prayer by prayer, with the beads to tap.
+Via Petri and Divine Mercy have a **reminder** at the time and on the days chosen, through the
+phone's calendar.
+
+**Psalm numbering** (Settings → Typography): the Vulgate's or the Hebrew one of most modern Bibles;
+headings, citations, verse numbers and the psalm search follow it (`web/js/psalms.js`).
+
+**Visit counts** (`web/js/analytics.js`): a cookie-free count of pages and features used, through
+GoatCounter, when the repository variable `GOATCOUNTER_CODE` is set (Settings → Secrets and
+variables → Actions → Variables). Off for Do Not Track / Global Privacy Control, and in Settings →
+About.
 **Search** finds feasts and saints as you type (English or Latin names: "St. Lucy", "Christmas";
 `web/js/feasts.js`) and, with the Search button, words in the texts.
 

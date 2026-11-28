@@ -47,7 +47,7 @@ export const DYNAMIC = [
 
 /** The page's text, recorded as web/js/ui.js does (keep SKIP in step with it). */
 export function pageStrings(): string[] {
-  const SKIP = '#text, #month-list, #week, #results, #feastlist, #sacristan-body, #hours, #masschoice, #outline, #jump, #wheel-svg, #info, select:not([data-t]), [lang="la"], .fp-sample, .initials-demo, .flagmenu-list, script, style, svg';
+  const SKIP = '#text, #month-list, #week, #results, #feastlist, #sacristan-body, #devotion-body, #dv-days, #hours, #masschoice, #outline, #jump, #wheel-svg, #info, select:not([data-t]), [lang="la"], .fp-sample, .initials-demo, .flagmenu-list, script, style, svg';
   const $ = cheerio.load(readFileSync(resolve(WEB, 'index.html'), 'utf8'));
   const out = new Set<string>();
   const squash = (s: string) => s.replace(/\s+/g, ' ').trim();

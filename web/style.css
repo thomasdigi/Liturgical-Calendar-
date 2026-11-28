@@ -686,6 +686,56 @@ body.comparing #layout { display: none; }
 .angelus-reminder label.check { display: flex; gap: 10px; align-items: center; font-size: 15px; }
 .angelus-reminder button.primary { border: 0; border-radius: 9px; padding: 9px 16px; background: var(--accent); color: var(--on-accent); font: 15px var(--sans); cursor: pointer; }
 
+/* The devotions' texts (web/js/devotions.js) */
+.dv-langs { margin: 0 auto 20px; font-family: var(--sans); }
+.dv-langs button { border: 0; background: none; padding: 7px 14px; cursor: pointer; color: var(--muted); min-height: 36px; font: inherit; }
+.dv-langs button[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.devotion-body { text-align: left; margin: 0 auto 28px; }
+.devotion-body h2 { font: 600 21px/1.3 var(--serif); color: var(--accent-ink); margin: 30px 0 10px; }
+.devotion-body h2.dv-station { border-top: 1px solid var(--rule); padding-top: 22px; }
+.devotion-body .dv-pair h2 { margin: 0; }
+.devotion-body > h2:first-child, .devotion-body > .dv-rubric:first-child + h2 { margin-top: 12px; }
+.dv-rubric { color: var(--rubric); font-style: italic; margin: 10px 0; }
+.dv-prayer { margin: 10px 0; }
+.dv-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; margin: 10px 0; }
+.dv-pair > * { margin: 0; min-width: 0; }
+.devotion-body > h2 + .dv-pair, .devotion-body .dv-station + .dv-pair { margin-top: 0; }
+.dv-pair:has(> h2.dv-station) { border-top: 1px solid var(--rule); padding-top: 22px; margin-top: 30px; }
+.dv-pair > h2.dv-station { border: 0; padding: 0; }
+.vr { color: var(--rubric); font-weight: 600; }
+.dv-reading { margin: 0 0 8px; }
+.dv-reading p { margin: 0; }
+.dv-reading .dv-ref { font: 600 13px var(--sans); color: var(--muted); letter-spacing: .02em; margin-bottom: 4px; }
+.dv-reading sup { color: var(--rubric); font: 600 .62em var(--sans); margin: 0 2px 0 4px; }
+.dv-fold { border: 1px solid var(--rule); border-radius: 10px; padding: 8px 14px; margin: 8px 0; background: var(--paper); }
+.dv-fold summary { cursor: pointer; font-weight: 600; }
+.dv-sources { font: 12.5px var(--sans); color: var(--muted); margin-top: 28px; }
+@media (max-width: 520px) {
+  .dv-pair { gap: 6px 12px; font-size: .92em; }
+  .devotion-body h2 { font-size: 18px; }
+}
+/* The Chaplet, prayer by prayer */
+.mercy-card { border: 1px solid var(--rule); border-radius: 14px; background: var(--paper); padding: 16px 18px; margin: 14px 0; min-height: 160px; }
+.mercy-where { font: 600 12.5px var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; }
+.mercy-card h2 { margin: 0 0 8px; }
+.mercy-card .dv-pair { margin: 0 0 6px; }
+.mercy-nav { display: flex; gap: 10px; justify-content: space-between; margin: 10px 0 18px; font-family: var(--sans); }
+.mercy-nav button { flex: 1; min-height: 48px; border: 1px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); font: 16px var(--sans); cursor: pointer; }
+.mercy-nav button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); flex: 2; }
+.mercy-nav button:disabled { opacity: .4; cursor: default; }
+.mercy-beads { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; justify-content: center; padding: 4px 0; }
+.bead { width: 14px; height: 14px; padding: 0; border-radius: 50%; border: 1.5px solid var(--muted); background: transparent; cursor: pointer; }
+.bead.large { width: 20px; height: 20px; }
+.bead.cross { border-radius: 3px; }
+.bead.gap { margin-left: 12px; }
+.bead.done { background: var(--muted); opacity: .55; }
+.bead.now { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent); }
+/* The reminder's time and days */
+.time-pick { display: flex; gap: 10px; align-items: center; font-size: 15px; margin: 8px 0; }
+.time-pick input { font: 16px var(--sans); padding: 4px 8px; border: 1px solid var(--rule); border-radius: 8px; background: var(--bg); color: var(--ink); }
+.dv-days { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
+.dv-days legend { grid-column: 1 / -1; }
+
 /* ---------- the month's Ordo, printed (web/js/ordoprint.js) ---------- */
 #ordo-print { display: none; }
 @media print {

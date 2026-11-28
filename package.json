@@ -8,7 +8,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "site": "tsx scripts/site.ts",
-    "translations": "tsx scripts/ui-build.ts"
+    "translations": "tsx scripts/ui-build.ts",
+    "scripture": "tsx scripts/scripture.ts"
   },
   "repository": {
     "type": "git",

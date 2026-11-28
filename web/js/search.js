@@ -4,6 +4,7 @@ import { findFeasts } from './feasts.js';
 import { avail, built, config, lang, state } from './state.js';
 import { $, addMonths, esc, monthOf, store } from './util.js';
 import { fmtDate, t } from './ui.js';
+import { fromHebrew, hebrewNumbering } from './psalms.js';
 
 const monthLabel = (m) => fmtDate(m, 'monthYear');
 
@@ -122,15 +123,17 @@ export async function runSearch() {
   const seq = ++searchSeq;
   const query = $('q').value.trim();
   // A psalm by number: its heading in the Latin ("Psalmus 50"), wherever it's said.
-  const psalm = psalmNumber(query);
-  const terms = psalm ? [`psalmus ${psalm}`] : parseQuery(query);
+  // With Hebrew numbering chosen, "Psalm 51" means the Vulgate's 50 (the texts keep the Vulgate's numbers).
+  const typed = psalmNumber(query);
+  const psalms = typed ? (hebrewNumbering() ? fromHebrew(typed) : [typed]) : null;
+  const terms = psalms ? psalms.map((n) => `psalmus ${n}`) : parseQuery(query);
   if (!terms.length) { $('searchstatus').textContent = t('Type a word or phrase to find.'); return; }
   remember(query);
-  const matches = psalm
-    ? (n) => new RegExp(`psalmus ${psalm}(?!\\d)`).test(n)
+  const matches = psalms
+    ? (n) => psalms.some((p) => new RegExp(`psalmus ${p}(?!\\d)`).test(n))
     : (n) => terms.every((term) => n.includes(term));
   const which = $('searchparts').value;
-  const within = psalm ? 'latin' : $('searchin').value;
+  const within = psalms ? 'latin' : $('searchin').value;
   const langId = searchLangId();
   const hits = [];
   $('results').innerHTML = '';

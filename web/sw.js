@@ -5,7 +5,7 @@
 //  - Texts (data/…): saved as they're read, and by "Save for offline" (web/js/offline.js),
 //    in the DATA cache. Served from there at once, refreshed in the background when online.
 //  - Site settings (data/config.json, data/available.json): network first.
-const SHELL = 'shell-v13';
+const SHELL = 'shell-v14';
 const DATA = 'data-v1'; // keep in step with web/js/offline.js
 
 const SHELL_FILES = [
@@ -45,6 +45,12 @@ const SHELL_FILES = [
   'js/booklet.js',
   'js/yearpage.js',
   'js/feastpage.js',
+  'js/analytics.js',
+  'js/psalms.js',
+  'js/devotions.js',
+  'js/devotions/texts.js',
+  'js/devotions/prayers.js',
+  'js/devotions/readings.js',
   'js/epub.js',
   'js/ui.js',
   'js/ui/de.js',

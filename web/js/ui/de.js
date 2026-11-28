@@ -445,5 +445,20 @@ export default {
  "Corpus Christi": "Fronleichnam",
  "Sacred Heart": "Heiligstes Herz Jesu",
  "Christ the King": "Christkönig",
- "First Sunday of Advent": "Erster Adventssonntag"
+ "First Sunday of Advent": "Erster Adventssonntag",
+ "Back": "Zurück",
+ "Beads": "Perlen",
+ "Count my visits anonymously": "Meine Besuche anonym zählen",
+ "Hebrew (most modern Bibles: the Miserere is Psalm 51)": "Hebräisch (die meisten modernen Bibeln: das Miserere ist Psalm 51)",
+ "Language of the prayers": "Sprache der Gebete",
+ "Next": "Weiter",
+ "Only which pages and features are used, to choose what to improve: no cookies, no personal data, nothing about what you read or search. Off if your browser asks not to be tracked.": "Nur welche Seiten und Funktionen genutzt werden, um zu entscheiden, was verbessert wird: keine Cookies, keine persönlichen Daten, nichts darüber, was Sie lesen oder suchen. Aus, wenn Ihr Browser darum bittet, nicht verfolgt zu werden.",
+ "Psalm numbering": "Psalmenzählung",
+ "Reminder": "Erinnerung",
+ "Scripture": "Heilige Schrift",
+ "Start again": "Von vorn beginnen",
+ "Time": "Uhrzeit",
+ "Vulgate (the traditional books: Psalm 50 is the Miserere)": "Vulgata (die traditionellen Bücher: Psalm 50 ist das Miserere)",
+ "Your phone opens the reminder in its calendar app: confirm there to add it.": "Ihr Telefon öffnet die Erinnerung in seiner Kalender-App: Bestätigen Sie dort, um sie hinzuzufügen.",
+ "Your phone's calendar can remind you to pray, even when this app is closed. Choose the time and the days.": "Der Kalender Ihres Telefons kann Sie ans Beten erinnern, auch wenn diese App geschlossen ist. Wählen Sie die Uhrzeit und die Tage."
 };

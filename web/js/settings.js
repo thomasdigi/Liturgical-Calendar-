@@ -4,6 +4,7 @@ import { syncOfflinePanel } from './offline.js';
 import { comboBuilt, comboLabel, state } from './state.js';
 import { $ } from './util.js';
 import { fmtNum, t } from './ui.js';
+import { trackEvent } from './analytics.js';
 
 /** The address of a calendar file for the calendar and version on screen. */
 const feedUrl = (kind) => new URL(`data/${state.calendar}/${state.version}/${kind}.ics`, location.href).href;
@@ -85,6 +86,7 @@ export function initSettings() {
     btn.disabled = true;
     $('epub-status').textContent = t('Gathering the texts…');
     try {
+      trackEvent(`feature/ebook-${$('epub-range').value}`);
       const { makeEpub } = await import('./epub.js');
       const book = await makeEpub({ range: $('epub-range').value, contents: $('epub-contents').value },
         (done, total) => { $('epub-status').textContent = t('Gathering the texts: day {done} of {total}…', { done, total }); });
@@ -106,6 +108,7 @@ export function initSettings() {
   document.querySelectorAll('.print-go').forEach((b) => (b.onclick = async () => {
     close();
     // The month page prints the month's Ordo; the day page, what's on screen.
+    trackEvent(state.page === 'month' ? 'print/ordo' : $('print-what').value === 'page' ? 'print/page' : `print/booklet-${$('print-what').value}`);
     if (state.page === 'month') {
       const { printOrdo } = await import('./ordoprint.js');
       printOrdo();

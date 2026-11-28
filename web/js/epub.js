@@ -7,6 +7,7 @@ import { getJson, readPart } from './data.js';
 import { comboLabel, config, inRange, lang, shownLangId, state } from './state.js';
 import { esc, monthOf, shift } from './util.js';
 import { simplifyLatin } from './typography.js';
+import { convertPsalms } from './psalms.js';
 import { fmtDate, t, uiLang } from './ui.js';
 
 // ---------- a minimal ZIP writer (stored, no compression: EPUB's "mimetype" must be stored) ----------
@@ -127,6 +128,7 @@ function toXhtml(html, title, langCode) {
   doc.body.querySelectorAll('.GABC, .GCHANT, button, script').forEach((el) => el.remove());
   doc.body.querySelectorAll('.rubric').forEach((el) => { if (/^\s*(✠|✙︎?|\+)\s*$/.test(el.textContent)) { el.textContent = '✠'; el.classList.add('cross'); } });
   simplifyLatin(doc.body);
+  convertPsalms(doc.body); // Hebrew psalm numbers, if chosen
   const body = new XMLSerializer().serializeToString(doc.body).replace(/^<body[^>]*>|<\/body>$/g, '');
   return `<?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html>

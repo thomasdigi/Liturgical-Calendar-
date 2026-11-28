@@ -445,5 +445,20 @@ export default {
  "Corpus Christi": "Corpus Christi",
  "Sacred Heart": "Sacratissimum Cor Iesu",
  "Christ the King": "D. N. Iesus Christus Rex",
- "First Sunday of Advent": "Dominica I Adventus"
+ "First Sunday of Advent": "Dominica I Adventus",
+ "Back": "Retro",
+ "Beads": "Globuli",
+ "Count my visits anonymously": "Visitationes meas anonyme numerare",
+ "Hebrew (most modern Bibles: the Miserere is Psalm 51)": "Hebraica (plurimae Bibliae recentes: Miserere est psalmus 51)",
+ "Language of the prayers": "Lingua orationum",
+ "Next": "Sequens",
+ "Only which pages and features are used, to choose what to improve: no cookies, no personal data, nothing about what you read or search. Off if your browser asks not to be tracked.": "Tantum quae paginae et functiones adhibeantur, ut eligatur quid emendetur: nulla crustula, nulla data personalia, nihil de iis quae legis vel quaeris. Exstinctum si navigatrum tuum petit ne vestigetur.",
+ "Psalm numbering": "Numeratio psalmorum",
+ "Reminder": "Admonitio",
+ "Scripture": "Sacra Scriptura",
+ "Start again": "Iterum incipere",
+ "Time": "Hora",
+ "Vulgate (the traditional books: Psalm 50 is the Miserere)": "Vulgata (libri traditi: psalmus 50 est Miserere)",
+ "Your phone opens the reminder in its calendar app: confirm there to add it.": "Telephonum tuum admonitionem in suo calendario aperit: ibi confirma ut addatur.",
+ "Your phone's calendar can remind you to pray, even when this app is closed. Choose the time and the days.": "Calendarium telephoni tui te monere potest ut ores, etiam cum haec applicatio clausa est. Elige horam et dies."
 };

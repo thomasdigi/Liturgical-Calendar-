@@ -445,5 +445,20 @@ export default {
  "Corpus Christi": "Fête-Dieu",
  "Sacred Heart": "Sacré-Cœur",
  "Christ the King": "Christ-Roi",
- "First Sunday of Advent": "Premier dimanche de l’Avent"
+ "First Sunday of Advent": "Premier dimanche de l’Avent",
+ "Back": "Précédent",
+ "Beads": "Grains",
+ "Count my visits anonymously": "Compter mes visites anonymement",
+ "Hebrew (most modern Bibles: the Miserere is Psalm 51)": "Hébraïque (la plupart des Bibles modernes : le Miserere est le psaume 51)",
+ "Language of the prayers": "Langue des prières",
+ "Next": "Suivant",
+ "Only which pages and features are used, to choose what to improve: no cookies, no personal data, nothing about what you read or search. Off if your browser asks not to be tracked.": "Seulement les pages et fonctions utilisées, pour choisir quoi améliorer : pas de cookies, aucune donnée personnelle, rien sur ce que vous lisez ou cherchez. Désactivé si votre navigateur demande à ne pas être suivi.",
+ "Psalm numbering": "Numérotation des psaumes",
+ "Reminder": "Rappel",
+ "Scripture": "Écriture sainte",
+ "Start again": "Recommencer",
+ "Time": "Heure",
+ "Vulgate (the traditional books: Psalm 50 is the Miserere)": "Vulgate (les livres traditionnels : le psaume 50 est le Miserere)",
+ "Your phone opens the reminder in its calendar app: confirm there to add it.": "Votre téléphone ouvre le rappel dans son application de calendrier : confirmez-y pour l’ajouter.",
+ "Your phone's calendar can remind you to pray, even when this app is closed. Choose the time and the days.": "Le calendrier de votre téléphone peut vous rappeler de prier, même quand cette application est fermée. Choisissez l’heure et les jours."
 };
